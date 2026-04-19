@@ -6,8 +6,8 @@ export default function Nav({ config, musicOn, setMusicOn, visible }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const audioRef = useRef(null);
 
-  const musicUrl = useMediaUrl('music/bgm.mp3');
-  const navLogoUrl = useMediaUrl('icons/medallion-ink.png');
+  const musicUrl = useMediaUrl('music/bgm.mp3', null);
+  const navLogoUrl = useMediaUrl('icons/medallion-ink.png', '/assets/medallion-ink.png');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -38,6 +38,7 @@ export default function Nav({ config, musicOn, setMusicOn, visible }) {
             src={navLogoUrl || '/assets/medallion-ink.png'}
             alt=""
             style={{ height: 32, width: 'auto', maxWidth: 32, flexShrink: 0, display: 'block' }}
+            onError={(e) => { e.target.src = '/assets/medallion-ink.png'; }}
           />
           <span>
             {config.brideShort} &amp; {config.groomShort}

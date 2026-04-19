@@ -1,41 +1,36 @@
 /**
- * Placeholder images for the wedding site.
- * These show when no photos have been uploaded to Supabase Storage yet.
- * Replace with real photos by uploading to the media bucket.
+ * Placeholder data for the wedding site.
+ * URLs are null so the app renders styled .ph placeholder divs
+ * (gold-striped boxes with labels) matching the original design.
+ * Replace with real photos by uploading to the Supabase media bucket.
  */
 
-// Using picsum.photos for beautiful placeholder images
-// Each ID gives a consistent, repeatable image
 export const PLACEHOLDERS = {
-  // Carousel photos
   carousel: [
-    { url: 'https://picsum.photos/seed/wedding-01/640/860', cap: 'Đà Lạt · 2024', type: 'tall' },
-    { url: 'https://picsum.photos/seed/wedding-02/1120/700', cap: 'Mùa hè đầu tiên', type: 'wide' },
-    { url: 'https://picsum.photos/seed/wedding-03/840/840', cap: 'Buổi chiều Sài Gòn', type: 'sq' },
-    { url: 'https://picsum.photos/seed/wedding-04/640/860', cap: 'Nụ cười', type: 'tall' },
-    { url: 'https://picsum.photos/seed/wedding-05/1120/700', cap: 'Hoàng hôn', type: 'wide' },
-    { url: 'https://picsum.photos/seed/wedding-06/840/840', cap: 'Tay trong tay', type: 'sq' },
-    { url: 'https://picsum.photos/seed/wedding-07/640/860', cap: 'Một ngày bình yên', type: 'tall' },
+    { url: null, cap: 'Đà Lạt · 2024', type: 'tall', label: 'Photo 01 · Engagement' },
+    { url: null, cap: 'Mùa hè đầu tiên', type: 'wide', label: 'Photo 02 · Wide' },
+    { url: null, cap: 'Buổi chiều Sài Gòn', type: 'sq', label: 'Photo 03 · Square' },
+    { url: null, cap: 'Nụ cười', type: 'tall', label: 'Photo 04 · Portrait' },
+    { url: null, cap: 'Hoàng hôn', type: 'wide', label: 'Photo 05 · Wide' },
+    { url: null, cap: 'Tay trong tay', type: 'sq', label: 'Photo 06 · Square' },
+    { url: null, cap: 'Một ngày bình yên', type: 'tall', label: 'Photo 07 · Portrait' },
   ],
 
-  // Portraits
-  groom: 'https://picsum.photos/seed/groom-portrait/600/750',
-  bride: 'https://picsum.photos/seed/bride-portrait/600/750',
+  groom: null,
+  bride: null,
 
-  // Timeline moments
   timeline: {
-    'timeline/photo.jpg': 'https://picsum.photos/seed/tl-photo/440/590',
-    'timeline/welcome.jpg': 'https://picsum.photos/seed/tl-welcome/440/590',
-    'timeline/ceremony.jpg': 'https://picsum.photos/seed/tl-ceremony/440/590',
-    'timeline/vows.jpg': 'https://picsum.photos/seed/tl-vows/440/590',
-    'timeline/reception.jpg': 'https://picsum.photos/seed/tl-reception/440/590',
+    'timeline/photo.jpg': null,
+    'timeline/welcome.jpg': null,
+    'timeline/ceremony.jpg': null,
+    'timeline/vows.jpg': null,
+    'timeline/reception.jpg': null,
   },
 
-  // Background photos (info section)
   background: {
-    'background/left.jpg': 'https://picsum.photos/seed/bg-left/560/750',
-    'background/right.jpg': 'https://picsum.photos/seed/bg-right/640/800',
-    'background/moment-1.jpg': 'https://picsum.photos/seed/bg-moment1/400/400',
-    'background/moment-2.jpg': 'https://picsum.photos/seed/bg-moment2/360/480',
+    'background/left.jpg': null,
+    'background/right.jpg': null,
+    'background/moment-1.jpg': null,
+    'background/moment-2.jpg': null,
   },
 };

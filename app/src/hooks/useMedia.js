@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
-import { getMediaUrl, listMedia } from '../lib/storage';
+import { getMediaUrl, getMediaUrlAsync, listMedia } from '../lib/storage';
 
 /**
  * Get a single media file URL by its storage path.
- * Falls back to a local path if Supabase is not configured.
+ * Waits for bucket availability check, then returns remote URL or localFallback.
  */
 export function useMediaUrl(storagePath, localFallback = null) {
-  const url = getMediaUrl(storagePath);
-  return url || localFallback;
+  const [url, setUrl] = useState(localFallback);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMediaUrlAsync(storagePath).then((remoteUrl) => {
+      if (cancelled) return;
+      setUrl(remoteUrl || localFallback);
+    });
+    return () => { cancelled = true; };
+  }, [storagePath, localFallback]);
+
+  return url;
 }
 
 /**

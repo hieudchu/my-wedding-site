@@ -15,7 +15,7 @@ export default function App() {
   const [musicOn, setMusicOn] = useState(false);
   const [navVisible, setNavVisible] = useState(false);
 
-  useReveal();
+  useReveal(!loading);
 
   if (loading) return null;
 

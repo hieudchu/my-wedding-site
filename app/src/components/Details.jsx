@@ -48,12 +48,16 @@ export default function Details({ siteText = {} }) {
         <div className="carousel" ref={trackRef}>
           {!loading && photos.map((p, i) => (
             <div key={i} className={`card ${p.type}`}>
-              <img
-                src={p.url}
-                alt={p.cap}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                loading="lazy"
-              />
+              {p.url ? (
+                <img
+                  src={p.url}
+                  alt={p.cap}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="ph" data-label={p.label || p.cap} style={{ width: '100%', height: '100%' }} />
+              )}
               <span className="cap">{p.cap}</span>
             </div>
           ))}

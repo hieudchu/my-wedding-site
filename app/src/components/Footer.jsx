@@ -1,6 +1,6 @@
 import { formatDateParts } from '../lib/config';
 
-export default function Footer({ config }) {
+export default function Footer({ config, siteText = {} }) {
   const parts = formatDateParts(config.weddingDate);
   return (
     <footer className="footer">
@@ -10,7 +10,7 @@ export default function Footer({ config }) {
       <div>
         {parts.dd}.{parts.mm}.{parts.yyyy} — {config.venueName}
       </div>
-      <div className="small">With love · Made for our beloved guests</div>
+      <div className="small">{siteText.footer_text || 'With love · Made for our beloved guests'}</div>
     </footer>
   );
 }

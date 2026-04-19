@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, supabaseConfigured } from './supabase';
 
 const BUCKET = 'media';
 
@@ -7,8 +7,7 @@ const BUCKET = 'media';
  * Returns null if Supabase is not configured.
  */
 export function getMediaUrl(path) {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  if (!url) return null;
+  if (!supabaseConfigured) return null;
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data?.publicUrl || null;
 }
@@ -18,8 +17,7 @@ export function getMediaUrl(path) {
  * Returns array of { name, url } objects.
  */
 export async function listMedia(folder) {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  if (!url) return [];
+  if (!supabaseConfigured) return [];
 
   const { data, error } = await supabase.storage
     .from(BUCKET)

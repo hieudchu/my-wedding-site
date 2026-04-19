@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import MediaImage from './MediaImage';
 import { useMediaList } from '../hooks/useMedia';
 
 const FALLBACK_PHOTOS = [
@@ -12,10 +11,9 @@ const FALLBACK_PHOTOS = [
   { type: 'tall', label: 'Photo 07 · Portrait', cap: 'Một ngày bình yên' },
 ];
 
-// Card type cycle for dynamically loaded photos
 const TYPE_CYCLE = ['tall', 'wide', 'sq'];
 
-export default function Details() {
+export default function Details({ siteText = {} }) {
   const trackRef = useRef(null);
   const { files, loading } = useMediaList('carousel');
 
@@ -25,7 +23,6 @@ export default function Details() {
     el.scrollBy({ left: dir * 400, behavior: 'smooth' });
   };
 
-  // Use storage photos if available, otherwise fall back to placeholders
   const hasRemote = files.length > 0;
   const photos = hasRemote
     ? files.map((f, i) => ({
@@ -36,16 +33,24 @@ export default function Details() {
       }))
     : FALLBACK_PHOTOS;
 
+  const heading = siteText.details_heading || 'Cùng nhau đón những hoàng hôn rực rỡ nhất của cuộc đời.';
+  // Split heading to wrap italic part if it contains a pattern like "rực rỡ nhất"
+  const headingParts = heading.split(/(rực rỡ nhất)/);
+
   return (
     <section className="details" id="story">
       <div className="details-intro reveal">
-        <span className="eyebrow">Save the date · 08.11.2026</span>
+        <span className="eyebrow">{siteText.details_eyebrow || 'Save the date · 08.11.2026'}</span>
         <h2>
-          Cùng nhau đón những hoàng hôn <em>rực rỡ nhất</em> của cuộc đời.
+          {headingParts.length > 1
+            ? headingParts.map((part, i) =>
+                part === 'rực rỡ nhất' ? <em key={i}>{part}</em> : part
+              )
+            : heading}
         </h2>
         <p>
-          Sau bao mùa mưa nắng, hai con tim cuối cùng cũng tìm được cùng một nhịp đập.
-          Chúng em xin trân trọng mời bạn đến chia vui trong ngày trọng đại của chúng em.
+          {siteText.details_paragraph ||
+            'Sau bao mùa mưa nắng, hai con tim cuối cùng cũng tìm được cùng một nhịp đập. Chúng em xin trân trọng mời bạn đến chia vui trong ngày trọng đại của chúng em.'}
         </p>
       </div>
 

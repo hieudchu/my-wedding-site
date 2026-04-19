@@ -1,7 +1,7 @@
 import { formatDateParts } from '../lib/config';
 import MediaImage from './MediaImage';
 
-export default function WeddingInfo({ config }) {
+export default function WeddingInfo({ config, siteText = {} }) {
   const parts = formatDateParts(config.weddingDate);
 
   return (
@@ -27,8 +27,8 @@ export default function WeddingInfo({ config }) {
           localFallback="/assets/medallion-ink.png"
           style={{ width: 110, height: 'auto', objectFit: 'contain' }}
         />
-        <p className="announce">Trân trọng báo tin</p>
-        <p className="announce announce-en">We joyfully announce our wedding</p>
+        <p className="announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
+        <p className="announce announce-en">{siteText.info_announce_en || 'We joyfully announce our wedding'}</p>
 
         <h2 className="names">
           {config.brideShort}
@@ -53,7 +53,7 @@ export default function WeddingInfo({ config }) {
         <div className="divider" />
 
         <p className="location">
-          Tại tư gia · {config.venueName}
+          {siteText.info_venue_prefix || 'Tại tư gia'} · {config.venueName}
           <span className="addr">{config.venueAddress}</span>
         </p>
 

@@ -1,16 +1,29 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { useCountdown } from '../hooks/useCountdown';
 import MediaImage from './MediaImage';
 
-const items = [
-  { time: '14:30', label: 'Chụp ảnh gia đình', en: 'Family photo session', img: 'timeline/photo.jpg' },
-  { time: '15:00', label: 'Đón khách', en: 'Guest welcome', img: 'timeline/welcome.jpg' },
-  { time: '16:30', label: 'Bắt đầu buổi lễ', en: 'Ceremony begins', img: 'timeline/ceremony.jpg' },
-  { time: '17:00', label: 'Trao nhẫn', en: 'Ring exchange', img: 'timeline/vows.jpg' },
-  { time: '18:00', label: 'Khai tiệc', en: 'Reception', img: 'timeline/reception.jpg' },
+const FALLBACK_ITEMS = [
+  { time: '14:30', label_vi: 'Chụp ảnh gia đình', label_en: 'Family photo session', image_path: 'timeline/photo.jpg' },
+  { time: '15:00', label_vi: 'Đón khách', label_en: 'Guest welcome', image_path: 'timeline/welcome.jpg' },
+  { time: '16:30', label_vi: 'Bắt đầu buổi lễ', label_en: 'Ceremony begins', image_path: 'timeline/ceremony.jpg' },
+  { time: '17:00', label_vi: 'Trao nhẫn', label_en: 'Ring exchange', image_path: 'timeline/vows.jpg' },
+  { time: '18:00', label_vi: 'Khai tiệc', label_en: 'Reception', image_path: 'timeline/reception.jpg' },
 ];
 
 export default function Timeline({ config }) {
   const cd = useCountdown(config.weddingDate);
+  const [items, setItems] = useState(FALLBACK_ITEMS);
+
+  useEffect(() => {
+    supabase
+      .from('timeline_events')
+      .select('*')
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data && data.length > 0) setItems(data);
+      });
+  }, []);
 
   return (
     <section className="timeline" id="timeline">
@@ -22,15 +35,15 @@ export default function Timeline({ config }) {
 
         <div className="timeline-track">
           {items.map((it, i) => (
-            <div key={i} className={`tl-item reveal ${i % 2 ? 'alt' : ''}`}>
+            <div key={it.id || i} className={`tl-item reveal ${i % 2 ? 'alt' : ''}`}>
               <div className="side-time">
                 <span className="t">{it.time}</span>
-                <span className="label">{it.label}</span>
-                <span className="en">{it.en}</span>
+                <span className="label">{it.label_vi}</span>
+                <span className="en">{it.label_en}</span>
               </div>
               <div className="dot" />
               <div className="side-img">
-                <MediaImage storagePath={it.img} label={it.en} />
+                <MediaImage storagePath={it.image_path} label={it.label_en} />
               </div>
             </div>
           ))}

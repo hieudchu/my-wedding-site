@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDateParts } from '../lib/config';
 import MediaImage from './MediaImage';
 
-export default function GateHero({ config, onOpen }) {
+export default function GateHero({ config, siteText = {}, onOpen }) {
   const [opened, setOpened] = useState(false);
   const parts = formatDateParts(config.weddingDate);
 
@@ -29,7 +29,9 @@ export default function GateHero({ config, onOpen }) {
           {config.brideShort}<span className="amp">&amp;</span>{config.groomShort}
         </h1>
         <div className="ornament" />
-        <p className="tagline">"Cùng nhau đón những hoàng hôn rực rỡ nhất của cuộc đời."</p>
+        <p className="tagline">
+          {siteText.gate_tagline || '"Cùng nhau đón những hoàng hôn rực rỡ nhất của cuộc đời."'}
+        </p>
         <div className="date-line">
           {parts.dd} · {parts.mm} · {parts.yyyy}
         </div>
@@ -58,8 +60,8 @@ export default function GateHero({ config, onOpen }) {
       </div>
 
       <button className="gate-prompt" onClick={handleOpen} aria-label="Mở thiệp">
-        <span className="label">Trân trọng kính mời</span>
-        <span className="sub">Tap to open · Bấm để mở thiệp</span>
+        <span className="label">{siteText.gate_prompt || 'Trân trọng kính mời'}</span>
+        <span className="sub">{siteText.gate_prompt_sub || 'Tap to open · Bấm để mở thiệp'}</span>
         <span className="pulse" />
       </button>
     </section>

@@ -539,11 +539,13 @@ function RSVP({ tweaks }) {
 /* ---------- Nav + Music ---------- */
 function Nav({ tweaks, musicOn, setMusicOn, visible }) {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  const handleNavClick = () => setMenuOpen(false);
   return (
     <nav className={`nav ${visible ? "visible" : ""} ${scrolled ? "scrolled" : ""}`}>
       <a href="#home" className="brand">
@@ -557,9 +559,23 @@ function Nav({ tweaks, musicOn, setMusicOn, visible }) {
         <a href="#timeline">Lịch trình</a>
         <a href="#rsvp">Xác nhận</a>
       </div>
-      <button className={`music-btn ${musicOn ? "" : "muted"}`} onClick={() => setMusicOn(!musicOn)} title={tweaks.musicTrack}>
-        <div className="bars"><span /><span /><span /></div>
-      </button>
+      <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+        <a href="#story" onClick={handleNavClick}>Chuyện tình</a>
+        <a href="#groom" onClick={handleNavClick}>Gia đình</a>
+        <a href="#details" onClick={handleNavClick}>Thiệp mời</a>
+        <a href="#timeline" onClick={handleNavClick}>Lịch trình</a>
+        <a href="#rsvp" onClick={handleNavClick}>Xác nhận</a>
+      </div>
+      <div className="nav-right">
+        <button className={`music-btn ${musicOn ? "" : "muted"}`} onClick={() => setMusicOn(!musicOn)} title={tweaks.musicTrack}>
+          <div className="bars"><span /><span /><span /></div>
+        </button>
+        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu">
+          <span className={`hamburger-icon ${menuOpen ? "open" : ""}`}>
+            <span /><span /><span />
+          </span>
+        </button>
+      </div>
     </nav>
   );
 }

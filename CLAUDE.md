@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A **handoff bundle from Claude Design** — HTML/CSS/JS prototypes for a Vietnamese wedding invitation website ("Web cưới") for Minh & Hiếu, dated 08.11.2026. These are design prototypes, not production code. The goal is to recreate them pixel-perfectly in whatever production technology fits (React, Vue, etc.).
+A **personal, one-time-use** Vietnamese wedding invitation website ("Web cưới") for Minh & Hiếu, dated 08.11.2026. This project is not intended to be reused, forked, or turned into a template. There is no need for generalization, abstraction, or configurability beyond what serves this single wedding.
+
+Originally a handoff bundle from Claude Design (HTML/CSS/JS prototypes), now migrated to a production React + Vite + Supabase build in the `app/` directory.
 
 ## Key Entry Point
 

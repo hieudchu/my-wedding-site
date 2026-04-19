@@ -1,6 +1,6 @@
 {
-  "outputDirectory": "project",
-  "rewrites": [
-    { "source": "/", "destination": "/Wedding.html" }
-  ]
+  "buildCommand": "cd app && npm run build",
+  "outputDirectory": "app/dist",
+  "installCommand": "cd app && npm install",
+  "framework": "vite"
 }

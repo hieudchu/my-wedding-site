@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "project",
+  "rewrites": [
+    { "source": "/", "destination": "/Wedding.html" }
+  ]
+}

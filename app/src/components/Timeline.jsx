@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCountdown } from '../hooks/useCountdown';
+import { PLACEHOLDERS } from '../lib/placeholders';
 import MediaImage from './MediaImage';
 
 const FALLBACK_ITEMS = [
@@ -43,7 +44,11 @@ export default function Timeline({ config }) {
               </div>
               <div className="dot" />
               <div className="side-img">
-                <MediaImage storagePath={it.image_path} label={it.label_en} />
+                <MediaImage
+                  storagePath={it.image_path}
+                  placeholder={PLACEHOLDERS.timeline[it.image_path]}
+                  label={it.label_en}
+                />
               </div>
             </div>
           ))}

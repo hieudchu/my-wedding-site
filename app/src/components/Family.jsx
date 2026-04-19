@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { PLACEHOLDERS } from '../lib/placeholders';
 import MediaImage from './MediaImage';
 
 export default function Family({ side, config, siteText = {}, reverse }) {
@@ -39,10 +40,9 @@ export default function Family({ side, config, siteText = {}, reverse }) {
     ? siteText.groom_hometown || 'Hà Nội · Việt Nam'
     : siteText.bride_hometown || 'TP. Hồ Chí Minh · Việt Nam';
 
-  const eyebrow = isGroom ? 'Nhà trai · Groom\'s Family' : 'Nhà gái · Bride\'s Family';
-  const name = isGroom ? config.groomName : config.brideName;
   const photoLabel = isGroom ? 'Portrait · The Groom' : 'Portrait · The Bride';
   const storagePath = isGroom ? 'portraits/groom.jpg' : 'portraits/bride.jpg';
+  const placeholderImg = isGroom ? PLACEHOLDERS.groom : PLACEHOLDERS.bride;
 
   return (
     <section
@@ -51,15 +51,20 @@ export default function Family({ side, config, siteText = {}, reverse }) {
     >
       <div className="container">
         <div className="family-portrait reveal">
-          <MediaImage storagePath={storagePath} label={photoLabel} alt={photoLabel} />
+          <MediaImage
+            storagePath={storagePath}
+            placeholder={placeholderImg}
+            label={photoLabel}
+            alt={photoLabel}
+          />
           <div className="sig">{isGroom ? 'H' : 'M'}</div>
         </div>
         <div className="family-info reveal d1">
-          <span className="eyebrow">{eyebrow}</span>
+          <span className="eyebrow">{isGroom ? "Nhà trai · Groom's Family" : "Nhà gái · Bride's Family"}</span>
           <h3>
             <em>{isGroom ? 'Chú rể' : 'Cô dâu'}</em>
             <br />
-            {name}
+            {isGroom ? config.groomName : config.brideName}
           </h3>
           <p className="bio">{bio}</p>
           <div className="family-list">

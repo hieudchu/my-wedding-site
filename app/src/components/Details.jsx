@@ -1,15 +1,6 @@
 import { useRef } from 'react';
 import { useMediaList } from '../hooks/useMedia';
-
-const FALLBACK_PHOTOS = [
-  { type: 'tall', label: 'Photo 01 · Engagement', cap: 'Đà Lạt · 2024' },
-  { type: 'wide', label: 'Photo 02 · Wide', cap: 'Mùa hè đầu tiên' },
-  { type: 'sq', label: 'Photo 03 · Square', cap: 'Buổi chiều Sài Gòn' },
-  { type: 'tall', label: 'Photo 04 · Portrait', cap: 'Nụ cười' },
-  { type: 'wide', label: 'Photo 05 · Wide', cap: 'Hoàng hôn' },
-  { type: 'sq', label: 'Photo 06 · Square', cap: 'Tay trong tay' },
-  { type: 'tall', label: 'Photo 07 · Portrait', cap: 'Một ngày bình yên' },
-];
+import { PLACEHOLDERS } from '../lib/placeholders';
 
 const TYPE_CYCLE = ['tall', 'wide', 'sq'];
 
@@ -23,18 +14,17 @@ export default function Details({ siteText = {} }) {
     el.scrollBy({ left: dir * 400, behavior: 'smooth' });
   };
 
+  // Use storage photos if available, otherwise placeholder images
   const hasRemote = files.length > 0;
   const photos = hasRemote
     ? files.map((f, i) => ({
         type: TYPE_CYCLE[i % TYPE_CYCLE.length],
         url: f.url,
-        label: f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
         cap: f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
       }))
-    : FALLBACK_PHOTOS;
+    : PLACEHOLDERS.carousel;
 
   const heading = siteText.details_heading || 'Cùng nhau đón những hoàng hôn rực rỡ nhất của cuộc đời.';
-  // Split heading to wrap italic part if it contains a pattern like "rực rỡ nhất"
   const headingParts = heading.split(/(rực rỡ nhất)/);
 
   return (
@@ -58,16 +48,12 @@ export default function Details({ siteText = {} }) {
         <div className="carousel" ref={trackRef}>
           {!loading && photos.map((p, i) => (
             <div key={i} className={`card ${p.type}`}>
-              {p.url ? (
-                <img
-                  src={p.url}
-                  alt={p.cap}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  loading="lazy"
-                />
-              ) : (
-                <div className="ph" data-label={p.label} style={{ width: '100%', height: '100%' }} />
-              )}
+              <img
+                src={p.url}
+                alt={p.cap}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                loading="lazy"
+              />
               <span className="cap">{p.cap}</span>
             </div>
           ))}

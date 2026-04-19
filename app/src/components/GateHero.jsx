@@ -19,11 +19,11 @@ export default function GateHero({ config, siteText = {}, onOpen }) {
       <div className="gate-hero-content">
         <MediaImage
           storagePath="icons/medallion-gold.png"
+          localFallback="/assets/medallion-gold.png"
           label="Medallion"
           alt="H&M medallion"
           className="medallion"
           style={{ width: 200, height: 'auto', objectFit: 'contain' }}
-          localFallback="/assets/medallion-gold.png"
         />
         <h1>
           {config.brideShort}<span className="amp">&amp;</span>{config.groomShort}

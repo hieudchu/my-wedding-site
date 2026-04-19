@@ -1,16 +1,18 @@
 import { formatDateParts } from '../lib/config';
+import { PLACEHOLDERS } from '../lib/placeholders';
 import MediaImage from './MediaImage';
 
 export default function WeddingInfo({ config, siteText = {} }) {
   const parts = formatDateParts(config.weddingDate);
+  const bg = PLACEHOLDERS.background;
 
   return (
     <section className="info" id="details">
       <div className="info-bg-photos">
-        <MediaImage storagePath="background/left.jpg" label="Couple · Left" className="l" />
-        <MediaImage storagePath="background/right.jpg" label="Couple · Right" className="r" />
-        <MediaImage storagePath="background/moment-1.jpg" label="Moment" className="l2" />
-        <MediaImage storagePath="background/moment-2.jpg" label="Moment" className="r2" />
+        <MediaImage storagePath="background/left.jpg" placeholder={bg['background/left.jpg']} label="Couple · Left" className="l" />
+        <MediaImage storagePath="background/right.jpg" placeholder={bg['background/right.jpg']} label="Couple · Right" className="r" />
+        <MediaImage storagePath="background/moment-1.jpg" placeholder={bg['background/moment-1.jpg']} label="Moment" className="l2" />
+        <MediaImage storagePath="background/moment-2.jpg" placeholder={bg['background/moment-2.jpg']} label="Moment" className="r2" />
       </div>
 
       <div className="info-card reveal">
@@ -21,10 +23,10 @@ export default function WeddingInfo({ config, siteText = {} }) {
 
         <MediaImage
           storagePath="icons/medallion-ink.png"
+          localFallback="/assets/medallion-ink.png"
           label="Medallion"
           alt=""
           className="medallion-ink"
-          localFallback="/assets/medallion-ink.png"
           style={{ width: 110, height: 'auto', objectFit: 'contain' }}
         />
         <p className="announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>

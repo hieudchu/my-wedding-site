@@ -3,22 +3,24 @@ import { useMediaUrl } from '../hooks/useMedia';
 
 /**
  * Renders an image from Supabase Storage.
- * Falls back to localFallback path, then to a placeholder div.
- *
- * @param {string} storagePath — path in the media bucket (e.g. "portraits/groom.jpg")
- * @param {string} localFallback — local fallback path (e.g. "/assets/medallion-gold.png")
- * @param {string} label — placeholder label text (shown when no image)
- * @param {string} alt — img alt text
- * @param {string} className — additional CSS classes
- * @param {object} style — inline styles
+ * Fallback chain: Supabase URL → localFallback → placeholder URL → .ph div
  */
-export default function MediaImage({ storagePath, localFallback, label, alt = '', className = '', style }) {
+export default function MediaImage({
+  storagePath,
+  localFallback,
+  placeholder,
+  label,
+  alt = '',
+  className = '',
+  style,
+}) {
   const remoteUrl = useMediaUrl(storagePath);
-  const [failed, setFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState(new Set());
 
-  const src = remoteUrl && !failed ? remoteUrl : localFallback;
+  const sources = [remoteUrl, localFallback, placeholder].filter(Boolean);
+  const activeSrc = sources.find((s) => !failedSrc.has(s));
 
-  if (!src) {
+  if (!activeSrc) {
     return (
       <div
         className={`ph ${className}`}
@@ -30,13 +32,11 @@ export default function MediaImage({ storagePath, localFallback, label, alt = ''
 
   return (
     <img
-      src={src}
+      src={activeSrc}
       alt={alt || label || ''}
       className={className}
       style={{ width: '100%', height: '100%', objectFit: 'cover', ...style }}
-      onError={() => {
-        if (!failed) setFailed(true);
-      }}
+      onError={() => setFailedSrc((prev) => new Set(prev).add(activeSrc))}
       loading="lazy"
     />
   );

@@ -8,8 +8,12 @@ const BUCKET = 'media';
  */
 export function getMediaUrl(path) {
   if (!supabaseConfigured) return null;
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data?.publicUrl || null;
+  try {
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  } catch {
+    return null;
+  }
 }
 
 /**

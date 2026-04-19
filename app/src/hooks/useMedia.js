@@ -20,12 +20,16 @@ export function useMediaList(folder) {
 
   useEffect(() => {
     let cancelled = false;
-    listMedia(folder).then((result) => {
-      if (!cancelled) {
-        setFiles(result);
-        setLoading(false);
-      }
-    });
+    listMedia(folder)
+      .then((result) => {
+        if (!cancelled) {
+          setFiles(result);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => { cancelled = true; };
   }, [folder]);
 

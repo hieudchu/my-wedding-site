@@ -15,7 +15,8 @@ export default function Family({ side, config, siteText = {}, reverse }) {
       .order('sort_order')
       .then(({ data }) => {
         if (data && data.length > 0) setMembers(data);
-      });
+      })
+      .catch(() => {});
   }, [side]);
 
   const fallbackMembers = isGroom

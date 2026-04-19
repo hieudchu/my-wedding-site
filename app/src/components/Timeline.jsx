@@ -23,7 +23,8 @@ export default function Timeline({ config }) {
       .order('sort_order')
       .then(({ data }) => {
         if (data && data.length > 0) setItems(data);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   return (

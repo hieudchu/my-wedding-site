@@ -16,7 +16,7 @@ const SECTIONS = [
   },
   {
     title: 'Info · Thiệp mời',
-    keys: ['info_announce', 'info_announce_en', 'info_venue_prefix'],
+    keys: ['info_announce', 'info_announce_en', 'info_venue_prefix', 'info_time_label', 'info_map_button'],
   },
   {
     title: 'RSVP · Xác nhận',

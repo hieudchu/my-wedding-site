@@ -8,11 +8,12 @@ export default function WeddingInfo({ config, siteText = {} }) {
 
   return (
     <section className="info" id="details">
-      <div className="info-bg-photos">
-        <MediaImage storagePath="background/left.jpg" placeholder={bg['background/left.jpg']} label="Couple · Left" className="l" />
-        <MediaImage storagePath="background/right.jpg" placeholder={bg['background/right.jpg']} label="Couple · Right" className="r" />
-        <MediaImage storagePath="background/moment-1.jpg" placeholder={bg['background/moment-1.jpg']} label="Moment" className="l2" />
-        <MediaImage storagePath="background/moment-2.jpg" placeholder={bg['background/moment-2.jpg']} label="Moment" className="r2" />
+      {/* Blob-shaped background images */}
+      <div className="info-blob info-blob-1">
+        <MediaImage storagePath="background/left.jpg" placeholder={bg['background/left.jpg']} label="Couple photo" alt="" />
+      </div>
+      <div className="info-blob info-blob-2">
+        <MediaImage storagePath="background/right.jpg" placeholder={bg['background/right.jpg']} label="Couple photo" alt="" />
       </div>
 
       <div className="info-card reveal">
@@ -49,7 +50,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
           <div className="d">{parts.yyyy}</div>
         </div>
         <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18, color: 'var(--muted)' }}>
-          Hôn lễ bắt đầu lúc {config.weddingTime}
+          {siteText.info_time_label || 'Hôn lễ bắt đầu lúc'} {config.weddingTime}
         </div>
 
         <div className="divider" />
@@ -65,7 +66,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
               <path d="M12 21s-7-8-7-13a7 7 0 0114 0c0 5-7 13-7 13z" strokeLinejoin="round" />
               <circle cx="12" cy="8" r="2.5" />
             </svg>
-            Xem bản đồ
+            {siteText.info_map_button || 'Xem bản đồ'}
           </a>
           <a href={`tel:${config.phone.replace(/\s/g, '')}`} className="btn btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

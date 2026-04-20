@@ -435,41 +435,39 @@
   display: grid;
   place-items: center;
 }
-.info-bg-photos {
+
+/* Blob-shaped images */
+.info-blob {
   position: absolute;
-  inset: 0;
   pointer-events: none;
+  z-index: 1;
 }
-.info-bg-photos .ph {
-  position: absolute;
-  border-radius: 6px;
-  opacity: 0.35;
-  filter: saturate(0.7);
-  box-shadow: var(--shadow-soft);
+.info-blob img,
+.info-blob .ph {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.info-bg-photos .ph.l {
-  top: 12%; left: 4%;
-  width: 280px; aspect-ratio: 3/4;
-  transform: rotate(-6deg);
+.info-blob-1 {
+  bottom: -4%;
+  left: -2%;
+  width: 38%;
+  aspect-ratio: 4/5;
+  border-radius: 60% 50% 40% 30% / 50% 40% 60% 40%;
+  overflow: hidden;
+  transform: rotate(-4deg);
 }
-.info-bg-photos .ph.r {
-  bottom: 10%; right: 4%;
-  width: 320px; aspect-ratio: 4/5;
-  transform: rotate(4deg);
-}
-.info-bg-photos .ph.l2 {
-  top: 55%; left: 10%;
-  width: 200px; aspect-ratio: 1/1;
-  transform: rotate(8deg);
-  opacity: 0.2;
-}
-.info-bg-photos .ph.r2 {
-  top: 8%; right: 16%;
-  width: 180px; aspect-ratio: 3/4;
-  transform: rotate(-5deg);
-  opacity: 0.2;
+.info-blob-2 {
+  top: -2%;
+  right: -2%;
+  width: 28%;
+  aspect-ratio: 3/4;
+  border-radius: 40% 30% 50% 60% / 60% 50% 40% 30%;
+  overflow: hidden;
+  transform: rotate(3deg);
 }
 
+/* Center card */
 .info-card {
   position: relative;
   z-index: 2;
@@ -1054,11 +1052,8 @@
 /* ========= Responsive: Info section ========= */
 @media (max-width: 768px) {
   .info { padding: 80px 0; min-height: auto; }
-  .info-bg-photos .ph.l,
-  .info-bg-photos .ph.r,
-  .info-bg-photos .ph.l2,
-  .info-bg-photos .ph.r2 { display: none; }
-
+  .info-blob-1 { width: 50%; bottom: -2%; left: -6%; }
+  .info-blob-2 { width: 36%; top: -2%; right: -4%; }
   .info-card { padding: 40px 24px; margin: 0 16px; }
   .info-card .medallion-ink { width: 80px; }
   .info-card .date-big { gap: 16px; flex-wrap: wrap; justify-content: center; }
@@ -1066,6 +1061,11 @@
   .info-card .location .addr { font-size: 13px; }
   .info-card .actions { flex-direction: column; align-items: center; gap: 12px; }
   .info-card .actions .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .info { padding: 60px 0; }
+  .info-blob-1 { width: 55%; bottom: 0; left: -8%; }
+  .info-blob-2 { width: 40%; top: -1%; right: -6%; }
 }
 
 /* ========= Responsive: Timeline ========= */

@@ -9,6 +9,7 @@ import WeddingInfo from './components/WeddingInfo';
 import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
+import { LightboxProvider } from './components/Lightbox';
 
 export default function App() {
   const { config, siteText, loading } = useSiteConfig();
@@ -36,7 +37,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <LightboxProvider>
       <Nav config={config} musicOn={musicOn} setMusicOn={setMusicOn} visible={navVisible} />
       <GateHero config={config} siteText={siteText} onOpen={handleGateOpen} />
       <Details config={config} siteText={siteText} />
@@ -46,6 +47,6 @@ export default function App() {
       <Timeline config={config} />
       <RSVP config={config} siteText={siteText} />
       <Footer config={config} siteText={siteText} />
-    </>
+    </LightboxProvider>
   );
 }

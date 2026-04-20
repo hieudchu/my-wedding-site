@@ -2,12 +2,14 @@ import { useRef } from 'react';
 import { useMediaList } from '../hooks/useMedia';
 import { PLACEHOLDERS } from '../lib/placeholders';
 import { formatDateParts } from '../lib/config';
+import { useLightbox } from './Lightbox';
 
 const TYPE_CYCLE = ['tall', 'wide', 'sq'];
 
 export default function Details({ config = {}, siteText = {} }) {
   const trackRef = useRef(null);
   const { files, loading } = useMediaList('carousel');
+  const openLightbox = useLightbox();
 
   const scrollBy = (dir) => {
     const el = trackRef.current;
@@ -53,11 +55,21 @@ export default function Details({ config = {}, siteText = {} }) {
                 <img
                   src={p.url}
                   alt={p.cap}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                  onClick={() => openLightbox(p.url, p.cap)}
+                  role="button"
+                  tabIndex={0}
                   loading="lazy"
                 />
               ) : (
-                <div className="ph" data-label={p.label || p.cap} style={{ width: '100%', height: '100%' }} />
+                <div
+                  className="ph"
+                  data-label={p.label || p.cap}
+                  style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+                  onClick={() => openLightbox(null, p.label || p.cap)}
+                  role="button"
+                  tabIndex={0}
+                />
               )}
               <span className="cap">{p.cap}</span>
             </div>

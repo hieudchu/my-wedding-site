@@ -8,43 +8,52 @@ A **personal, one-time-use** Vietnamese wedding invitation website ("Web cưới
 
 Originally a handoff bundle from Claude Design (HTML/CSS/JS prototypes), now migrated to a production React + Vite + Supabase build in the `app/` directory.
 
+## IMPORTANT: Active Codebase
+
+**The production app lives in `app/`** — a React + Vite + Supabase build. **All code changes MUST be made in `app/src/`.**
+
+The `project/` directory is the **old prototype** (CDN React + Babel standalone). It is NOT used by `npm run dev`. **Never edit files in `project/` for production changes.**
+
 ## Key Entry Point
 
-**Read `project/Wedding.html` first**, then follow its imports. The user had this file open during handoff. It loads two stylesheets and one JSX file via Babel standalone (no build step).
+Start from `app/src/App.jsx`, then explore `app/src/components/` and `app/src/hooks/`.
 
 ## Architecture
 
-Single-page React app rendered client-side via CDN React 18 + Babel standalone:
+React 18 + Vite SPA with Supabase backend:
 
-- `project/Wedding.html` — Shell: loads fonts (Cormorant Garamond, Inter, JetBrains Mono), CSS, CDN React/Babel, and `app.jsx`
-- `project/app.jsx` — All React components in one file (~655 lines). Section flow: **Gate → Details → Family (Groom) → Family (Bride) → WeddingInfo → Timeline → RSVP → Footer**
-- `project/styles/globals.css` — CSS variables (Dreamy Florals palette: blush/dusty-rose/taupe/sage), resets, typography
-- `project/styles/sections.css` — Per-section styling, animations, responsive breakpoints
+- `app/src/main.jsx` — Entry point, renders `<App />`
+- `app/src/App.jsx` — Root component. Section flow: **Gate → Details → Family (Groom) → Family (Bride) → WeddingInfo → Timeline → RSVP → Footer**
+- `app/src/components/` — One component per section file
+- `app/src/hooks/` — Custom hooks (useSiteConfig, useMedia, useReveal, useCountdown)
+- `app/src/lib/` — Supabase client, config helpers, placeholders
+- `app/src/styles/globals.css` — CSS variables, resets, typography, lightbox
+- `app/src/styles/sections.css` — Per-section styling, animations, responsive breakpoints
 
-### Component Map (in app.jsx)
+### Component Map
 
-| Component | Section | Purpose |
-|-----------|---------|---------|
-| `GateHero` | 01 Gate | Opening doors animation, tap-to-open |
-| `Details` | 02 Details | Save-the-date, horizontal photo carousel |
-| `Family` | 03a/03b | Reused for both groom and bride sides (prop `side`) |
-| `WeddingInfo` | 04 | Formal invitation card with map/phone CTAs |
-| `Timeline` | 05 | Event schedule + live countdown timer |
-| `RSVP` | 06 | Form with duplicate-name check via localStorage |
-| `Nav` | — | Sticky nav, appears after gate opens; music toggle |
-| `Footer` | — | Simple closing |
-| `TweaksPanel` | — | Edit-mode panel for live customization (communicates with parent via postMessage) |
+| Component | File | Purpose |
+|-----------|------|---------|
+| `GateHero` | `GateHero.jsx` | Opening doors animation, tap-to-open |
+| `Details` | `Details.jsx` | Save-the-date, horizontal photo carousel |
+| `Family` | `Family.jsx` | Reused for both groom and bride sides (prop `side`) |
+| `WeddingInfo` | `WeddingInfo.jsx` | Formal invitation card with map/phone CTAs |
+| `Timeline` | `Timeline.jsx` | Event schedule + live countdown timer |
+| `RSVP` | `RSVP.jsx` | Attendance confirmation form |
+| `Nav` | `Nav.jsx` | Sticky nav, appears after gate opens; music toggle |
+| `Footer` | `Footer.jsx` | Simple closing |
+| `MediaImage` | `MediaImage.jsx` | Image component with Supabase fallback chain + lightbox |
+| `Lightbox` | `Lightbox.jsx` | Full-screen photo overlay (context provider) |
 
-### Configurable Data
+### Data & Config
 
-All wedding details are in `TWEAK_DEFAULTS` at the top of `app.jsx` (names, date, venue, phone, etc.). The `TweaksPanel` component allows live editing and syncs changes to a parent frame via `postMessage`.
+Wedding details are loaded from Supabase via `useSiteConfig()`. Family members, timeline events, and media are fetched from Supabase tables and storage.
 
 ## Assets
 
-- `project/assets/` — Medallion images (gold, ink variants)
-- `project/uploads/` — User-uploaded reference files (screenshots, PDF invitations)
-- `project/tmp/` — Design iteration screenshots
-- Photo placeholders use `<div className="ph" data-label="...">` — no actual photos yet
+- `app/public/assets/` — Medallion images (gold, ink variants)
+- Media images served from Supabase Storage with placeholder fallbacks
+- Photo placeholders use `<div className="ph" data-label="...">` when no image is available
 
 ## Design Tokens (from globals.css)
 
@@ -55,21 +64,14 @@ All wedding details are in `TWEAK_DEFAULTS` at the top of `app.jsx` (names, date
 
 ## Running Locally
 
-No build step. Serve the `project/` directory with any static server:
-
 ```bash
-# Python
-python3 -m http.server 8000 --directory project
-
-# Node (npx)
-npx serve project
+cd app
+npm run dev
 ```
-
-Open `http://localhost:8000/Wedding.html` (or whichever port).
 
 ## Implementation Notes
 
-- RSVP duplicate checking uses `localStorage` key `rsvp_names` — this is a prototype mock, not a real backend
 - Scroll-reveal animations use `IntersectionObserver` via the `useReveal()` hook (class `.reveal` → `.in`)
 - The gate opening animation uses CSS transforms on `.gate-door-l` / `.gate-door-r`
-- Background music element exists (`<audio id="bgm">`) but has no `src` — wired to Nav toggle
+- `MediaImage` component handles image fallback chain: Supabase URL → local fallback → placeholder URL → `.ph` div
+- Lightbox uses React Context (`LightboxProvider` in App.jsx) — all `MediaImage` instances are clickable by default

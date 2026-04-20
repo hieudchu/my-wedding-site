@@ -8,7 +8,7 @@ const SECTIONS = [
   },
   {
     title: 'Details · Chuyện tình',
-    keys: ['details_eyebrow', 'details_heading', 'details_paragraph'],
+    keys: ['details_heading', 'details_paragraph'],
   },
   {
     title: 'Family · Gia đình',

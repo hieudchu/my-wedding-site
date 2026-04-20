@@ -39,7 +39,7 @@ export default function App() {
     <>
       <Nav config={config} musicOn={musicOn} setMusicOn={setMusicOn} visible={navVisible} />
       <GateHero config={config} siteText={siteText} onOpen={handleGateOpen} />
-      <Details siteText={siteText} />
+      <Details config={config} siteText={siteText} />
       <Family side="groom" config={config} siteText={siteText} reverse={false} />
       <Family side="bride" config={config} siteText={siteText} reverse={true} />
       <WeddingInfo config={config} siteText={siteText} />

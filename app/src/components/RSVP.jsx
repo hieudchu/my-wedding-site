@@ -76,7 +76,12 @@ export default function RSVP({ config, siteText = {} }) {
           </h2>
           <p>
             {siteText.rsvp_paragraph ||
-              'Sự hiện diện của bạn là món quà quý giá nhất. Xin bạn vui lòng xác nhận trước ngày 25.10.2026 để chúng em chuẩn bị chu đáo.'}
+              (() => {
+                const d = new Date(config.weddingDate + 'T12:00:00');
+                d.setDate(d.getDate() - 14);
+                const dl = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+                return `Sự hiện diện của bạn là món quà quý giá nhất. Xin bạn vui lòng xác nhận trước ngày ${dl} để chúng em chuẩn bị chu đáo.`;
+              })()}
           </p>
         </div>
 

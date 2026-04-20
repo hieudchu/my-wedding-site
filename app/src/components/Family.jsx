@@ -19,19 +19,7 @@ export default function Family({ side, config, siteText = {}, reverse }) {
       .catch(() => {});
   }, [side]);
 
-  const fallbackMembers = isGroom
-    ? [
-        { role_label: 'Cha · Father', name_vi: 'Ông Chu Văn Anh', name_en: 'Mr. Chu Van Anh' },
-        { role_label: 'Mẹ · Mother', name_vi: 'Bà Trần Thị Lan', name_en: 'Mrs. Tran Thi Lan' },
-        { role_label: 'Anh trai · Brother', name_vi: 'Chu Đăng Khôi', name_en: 'Chu Dang Khoi' },
-      ]
-    : [
-        { role_label: 'Cha · Father', name_vi: 'Ông Nguyễn Văn Thiện', name_en: 'Mr. Nguyen Van Thien' },
-        { role_label: 'Mẹ · Mother', name_vi: 'Bà Lê Thị Hương', name_en: 'Mrs. Le Thi Huong' },
-        { role_label: 'Chị gái · Sister', name_vi: 'Nguyễn Thu Thảo', name_en: 'Nguyen Thu Thao' },
-      ];
-
-  const displayMembers = members.length > 0 ? members : fallbackMembers;
+  const displayMembers = members;
 
   const bio = isGroom
     ? siteText.groom_bio || 'Cậu con trai lớn của gia đình, sinh ra và lớn lên tại Hà Nội. Nay chính thức trao gửi trái tim cho một nửa kia của cuộc đời.'

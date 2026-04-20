@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { useMediaList } from '../hooks/useMedia';
 import { PLACEHOLDERS } from '../lib/placeholders';
+import { formatDateParts } from '../lib/config';
 
 const TYPE_CYCLE = ['tall', 'wide', 'sq'];
 
-export default function Details({ siteText = {} }) {
+export default function Details({ config = {}, siteText = {} }) {
   const trackRef = useRef(null);
   const { files, loading } = useMediaList('carousel');
 
@@ -30,7 +31,7 @@ export default function Details({ siteText = {} }) {
   return (
     <section className="details" id="story">
       <div className="details-intro reveal">
-        <span className="eyebrow">{siteText.details_eyebrow || 'Save the date · 08.11.2026'}</span>
+        <span className="eyebrow">Save the date · {(() => { const p = formatDateParts(config.weddingDate); return `${p.dd}.${p.mm}.${p.yyyy}`; })()}</span>
         <h2>
           {headingParts.length > 1
             ? headingParts.map((part, i) =>

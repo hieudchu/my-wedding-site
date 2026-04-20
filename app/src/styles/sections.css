@@ -419,7 +419,8 @@
 }
 
 @media (max-width: 900px) {
-  .family .container { grid-template-columns: 1fr; gap: 48px; }
+  .family .container,
+  .family.reverse .container { grid-template-columns: 1fr; gap: 48px; }
   .family.reverse .family-portrait,
   .family.reverse .family-info { order: unset; }
 }
@@ -1089,13 +1090,14 @@
 }
 
 @media (max-width: 480px) {
-  .family { padding: 60px 0; }
+  .family { padding: 60px 0; overflow: visible; }
   .family-info { padding: 0; }
   .family-info .bio { font-size: 16px; }
   .family-list .row { grid-template-columns: 1fr; gap: 2px; padding: 10px 0; }
   .family-list .role { font-size: 10px; }
   .family-list .name { font-size: 18px; }
-  .family-portrait .sig { font-size: 48px; }
+  .family-portrait { overflow: visible; }
+  .family-portrait .sig { font-size: 48px; bottom: -16px; right: -8px; }
 }
 
 /* ========= Responsive: RSVP ========= */

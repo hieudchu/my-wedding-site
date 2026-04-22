@@ -1,3 +1,12 @@
+/* ========= Font Face ========= */
+@font-face {
+  font-family: 'TAN Whistling';
+  src: url('/fonts/TANWHISTLING-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ========= Wedding Site — Global Styles ========= */
 /* Palette: Dreamy Florals — Soft Blush / Dusty Rose / Taupe / Sage */
 :root {
@@ -6,9 +15,9 @@
   --cream-2: #F5E8E8;         /* slightly deeper blush (alt section bg) */
   --blush-deep: #EFD8D9;      /* deeper blush for cards/surfaces */
 
-  --ink: #6B5E5B;             /* taupe — body text */
-  --ink-soft: #8A7B77;        /* secondary text */
-  --muted: #A89996;           /* tertiary / labels */
+  --ink: #4A3F3D;             /* taupe — body text (darkened) */
+  --ink-soft: #6B5E5B;        /* secondary text (darkened) */
+  --muted: #8A7B77;           /* tertiary / labels (darkened) */
 
   --rose: #B58285;            /* dusty rose — primary */
   --rose-soft: #D4A3A5;       /* light rose — accents/hover */
@@ -39,6 +48,7 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--sans);
+  font-weight: 450;
   background: var(--cream);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -205,6 +215,7 @@ section {
   font-family: var(--serif);
   font-style: italic;
   font-size: 18px;
+  font-weight: 600;
   color: var(--ink);
   display: inline-flex;
   align-items: center;
@@ -219,6 +230,7 @@ section {
   width: auto !important;
   max-width: 32px;
   flex-shrink: 0;
+  filter: contrast(1.4);
 }
 .nav .links {
   display: flex;

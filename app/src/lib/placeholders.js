@@ -7,13 +7,13 @@
 
 export const PLACEHOLDERS = {
   carousel: [
-    { url: null, cap: 'Đà Lạt · 2024', type: 'tall', label: 'Photo 01 · Engagement' },
-    { url: null, cap: 'Mùa hè đầu tiên', type: 'wide', label: 'Photo 02 · Wide' },
-    { url: null, cap: 'Buổi chiều Sài Gòn', type: 'sq', label: 'Photo 03 · Square' },
-    { url: null, cap: 'Nụ cười', type: 'tall', label: 'Photo 04 · Portrait' },
-    { url: null, cap: 'Hoàng hôn', type: 'wide', label: 'Photo 05 · Wide' },
-    { url: null, cap: 'Tay trong tay', type: 'sq', label: 'Photo 06 · Square' },
-    { url: null, cap: 'Một ngày bình yên', type: 'tall', label: 'Photo 07 · Portrait' },
+    { url: null, cap: 'Đà Lạt · 2024', type: 'tall', label: 'Ảnh 01' },
+    { url: null, cap: 'Mùa hè đầu tiên', type: 'wide', label: 'Ảnh 02' },
+    { url: null, cap: 'Buổi chiều Sài Gòn', type: 'sq', label: 'Ảnh 03' },
+    { url: null, cap: 'Nụ cười', type: 'tall', label: 'Ảnh 04' },
+    { url: null, cap: 'Hoàng hôn', type: 'wide', label: 'Ảnh 05' },
+    { url: null, cap: 'Tay trong tay', type: 'sq', label: 'Ảnh 06' },
+    { url: null, cap: 'Một ngày bình yên', type: 'tall', label: 'Ảnh 07' },
   ],
 
   groom: null,

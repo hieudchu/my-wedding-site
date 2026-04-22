@@ -28,7 +28,7 @@ export default class ErrorBoundary extends Component {
           padding: 40,
         }}>
           <div>
-            <h1 style={{ fontSize: 48, fontWeight: 400, margin: '0 0 12px' }}>Minh &amp; Hiếu</h1>
+            <h1 style={{ fontSize: 48, fontWeight: 400, margin: '0 0 12px' }}>Hiếu &amp; Minh</h1>
             <p style={{ fontStyle: 'italic', color: '#A89996' }}>
               Trang web đang được cập nhật. Vui lòng quay lại sau.
             </p>

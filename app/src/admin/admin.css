@@ -362,6 +362,81 @@
 .upload-zone:hover { border-color: #B58285; background: #fdf5f5; }
 .upload-zone input { display: none; }
 
+/* Slot-based media manager */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.slot-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e8e2e0;
+  border-radius: 10px;
+  background: #faf8f7;
+}
+.slot-preview {
+  width: 100px;
+  min-width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px dashed #e8e2e0;
+  cursor: pointer;
+  transition: border-color .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+.slot-preview:hover { border-color: #B58285; }
+.slot-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.slot-audio {
+  padding: 8px;
+  text-align: center;
+  width: 100%;
+}
+.slot-audio audio { max-width: 84px; height: 28px; }
+.slot-empty {
+  font-size: 13px;
+  color: #A89996;
+  text-align: center;
+}
+.slot-info {
+  flex: 1;
+  min-width: 0;
+}
+.slot-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B5E5B;
+  margin-bottom: 2px;
+}
+.slot-desc {
+  font-size: 12px;
+  color: #A89996;
+  line-height: 1.4;
+}
+.slot-section {
+  font-size: 11px;
+  color: #c4b8b5;
+  margin-top: 4px;
+}
+.slot-section strong {
+  color: #B58285;
+  font-weight: 500;
+}
+@media (max-width: 768px) {
+  .slot-grid { grid-template-columns: 1fr; }
+  .slot-card { flex-direction: column; align-items: center; text-align: center; }
+  .slot-preview { width: 120px; height: 120px; }
+}
+
 /* RSVP table */
 .rsvp-table {
   width: 100%;

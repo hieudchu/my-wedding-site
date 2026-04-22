@@ -29,7 +29,7 @@ export default function Family({ side, config, siteText = {}, reverse }) {
     ? siteText.groom_hometown || 'Hà Nội · Việt Nam'
     : siteText.bride_hometown || 'TP. Hồ Chí Minh · Việt Nam';
 
-  const photoLabel = isGroom ? 'Portrait · The Groom' : 'Portrait · The Bride';
+  const photoLabel = isGroom ? 'Chân dung chú rể' : 'Chân dung cô dâu';
   const storagePath = isGroom ? 'portraits/groom.jpg' : 'portraits/bride.jpg';
   const placeholderImg = isGroom ? PLACEHOLDERS.groom : PLACEHOLDERS.bride;
 
@@ -49,7 +49,7 @@ export default function Family({ side, config, siteText = {}, reverse }) {
           <div className="sig">{isGroom ? 'H' : 'M'}</div>
         </div>
         <div className="family-info reveal d1">
-          <span className="eyebrow">{isGroom ? "Nhà trai · Groom's Family" : "Nhà gái · Bride's Family"}</span>
+          <span className="eyebrow">{isGroom ? 'Nhà trai · Groom\'s Family' : 'Nhà gái · Bride\'s Family'}</span>
           <h3>
             <em>{isGroom ? 'Chú rể' : 'Cô dâu'}</em>
             <br />
@@ -62,12 +62,11 @@ export default function Family({ side, config, siteText = {}, reverse }) {
                 <div className="role">{m.role_label}</div>
                 <div className="name">
                   {m.name_vi}
-                  <span className="en">{m.name_en}</span>
                 </div>
               </div>
             ))}
             <div className="row">
-              <div className="role">Quê quán · Hometown</div>
+              <div className="role">Quê quán</div>
               <div className="name">{hometown}</div>
             </div>
           </div>

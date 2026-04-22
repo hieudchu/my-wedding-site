@@ -33,7 +33,7 @@ export default function Details({ config = {}, siteText = {} }) {
   return (
     <section className="details" id="story">
       <div className="details-intro reveal">
-        <span className="eyebrow">Save the date · {(() => { const p = formatDateParts(config.weddingDate); return `${p.dd}.${p.mm}.${p.yyyy}`; })()}</span>
+        <span className="eyebrow">{siteText.details_eyebrow || 'Hẹn ngày'} · {(() => { const p = formatDateParts(config.weddingDate); return `${p.dd}.${p.mm}.${p.yyyy}`; })()}</span>
         <h2>
           {headingParts.length > 1
             ? headingParts.map((part, i) =>
@@ -81,7 +81,7 @@ export default function Details({ config = {}, siteText = {} }) {
               <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <span>Scroll · Vuốt để xem thêm</span>
+          <span>{siteText.details_carousel_hint || 'Vuốt để xem thêm'}</span>
           <button onClick={() => scrollBy(1)} aria-label="Next">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />

@@ -18,13 +18,11 @@ export function formatDateParts(iso) {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yyyy = d.getFullYear();
   const weekdays = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
-  const weekdaysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return {
     dd,
     mm,
     yyyy,
     weekday: weekdays[d.getDay()],
-    weekdayEn: weekdaysEn[d.getDay()],
     monthVn: `Tháng ${d.getMonth() + 1}`,
   };
 }

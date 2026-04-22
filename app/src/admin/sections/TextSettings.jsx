@@ -8,7 +8,7 @@ const SECTIONS = [
   },
   {
     title: 'Details · Chuyện tình',
-    keys: ['details_heading', 'details_paragraph'],
+    keys: ['details_eyebrow', 'details_heading', 'details_paragraph', 'details_carousel_hint'],
   },
   {
     title: 'Family · Gia đình',
@@ -19,8 +19,16 @@ const SECTIONS = [
     keys: ['info_announce', 'info_announce_en', 'info_venue_prefix', 'info_time_label', 'info_map_button'],
   },
   {
+    title: 'Timeline · Lịch trình',
+    keys: ['timeline_eyebrow', 'timeline_heading', 'timeline_countdown_label'],
+  },
+  {
     title: 'RSVP · Xác nhận',
-    keys: ['rsvp_heading', 'rsvp_paragraph', 'rsvp_dress_code', 'rsvp_dress_code_en'],
+    keys: ['rsvp_eyebrow', 'rsvp_heading', 'rsvp_paragraph', 'rsvp_attend_yes', 'rsvp_attend_yes_sub', 'rsvp_attend_no', 'rsvp_attend_no_sub', 'rsvp_success_title', 'rsvp_success_message', 'rsvp_dress_code', 'rsvp_dress_code_en'],
+  },
+  {
+    title: 'Navigation · Điều hướng',
+    keys: ['nav_story', 'nav_family', 'nav_invitation', 'nav_timeline', 'nav_rsvp'],
   },
   {
     title: 'Footer',

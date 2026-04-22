@@ -5,12 +5,12 @@ export default function Footer({ config, siteText = {} }) {
   return (
     <footer className="footer">
       <div className="names">
-        {config.brideShort} &amp; {config.groomShort}
+        {config.groomShort} &amp; {config.brideShort}
       </div>
       <div>
         {parts.dd}.{parts.mm}.{parts.yyyy} — {config.venueName}
       </div>
-      <div className="small">{siteText.footer_text || 'With love · Made for our beloved guests'}</div>
+      <div className="small">{siteText.footer_text || 'Với tất cả tình yêu'}</div>
     </footer>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMediaUrl } from '../hooks/useMedia';
 
-export default function Nav({ config, musicOn, setMusicOn, visible }) {
+export default function Nav({ config, siteText = {}, musicOn, setMusicOn, visible }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const audioRef = useRef(null);
@@ -41,22 +41,22 @@ export default function Nav({ config, musicOn, setMusicOn, visible }) {
             onError={(e) => { e.target.src = '/assets/medallion-ink.png'; }}
           />
           <span>
-            {config.brideShort} &amp; {config.groomShort}
+            {config.groomShort} &amp; {config.brideShort}
           </span>
         </a>
         <div className="links">
-          <a href="#story">Chuyện tình</a>
-          <a href="#groom">Gia đình</a>
-          <a href="#details">Thiệp mời</a>
-          <a href="#timeline">Lịch trình</a>
-          <a href="#rsvp">Xác nhận</a>
+          <a href="#story">{siteText.nav_story || 'Chuyện tình'}</a>
+          <a href="#groom">{siteText.nav_family || 'Gia đình'}</a>
+          <a href="#details">{siteText.nav_invitation || 'Thiệp mời'}</a>
+          <a href="#timeline">{siteText.nav_timeline || 'Lịch trình'}</a>
+          <a href="#rsvp">{siteText.nav_rsvp || 'Xác nhận'}</a>
         </div>
         <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-          <a href="#story" onClick={handleNavClick}>Chuyện tình</a>
-          <a href="#groom" onClick={handleNavClick}>Gia đình</a>
-          <a href="#details" onClick={handleNavClick}>Thiệp mời</a>
-          <a href="#timeline" onClick={handleNavClick}>Lịch trình</a>
-          <a href="#rsvp" onClick={handleNavClick}>Xác nhận</a>
+          <a href="#story" onClick={handleNavClick}>{siteText.nav_story || 'Chuyện tình'}</a>
+          <a href="#groom" onClick={handleNavClick}>{siteText.nav_family || 'Gia đình'}</a>
+          <a href="#details" onClick={handleNavClick}>{siteText.nav_invitation || 'Thiệp mời'}</a>
+          <a href="#timeline" onClick={handleNavClick}>{siteText.nav_timeline || 'Lịch trình'}</a>
+          <a href="#rsvp" onClick={handleNavClick}>{siteText.nav_rsvp || 'Xác nhận'}</a>
         </div>
         <div className="nav-right">
           <button

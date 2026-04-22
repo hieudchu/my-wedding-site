@@ -17,15 +17,15 @@ export default function RSVP({ config, siteText = {} }) {
   const checkDuplicate = (name) => {
     clearTimeout(timerRef.current);
     if (!name.trim()) { setNameStatus({ state: 'idle', msg: '' }); return; }
-    setNameStatus({ state: 'checking', msg: 'Đang kiểm tra trùng tên · Checking…' });
+    setNameStatus({ state: 'checking', msg: 'Đang kiểm tra trùng tên…' });
     timerRef.current = setTimeout(async () => {
       try {
         const { data, error } = await supabase.from('rsvps').select('name').ilike('name', name.trim());
         if (error) throw error;
         if (data && data.length > 0) {
-          setNameStatus({ state: 'error', msg: `"${name}" đã xác nhận trước đó · already confirmed.` });
+          setNameStatus({ state: 'error', msg: `"${name}" đã xác nhận trước đó.` });
         } else {
-          setNameStatus({ state: 'ok', msg: 'Tên hợp lệ · Name available' });
+          setNameStatus({ state: 'ok', msg: 'Tên hợp lệ' });
         }
       } catch {
         setNameStatus({ state: 'ok', msg: '' });
@@ -66,7 +66,7 @@ export default function RSVP({ config, siteText = {} }) {
             className="medallion-ink"
             style={{ width: 90, height: 'auto', objectFit: 'contain' }}
           />
-          <span className="eyebrow">RSVP · Xác nhận tham dự</span>
+          <span className="eyebrow">{siteText.rsvp_eyebrow || 'Xác nhận tham dự'}</span>
           <h2>
             {headingParts.length > 1
               ? headingParts.map((part, i) =>
@@ -89,25 +89,25 @@ export default function RSVP({ config, siteText = {} }) {
           {submitted ? (
             <div className="success-card show">
               <div className="check">&#10003;</div>
-              <h3>Đã xác nhận</h3>
+              <h3>{siteText.rsvp_success_title || 'Đã xác nhận'}</h3>
               <p>
-                Cảm ơn {form.name}! Chúng em sẽ liên lạc lại với bạn sớm nhất.<br />
-                <em>See you on {formatDateParts(config.weddingDate).dd}.{formatDateParts(config.weddingDate).mm}.{formatDateParts(config.weddingDate).yyyy}</em>
+                {(siteText.rsvp_success_message || 'Cảm ơn {name}! Chúng em sẽ liên lạc lại với bạn sớm nhất.').replace('{name}', form.name)}<br />
+                <em>Hẹn gặp bạn ngày {formatDateParts(config.weddingDate).dd}.{formatDateParts(config.weddingDate).mm}.{formatDateParts(config.weddingDate).yyyy}</em>
               </p>
             </div>
           ) : (
             <>
               <div className="attend-toggle">
                 <button type="button" className={form.attend === 'yes' ? 'active' : ''} onClick={() => update('attend', 'yes')}>
-                  Tham dự<span className="sub">Yes, I'll be there</span>
+                  {siteText.rsvp_attend_yes || 'Tham dự'}<span className="sub">{siteText.rsvp_attend_yes_sub || 'Có, tôi sẽ đến'}</span>
                 </button>
                 <button type="button" className={form.attend === 'no' ? 'active' : ''} onClick={() => update('attend', 'no')}>
-                  Gửi lời chúc<span className="sub">Can't make it</span>
+                  {siteText.rsvp_attend_no || 'Gửi lời chúc'}<span className="sub">{siteText.rsvp_attend_no_sub || 'Không thể tham dự'}</span>
                 </button>
               </div>
               <div className="form-row">
                 <div className="form-field">
-                  <label>Họ và tên · Full name</label>
+                  <label>Họ và tên</label>
                   <input type="text" value={form.name} onChange={(e) => { update('name', e.target.value); checkDuplicate(e.target.value); }} placeholder="VD: Nguyễn Văn A" required />
                   {nameStatus.msg && (
                     <div className={`hint ${nameStatus.state === 'error' ? 'error' : nameStatus.state === 'ok' ? 'ok' : ''}`}>
@@ -117,7 +117,7 @@ export default function RSVP({ config, siteText = {} }) {
                   )}
                 </div>
                 <div className="form-field">
-                  <label>Số điện thoại · Phone</label>
+                  <label>Số điện thoại</label>
                   <input type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="09xx xxx xxx" />
                 </div>
               </div>
@@ -127,56 +127,55 @@ export default function RSVP({ config, siteText = {} }) {
                   <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" />
                 </div>
                 <div className="form-field">
-                  <label>Bạn là khách của · You're with</label>
+                  <label>Bạn là khách của</label>
                   <select value={form.side} onChange={(e) => update('side', e.target.value)}>
-                    <option value="bride">Nhà gái · Bride's side</option>
-                    <option value="groom">Nhà trai · Groom's side</option>
-                    <option value="both">Cả hai · Both</option>
+                    <option value="bride">Nhà gái</option>
+                    <option value="groom">Nhà trai</option>
+                    <option value="both">Cả hai</option>
                   </select>
                 </div>
               </div>
               {form.attend === 'yes' && (
                 <div className="form-row">
                   <div className="form-field">
-                    <label>Số người tham dự · Guests</label>
+                    <label>Số người tham dự</label>
                     <select value={form.guests} onChange={(e) => update('guests', e.target.value)}>
-                      <option value="1">1 người · Just me</option>
-                      <option value="2">2 người · +1</option>
+                      <option value="1">1 người</option>
+                      <option value="2">2 người</option>
                       <option value="3">3 người</option>
                       <option value="4">4 người</option>
                     </select>
                   </div>
                   <div className="form-field">
-                    <label>Yêu cầu ăn uống · Dietary</label>
+                    <label>Yêu cầu ăn uống</label>
                     <select value={form.dietary} onChange={(e) => update('dietary', e.target.value)}>
-                      <option value="">Không có · None</option>
-                      <option value="veg">Chay · Vegetarian</option>
+                      <option value="">Không có</option>
+                      <option value="veg">Chay</option>
                       <option value="halal">Halal</option>
-                      <option value="allergy">Dị ứng · Allergy</option>
+                      <option value="allergy">Dị ứng</option>
                     </select>
                   </div>
                 </div>
               )}
               <div className="form-row full">
                 <div className="form-field">
-                  <label>Lời nhắn · Message to the couple</label>
+                  <label>Lời nhắn</label>
                   <textarea rows="3" value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Gửi đôi lời chúc phúc…" />
                 </div>
               </div>
               <div className="dress-code">
                 <div className="icon">&#9825;</div>
                 <div className="txt">
-                  <h5>Dress code · Semi-formal</h5>
+                  <h5>Trang phục</h5>
                   <p>
-                    {siteText.rsvp_dress_code || 'Tông màu gợi ý: kem, be, vàng ánh kim, burgundy — để cùng hoà vào không khí ấm áp của buổi tiệc.'}<br />
-                    <em>{siteText.rsvp_dress_code_en || 'Suggested palette: cream, beige, gold, burgundy.'}</em>
+                    {siteText.rsvp_dress_code || 'Tông màu gợi ý: kem, be, vàng ánh kim, burgundy — để cùng hoà vào không khí ấm áp của buổi tiệc.'}
                   </p>
                 </div>
               </div>
               <div className="submit-row">
                 <div className="legal">Bằng việc xác nhận, bạn đồng ý để chúng em lưu thông tin phục vụ việc sắp xếp chỗ ngồi.</div>
                 <button type="submit" className="btn btn-primary" disabled={!form.name || !form.attend || nameStatus.state === 'error' || submitting}>
-                  {submitting ? 'Đang gửi…' : 'Xác nhận · Confirm'}
+                  {submitting ? 'Đang gửi…' : 'Xác nhận'}
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>

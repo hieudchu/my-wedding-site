@@ -31,12 +31,10 @@ export default function WeddingInfo({ config, siteText = {} }) {
           style={{ width: 110, height: 'auto', objectFit: 'contain' }}
         />
         <p className="announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
-        <p className="announce announce-en">{siteText.info_announce_en || 'We joyfully announce our wedding'}</p>
+        <p className="announce announce-en">{siteText.info_announce_en || 'Hân hạnh thông báo hôn lễ'}</p>
 
         <h2 className="names">
-          {config.brideShort}
-          <span className="amp">&amp;</span>
-          {config.groomShort}
+          {config.groomShort} <span className="amp">&amp;</span> {config.brideShort}
         </h2>
 
         <div className="divider" />
@@ -45,11 +43,11 @@ export default function WeddingInfo({ config, siteText = {} }) {
           <div className="d">{parts.dd}</div>
           <div className="mid">
             <span className="big">{parts.monthVn}</span>
-            {parts.weekday} · {parts.weekdayEn}
+            {parts.weekday}
           </div>
           <div className="d">{parts.yyyy}</div>
         </div>
-        <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18, color: 'var(--muted)' }}>
+        <div className="time-label">
           {siteText.info_time_label || 'Hôn lễ bắt đầu lúc'} {config.weddingTime}
         </div>
 

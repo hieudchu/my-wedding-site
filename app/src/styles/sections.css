@@ -1,5 +1,18 @@
-/* ========= Section 1: Gate (hero) ========= */
-.gate-hero {
+/* ========= Section 1a: Gate overlay (doors) ========= */
+.gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  transition: visibility 0s linear 2s;
+}
+.gate-overlay.opened {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* ========= Section 1b: Hero (content behind doors) ========= */
+.hero {
   height: 100vh;
   min-height: 700px;
   position: relative;
@@ -8,6 +21,7 @@
   background: #3a2526;
   color: #FDF7F7;
 }
+.hero .gate-bg,
 .gate-bg {
   position: absolute; inset: 0;
   background:
@@ -15,13 +29,14 @@
     radial-gradient(ellipse at 50% 100%, rgba(156,174,169,0.18), transparent 60%),
     linear-gradient(180deg, #4a2e2f, #2d1a1b);
 }
+.hero .gate-bg::after,
 .gate-bg::after {
   content: "";
   position: absolute; inset: 0;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><circle cx='2' cy='2' r='0.4' fill='%23D4A3A5' opacity='0.08'/></svg>");
   opacity: 0.6;
 }
-.gate-hero-content {
+.hero-content {
   position: absolute;
   inset: 0;
   display: flex;
@@ -33,61 +48,64 @@
   opacity: 0;
   transition: opacity 1.2s ease .3s;
 }
-.gate-hero.opened .gate-hero-content { opacity: 1; }
+.hero.visible .hero-content { opacity: 1; }
 
-.gate-hero .ornament {
+.hero .ornament {
   width: 48px; height: 1px;
   background: var(--rose-soft);
   margin: 18px 0;
 }
-.gate-hero .medallion {
+.hero .medallion {
   width: 200px;
   height: auto;
   margin-bottom: 24px;
-  opacity: 0.95;
-  filter: drop-shadow(0 0 30px rgba(212,163,165,0.45));
+  opacity: 1;
+  filter: drop-shadow(0 0 30px rgba(212,163,165,0.45)) contrast(1.3);
   animation: medallionGlow 4s ease-in-out infinite;
 }
 @keyframes medallionGlow {
   0%, 100% { filter: drop-shadow(0 0 20px rgba(212,163,165,0.35)); }
   50% { filter: drop-shadow(0 0 40px rgba(212,163,165,0.55)); }
 }
-.gate-hero h1 {
+.hero h1 {
   font-family: var(--serif);
   font-size: clamp(56px, 10vw, 140px);
-  font-weight: 400;
+  font-weight: 500;
   margin: 0;
   line-height: 0.95;
   letter-spacing: -0.02em;
 }
-.gate-hero h1 .amp {
+.hero h1 .initial {
+  font-family: 'TAN Whistling', var(--serif);
+}
+.hero h1 .amp {
   font-style: italic;
   color: var(--rose-soft);
   margin: 0 0.1em;
 }
-.gate-hero .tagline {
+.hero .tagline {
   font-family: var(--serif);
   font-style: italic;
-  font-size: clamp(18px, 2vw, 22px);
+  font-size: clamp(22px, 3vw, 30px);
   color: rgba(253,247,247,0.78);
   margin: 24px 0 0;
-  max-width: 540px;
+  max-width: 640px;
   line-height: 1.5;
   padding: 0 20px;
 }
-.gate-hero .date-line {
+.hero .date-line {
   margin-top: 32px;
   display: flex;
   align-items: center;
   gap: 18px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.3em;
   color: var(--rose-soft);
   text-transform: uppercase;
 }
-.gate-hero .date-line::before,
-.gate-hero .date-line::after {
+.hero .date-line::before,
+.hero .date-line::after {
   content: "";
   width: 28px; height: 1px;
   background: var(--rose-soft);
@@ -171,8 +189,8 @@
   letter-spacing: 0.1em;
 }
 
-.gate-hero.opened .gate-door-l { transform: translateX(-100%) !important; }
-.gate-hero.opened .gate-door-r { transform: translateX(100%) !important; }
+.gate-overlay.opened .gate-door-l { transform: translateX(-100%) !important; }
+.gate-overlay.opened .gate-door-r { transform: translateX(100%) !important; }
 
 .gate-prompt {
   position: absolute;
@@ -185,7 +203,7 @@
   transition: opacity .6s;
   cursor: pointer;
 }
-.gate-hero.opened .gate-prompt { opacity: 0; pointer-events: none; }
+.gate-overlay.opened .gate-prompt { opacity: 0; pointer-events: none; }
 .gate-prompt .label {
   display: block;
   font-family: var(--serif);
@@ -355,7 +373,7 @@
   position: absolute;
   bottom: -28px;
   right: -20px;
-  font-family: var(--serif);
+  font-family: 'TAN Whistling', var(--serif);
   font-style: italic;
   font-size: 88px;
   color: var(--gold);
@@ -367,16 +385,21 @@
 .family-info {
   padding: 0 20px;
 }
-.family-info .eyebrow { margin-bottom: 12px; }
+.family-info .eyebrow { margin-bottom: 12px; font-size: 14px; letter-spacing: 0.22em; }
 .family-info h3 {
   font-family: var(--serif);
   font-size: clamp(36px, 5vw, 60px);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.02em;
   margin: 0 0 24px;
 }
-.family-info h3 em { font-style: italic; color: var(--burgundy); }
+.family-info h3 em {
+  font-style: italic;
+  color: var(--burgundy);
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 400;
+}
 .family-info .bio {
   font-family: var(--serif);
   font-size: 18px;
@@ -386,27 +409,31 @@
   max-width: 440px;
 }
 .family-list {
-  border-top: 1px solid var(--line);
-  padding-top: 24px;
+  border-top: none;
 }
 .family-list .row {
   display: grid;
   grid-template-columns: 140px 1fr;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
   gap: 20px;
   align-items: baseline;
 }
+.family-list .row:last-child {
+  border-bottom: 1px solid var(--line);
+}
 .family-list .role {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-soft);
+  font-weight: 500;
 }
 .family-list .name {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 26px;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink);
 }
@@ -473,7 +500,7 @@
   z-index: 2;
   text-align: center;
   max-width: 760px;
-  padding: 60px 40px;
+  padding: 40px 40px;
   background: rgba(253,247,247,0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -493,46 +520,49 @@
 .info-card .medallion-ink {
   width: 110px;
   height: auto;
-  margin: -10px auto 24px;
+  margin: -10px auto 16px;
   display: block;
-  opacity: 0.85;
+  opacity: 1;
+  filter: contrast(1.4);
 }
 .info-card .announce {
   font-family: var(--serif);
   font-style: italic;
   font-size: clamp(22px, 3vw, 32px);
-  color: var(--ink-soft);
+  font-weight: 500;
+  color: var(--ink);
   margin: 0 0 8px;
   letter-spacing: 0.01em;
 }
 .info-card .announce-en {
   font-family: var(--sans);
   font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 .info-card .names {
   font-family: var(--serif);
   font-size: clamp(40px, 6vw, 72px);
-  font-weight: 400;
-  line-height: 1.1;
+  font-weight: 500;
+  line-height: 1;
   letter-spacing: -0.02em;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 .info-card .names .amp {
-  display: block;
+  display: inline;
   font-style: italic;
   color: var(--gold);
   font-size: 0.6em;
-  margin: 8px 0;
+  margin: 0 0.1em;
 }
 .info-card .divider {
   width: 64px;
   height: 1px;
   background: var(--sage);
-  margin: 36px auto;
+  margin: 24px auto;
 }
 .info-card .date-big {
   font-family: var(--serif);
@@ -543,26 +573,41 @@
   margin: 32px 0;
 }
 .info-card .date-big .d {
+  flex: 1;
   font-size: clamp(40px, 6vw, 64px);
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1;
+  color: var(--ink);
+  text-align: center;
 }
 .info-card .date-big .mid {
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink);
+  flex-shrink: 0;
 }
 .info-card .date-big .mid .big {
   display: block;
   font-family: var(--serif);
   font-size: 28px;
+  font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
   color: var(--ink);
   font-style: italic;
   margin-bottom: 4px;
+}
+.info-card .time-label {
+  font-family: var(--serif);
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ink);
+  text-align: center;
+  margin-top: 8px;
 }
 .info-card .location {
   font-family: var(--serif);
@@ -768,6 +813,7 @@
   width: 90px;
   margin: 0 auto 20px;
   display: block;
+  filter: contrast(1.4);
   opacity: 0.8;
 }
 .rsvp-head {
@@ -992,13 +1038,14 @@
   .rsvp-form { padding: 28px; }
 }
 
-/* ========= Responsive: Gate ========= */
+/* ========= Responsive: Hero & Gate ========= */
 @media (max-width: 768px) {
-  .gate-hero { min-height: 100svh; }
-  .gate-hero .medallion { width: 140px; }
-  .gate-hero .tagline { font-size: 16px; padding: 0 16px; margin-top: 16px; }
-  .gate-hero .date-line { margin-top: 20px; gap: 12px; font-size: 11px; }
-  .gate-hero .ornament { margin: 12px 0; }
+  .hero { min-height: 100svh; }
+  .hero h1 { font-size: clamp(40px, 10vw, 80px); }
+  .hero .medallion { width: 140px; }
+  .hero .tagline { font-size: 18px; padding: 0 24px; margin-top: 16px; }
+  .hero .date-line { margin-top: 20px; gap: 12px; font-size: 13px; }
+  .hero .ornament { margin: 12px 0; }
 
   .gate-door .door-inner { inset: 12px; }
   .gate-door .door-inner::before { inset: 8px; }
@@ -1018,7 +1065,11 @@
 }
 
 @media (max-width: 480px) {
-  .gate-hero .medallion { width: 110px; }
+  .hero h1 { font-size: clamp(36px, 10vw, 56px); }
+  .hero .medallion { width: 110px; }
+  .hero .tagline { font-size: 16px; padding: 0 20px; }
+  .hero .date-line { font-size: 12px; gap: 10px; letter-spacing: 0.2em; }
+
   .gate-door .lantern { width: 60px; height: 90px; }
   .gate-door .lantern .glow { width: 40px; height: 55px; }
   .gate-door-l .lantern { right: 10px; }
@@ -1054,7 +1105,7 @@
   .info { padding: 80px 0; min-height: auto; }
   .info-blob-1 { width: 50%; bottom: -2%; left: -6%; }
   .info-blob-2 { width: 36%; top: -2%; right: -4%; }
-  .info-card { padding: 40px 24px; margin: 0 16px; }
+  .info-card { padding: 32px 20px; margin: 0 16px; }
   .info-card .medallion-ink { width: 80px; }
   .info-card .date-big { gap: 16px; flex-wrap: wrap; justify-content: center; }
   .info-card .location { font-size: 18px; }
@@ -1085,17 +1136,21 @@
 /* ========= Responsive: Family ========= */
 @media (max-width: 900px) {
   .family { padding: 80px 0; }
+  .family-info .eyebrow { font-size: 12px; }
   .family-portrait .sig { font-size: 60px; bottom: -20px; right: -10px; }
-  .family-list .row { grid-template-columns: 110px 1fr; gap: 12px; padding: 12px 0; }
+  .family-list .row { grid-template-columns: 110px 1fr; gap: 12px; padding: 16px 0; }
 }
 
 @media (max-width: 480px) {
   .family { padding: 60px 0; overflow: visible; }
   .family-info { padding: 0; }
+  .family-info .eyebrow { font-size: 11px; letter-spacing: 0.18em; }
+  .family-info h3 { font-size: clamp(30px, 8vw, 44px); }
+  .family-info h3 em { font-size: clamp(22px, 5vw, 30px); }
   .family-info .bio { font-size: 16px; }
-  .family-list .row { grid-template-columns: 1fr; gap: 2px; padding: 10px 0; }
-  .family-list .role { font-size: 10px; }
-  .family-list .name { font-size: 18px; }
+  .family-list .row { grid-template-columns: 1fr; gap: 4px; padding: 14px 0; }
+  .family-list .role { font-size: 11px; }
+  .family-list .name { font-size: 22px; }
   .family-portrait { overflow: visible; }
   .family-portrait .sig { font-size: 48px; bottom: -16px; right: -8px; }
 }

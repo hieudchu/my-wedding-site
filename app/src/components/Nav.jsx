@@ -27,13 +27,17 @@ export default function Nav({ config, siteText = {}, musicOn, setMusicOn, visibl
     }
   }, [musicOn, musicUrl]);
 
-  const handleNavClick = () => setMenuOpen(false);
+  const scrollTo = (e, id) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <>
       <audio ref={audioRef} loop preload="none" />
       <nav className={`nav ${visible ? 'visible' : ''} ${scrolled ? 'scrolled' : ''}`}>
-        <a href="#home" className="brand">
+        <a href="#" className="brand" onClick={(e) => scrollTo(e, 'hero')}>
           <img
             src={navLogoUrl || '/assets/medallion-ink.png'}
             alt=""
@@ -45,18 +49,18 @@ export default function Nav({ config, siteText = {}, musicOn, setMusicOn, visibl
           </span>
         </a>
         <div className="links">
-          <a href="#story">{siteText.nav_story || 'Chuyện tình'}</a>
-          <a href="#groom">{siteText.nav_family || 'Gia đình'}</a>
-          <a href="#details">{siteText.nav_invitation || 'Thiệp mời'}</a>
-          <a href="#timeline">{siteText.nav_timeline || 'Lịch trình'}</a>
-          <a href="#rsvp">{siteText.nav_rsvp || 'Xác nhận'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'story')}>{siteText.nav_story || 'Chuyện tình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'groom')}>{siteText.nav_family || 'Gia đình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'details')}>{siteText.nav_invitation || 'Thiệp mời'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'timeline')}>{siteText.nav_timeline || 'Lịch trình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'rsvp')}>{siteText.nav_rsvp || 'Xác nhận'}</a>
         </div>
         <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-          <a href="#story" onClick={handleNavClick}>{siteText.nav_story || 'Chuyện tình'}</a>
-          <a href="#groom" onClick={handleNavClick}>{siteText.nav_family || 'Gia đình'}</a>
-          <a href="#details" onClick={handleNavClick}>{siteText.nav_invitation || 'Thiệp mời'}</a>
-          <a href="#timeline" onClick={handleNavClick}>{siteText.nav_timeline || 'Lịch trình'}</a>
-          <a href="#rsvp" onClick={handleNavClick}>{siteText.nav_rsvp || 'Xác nhận'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'story')}>{siteText.nav_story || 'Chuyện tình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'groom')}>{siteText.nav_family || 'Gia đình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'details')}>{siteText.nav_invitation || 'Thiệp mời'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'timeline')}>{siteText.nav_timeline || 'Lịch trình'}</a>
+          <a href="#" onClick={(e) => scrollTo(e, 'rsvp')}>{siteText.nav_rsvp || 'Xác nhận'}</a>
         </div>
         <div className="nav-right">
           <button

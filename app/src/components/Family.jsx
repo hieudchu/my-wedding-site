@@ -21,13 +21,8 @@ export default function Family({ side, config, siteText = {}, reverse }) {
 
   const displayMembers = members;
 
-  const bio = isGroom
-    ? siteText.groom_bio || 'Cậu con trai lớn của gia đình, sinh ra và lớn lên tại Hà Nội. Nay chính thức trao gửi trái tim cho một nửa kia của cuộc đời.'
-    : siteText.bride_bio || 'Cô con gái út của gia đình, sinh ra và lớn lên tại Sài Gòn. Nay xin gửi trọn niềm tin và tình yêu cho người bạn đồng hành.';
-
-  const hometown = isGroom
-    ? siteText.groom_hometown || 'Hà Nội · Việt Nam'
-    : siteText.bride_hometown || 'TP. Hồ Chí Minh · Việt Nam';
+  const bio = isGroom ? siteText.groom_bio : siteText.bride_bio;
+  const hometown = isGroom ? siteText.groom_hometown : siteText.bride_hometown;
 
   const photoLabel = isGroom ? 'Chân dung chú rể' : 'Chân dung cô dâu';
   const storagePath = isGroom ? 'portraits/groom.jpg' : 'portraits/bride.jpg';
@@ -55,21 +50,25 @@ export default function Family({ side, config, siteText = {}, reverse }) {
             <br />
             {isGroom ? config.groomName : config.brideName}
           </h3>
-          <p className="bio">{bio}</p>
-          <div className="family-list">
-            {displayMembers.map((m, i) => (
-              <div key={m.id || i} className="row">
-                <div className="role">{m.role_label}</div>
-                <div className="name">
-                  {m.name_vi}
+          {bio && <p className="bio">{bio}</p>}
+          {(displayMembers.length > 0 || hometown) && (
+            <div className="family-list">
+              {displayMembers.map((m, i) => (
+                <div key={m.id || i} className="row">
+                  <div className="role">{m.role_label}</div>
+                  <div className="name">
+                    {m.name_vi}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <div className="row">
-              <div className="role">Quê quán</div>
-              <div className="name">{hometown}</div>
+              ))}
+              {hometown && (
+                <div className="row">
+                  <div className="role">Quê quán</div>
+                  <div className="name">{hometown}</div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
 export default function TimelineSettings() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState({});
   const { toast, ToastEl } = useToast();
 
   const fetchEvents = async () => {
@@ -59,6 +60,45 @@ export default function TimelineSettings() {
     }
   };
 
+  const uploadImage = async (eventId, file) => {
+    setUploading((prev) => ({ ...prev, [eventId]: true }));
+    const ext = file.name.split('.').pop();
+    const path = `timeline/${eventId}.${ext}`;
+    const { error } = await supabase.storage
+      .from('media')
+      .upload(path, file, { upsert: true });
+    setUploading((prev) => ({ ...prev, [eventId]: false }));
+    if (error) {
+      toast('Lỗi upload ảnh');
+      return;
+    }
+    updateEvent(eventId, 'image_path', path);
+    // Auto-save the path to DB
+    await supabase
+      .from('timeline_events')
+      .update({ image_path: path, updated_at: new Date().toISOString() })
+      .eq('id', eventId);
+    toast('Đã upload ảnh!');
+  };
+
+  const removeImage = async (eventId, imagePath) => {
+    if (imagePath) {
+      await supabase.storage.from('media').remove([imagePath]);
+    }
+    updateEvent(eventId, 'image_path', '');
+    await supabase
+      .from('timeline_events')
+      .update({ image_path: '', updated_at: new Date().toISOString() })
+      .eq('id', eventId);
+    toast('Đã xoá ảnh');
+  };
+
+  const getPublicUrl = (path) => {
+    if (!path) return null;
+    const { data } = supabase.storage.from('media').getPublicUrl(path);
+    return data?.publicUrl || null;
+  };
+
   const deleteEvent = async (id) => {
     const { error } = await supabase.from('timeline_events').delete().eq('id', id);
     if (!error) {
@@ -77,8 +117,52 @@ export default function TimelineSettings() {
       <div className="admin-card">
         <h3>Danh sách sự kiện</h3>
         {events.map((ev) => (
-          <div key={ev.id} style={{ padding: '14px 0', borderBottom: '1px solid #f0eded' }}>
-            <div className="admin-row">
+          <div key={ev.id} style={{ padding: '18px 0', borderBottom: '1px solid #f0eded' }}>
+            <div className="slot-card">
+              <div
+                className="slot-preview"
+                onClick={() => {
+                  if (!ev.image_path) document.getElementById(`tl-upload-${ev.id}`)?.click();
+                }}
+              >
+                {ev.image_path ? (
+                  <img src={getPublicUrl(ev.image_path) + '?t=' + Date.now()} alt={ev.label_vi} />
+                ) : (
+                  <div className="slot-empty">
+                    {uploading[ev.id] ? 'Uploading…' : '+ Upload'}
+                  </div>
+                )}
+                <input
+                  id={`tl-upload-${ev.id}`}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadImage(ev.id, file);
+                    e.target.value = '';
+                  }}
+                  disabled={uploading[ev.id]}
+                />
+              </div>
+              <div className="slot-info">
+                <div className="slot-label">{ev.label_vi || 'Sự kiện mới'}</div>
+                <div className="slot-desc">{ev.image_path || 'Chưa có ảnh · No image yet'}</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  {ev.image_path && (
+                    <button className="admin-btn admin-btn-danger" style={{ padding: '5px 12px', fontSize: 11 }} onClick={() => removeImage(ev.id, ev.image_path)}>
+                      Xoá ảnh · Delete
+                    </button>
+                  )}
+                  {!ev.image_path && (
+                    <button className="admin-btn admin-btn-secondary" style={{ padding: '5px 12px', fontSize: 11 }} onClick={() => document.getElementById(`tl-upload-${ev.id}`)?.click()}>
+                      Chọn ảnh · Upload
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="admin-row" style={{ marginTop: 12 }}>
               <div className="admin-field">
                 <label>Giờ · Time</label>
                 <input
@@ -107,7 +191,7 @@ export default function TimelineSettings() {
                 />
               </div>
               <div className="admin-field">
-                <label>Event name (EN)</label>
+                <label>Tên sự kiện (EN)</label>
                 <input
                   type="text"
                   value={ev.label_en}
@@ -115,19 +199,9 @@ export default function TimelineSettings() {
                 />
               </div>
             </div>
-            <div className="admin-field">
-              <label>Storage image path</label>
-              <input
-                type="text"
-                value={ev.image_path}
-                onChange={(e) => updateEvent(ev.id, 'image_path', e.target.value)}
-                placeholder="timeline/ceremony.jpg"
-              />
-              <div className="hint">Path trong Supabase Storage bucket "media"</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button className="admin-btn admin-btn-secondary" onClick={() => saveEvent(ev)}>Save</button>
-              <button className="admin-btn admin-btn-danger" onClick={() => deleteEvent(ev.id)}>Delete</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button className="admin-btn admin-btn-secondary" onClick={() => saveEvent(ev)}>Lưu · Save</button>
+              <button className="admin-btn admin-btn-danger" onClick={() => deleteEvent(ev.id)}>Xoá · Delete</button>
             </div>
           </div>
         ))}

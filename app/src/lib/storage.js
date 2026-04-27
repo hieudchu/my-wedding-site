@@ -28,14 +28,20 @@ async function getCachedFolder(folder) {
   }
 }
 
+// Cache-bust token — set once per page load so URLs are consistent
+// within a session but always fresh across reloads / deploys.
+const cacheBust = Date.now();
+
 /**
  * Build the public URL for a file (does not check existence).
+ * Appends a cache-bust param so CDN serves the latest version.
  */
 function buildPublicUrl(path) {
   if (!supabaseConfigured) return null;
   try {
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    return data?.publicUrl || null;
+    if (!data?.publicUrl) return null;
+    return `${data.publicUrl}?t=${cacheBust}`;
   } catch {
     return null;
   }

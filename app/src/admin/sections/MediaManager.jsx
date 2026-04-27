@@ -100,9 +100,9 @@ const SINGLE_SLOTS = [
 const MULTI_SLOTS = [
   {
     folder: 'carousel',
-    label: 'Album ảnh · Photo Carousel',
-    desc: 'Hiển thị trong carousel ảnh sau trang chủ (mục "Chuyện tình"). Ảnh sẽ được sắp xếp theo tên file.',
-    section: 'Details',
+    label: 'Album ảnh · Hero Slider',
+    desc: 'Hiển thị trong slider ảnh toàn màn hình ở trang chủ (sau trang tiêu đề). Ảnh sẽ được sắp xếp theo tên file.',
+    section: 'Hero',
     accept: 'image/*',
   },
   {
@@ -242,7 +242,45 @@ function MultiFileManager({ config, onToast }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [captions, setCaptions] = useState({});
+  const [savingCaptions, setSavingCaptions] = useState(false);
   const inputRef = useRef(null);
+  const hasCaptions = config.folder === 'carousel';
+
+  const fetchCaptions = async () => {
+    if (!hasCaptions) return;
+    const { data } = await supabase
+      .from('site_config')
+      .select('value')
+      .eq('key', 'carousel_captions')
+      .single();
+    if (data?.value) {
+      try { setCaptions(JSON.parse(data.value)); } catch { setCaptions({}); }
+    }
+  };
+
+  const saveCaptions = async (updated) => {
+    setSavingCaptions(true);
+    const { error } = await supabase
+      .from('site_config')
+      .upsert({ key: 'carousel_captions', value: JSON.stringify(updated), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    setSavingCaptions(false);
+    if (!error) {
+      onToast('Captions saved');
+    } else {
+      onToast('Error saving captions');
+    }
+  };
+
+  const handleCaptionChange = (fileName, value) => {
+    setCaptions((prev) => ({ ...prev, [fileName]: value }));
+  };
+
+  const handleCaptionBlur = (fileName) => {
+    const updated = { ...captions };
+    if (!updated[fileName]) delete updated[fileName];
+    saveCaptions(updated);
+  };
 
   const fetchFiles = async () => {
     setLoading(true);
@@ -262,7 +300,7 @@ function MultiFileManager({ config, onToast }) {
     setLoading(false);
   };
 
-  useEffect(() => { fetchFiles(); }, [config.folder]);
+  useEffect(() => { fetchFiles(); fetchCaptions(); }, [config.folder]);
 
   const handleUpload = async (e) => {
     const selected = Array.from(e.target.files);
@@ -288,6 +326,12 @@ function MultiFileManager({ config, onToast }) {
     const { error } = await supabase.storage.from(BUCKET).remove([`${config.folder}/${fileName}`]);
     if (!error) {
       setFiles((prev) => prev.filter((f) => f.name !== fileName));
+      if (hasCaptions && captions[fileName]) {
+        const updated = { ...captions };
+        delete updated[fileName];
+        setCaptions(updated);
+        saveCaptions(updated);
+      }
       onToast('Deleted');
     }
   };
@@ -324,6 +368,16 @@ function MultiFileManager({ config, onToast }) {
                 <div className="audio-placeholder">?</div>
               )}
               <div className="file-name">{f.name}</div>
+              {hasCaptions && (
+                <input
+                  type="text"
+                  className="caption-input"
+                  placeholder="Chú thích · Caption"
+                  value={captions[f.name] || ''}
+                  onChange={(e) => handleCaptionChange(f.name, e.target.value)}
+                  onBlur={() => handleCaptionBlur(f.name)}
+                />
+              )}
               <button className="delete-btn" onClick={() => handleDelete(f.name)} title="Delete">
                 &times;
               </button>

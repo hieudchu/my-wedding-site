@@ -49,14 +49,12 @@ export default function Nav({ config, siteText = {}, musicOn, setMusicOn, visibl
           </span>
         </a>
         <div className="links">
-          <a href="#" onClick={(e) => scrollTo(e, 'story')}>{siteText.nav_story || 'Chuyện tình'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'groom')}>{siteText.nav_family || 'Gia đình'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'details')}>{siteText.nav_invitation || 'Thiệp mời'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'timeline')}>{siteText.nav_timeline || 'Lịch trình'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'rsvp')}>{siteText.nav_rsvp || 'Xác nhận'}</a>
         </div>
         <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-          <a href="#" onClick={(e) => scrollTo(e, 'story')}>{siteText.nav_story || 'Chuyện tình'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'groom')}>{siteText.nav_family || 'Gia đình'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'details')}>{siteText.nav_invitation || 'Thiệp mời'}</a>
           <a href="#" onClick={(e) => scrollTo(e, 'timeline')}>{siteText.nav_timeline || 'Lịch trình'}</a>

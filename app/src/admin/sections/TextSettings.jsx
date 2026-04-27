@@ -6,11 +6,6 @@ const LABELS = {
   gate_tagline: 'Câu trích dẫn · Tagline',
   gate_prompt: 'Lời mời mở thiệp · Open prompt',
   gate_prompt_sub: 'Dòng phụ nút mở · Open prompt sub',
-  // Details
-  details_eyebrow: 'Dòng nhỏ phía trên · Eyebrow',
-  details_heading: 'Tiêu đề chính · Heading',
-  details_paragraph: 'Đoạn văn giới thiệu · Paragraph',
-  details_carousel_hint: 'Gợi ý vuốt ảnh · Carousel hint',
   // Family
   groom_bio: 'Giới thiệu chú rể · Groom bio',
   groom_hometown: 'Quê quán chú rể · Groom hometown',
@@ -39,7 +34,6 @@ const LABELS = {
   rsvp_dress_code: 'Trang phục (Tiếng Việt) · Dress code VI',
   rsvp_dress_code_en: 'Trang phục (Tiếng Anh) · Dress code EN',
   // Nav
-  nav_story: 'Mục Chuyện tình · Story link',
   nav_family: 'Mục Gia đình · Family link',
   nav_invitation: 'Mục Thiệp mời · Invitation link',
   nav_timeline: 'Mục Lịch trình · Timeline link',
@@ -52,10 +46,6 @@ const SECTIONS = [
   {
     title: 'Gate · Trang mở',
     keys: ['gate_tagline', 'gate_prompt', 'gate_prompt_sub'],
-  },
-  {
-    title: 'Details · Chuyện tình',
-    keys: ['details_eyebrow', 'details_heading', 'details_paragraph', 'details_carousel_hint'],
   },
   {
     title: 'Family · Gia đình',
@@ -75,7 +65,7 @@ const SECTIONS = [
   },
   {
     title: 'Navigation · Điều hướng',
-    keys: ['nav_story', 'nav_family', 'nav_invitation', 'nav_timeline', 'nav_rsvp'],
+    keys: ['nav_family', 'nav_invitation', 'nav_timeline', 'nav_rsvp'],
   },
   {
     title: 'Footer',

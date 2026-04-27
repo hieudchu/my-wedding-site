@@ -4,7 +4,6 @@ import { useReveal } from './hooks/useReveal';
 import Nav from './components/Nav';
 import GateHero from './components/GateHero';
 import Hero from './components/Hero';
-import Details from './components/Details';
 import Family from './components/Family';
 import WeddingInfo from './components/WeddingInfo';
 import Timeline from './components/Timeline';
@@ -51,7 +50,6 @@ export default function App() {
       <Nav config={config} siteText={siteText} musicOn={musicOn} setMusicOn={setMusicOn} visible={navVisible} />
       <GateHero siteText={siteText} onOpen={handleGateOpen} />
       <Hero config={config} siteText={siteText} visible={gateOpened} />
-      <Details config={config} siteText={siteText} />
       <Family side="groom" config={config} siteText={siteText} reverse={false} />
       <Family side="bride" config={config} siteText={siteText} reverse={true} />
       <WeddingInfo config={config} siteText={siteText} />

@@ -1,7 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { compressImage } from '../../lib/compressImage';
+import { withEntry, withoutEntry, entryId, nowVersion } from '../../lib/mediaManifest';
+import { applyToManifest, seedFolderFromStorage, manifestErrorHint } from '../../lib/manifestStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
+
+// Ảnh lịch trình nằm chung kho với mọi ảnh khác, nên cũng phải có mặt trong bản kê.
+const TIMELINE_FOLDER = 'timeline';
 
 export default function TimelineSettings() {
   const [events, setEvents] = useState([]);
@@ -61,11 +66,40 @@ export default function TimelineSettings() {
     }
   };
 
+  /**
+   * Trang này ghi thẳng vào kho ảnh, nên nó cũng phải ghi bản kê.
+   *
+   * Bản kê là chỗ trang khách tra `?v=` của từng ảnh. Bỏ qua nó thì:
+   *   - thay ảnh: `v` cũ nằm nguyên nên URL không đổi, khách vẫn thấy tấm cũ
+   *     nằm trong cache CDN — có khi tới tận ngày cưới;
+   *   - xoá ảnh: bản kê còn lại một mục trỏ vào file không còn nữa.
+   *
+   * Cả hai chỉ xảy ra khi thư mục timeline đã có mục trong bản kê — sau một lượt
+   * tải lên ở trang Media hoặc một lần bấm "Quét lại kho" — nên hôm nay im lặng
+   * không có nghĩa là mai vẫn im lặng.
+   *
+   * Dùng chung applyToManifest với trang Media: chung một hàng đợi thì hai trang
+   * không đè lên lượt ghi của nhau.
+   */
+  const writeManifest = async (mutate) => {
+    try {
+      await applyToManifest(mutate);
+      return null;
+    } catch (err) {
+      console.error('Không ghi được bản kê media:', err);
+      return manifestErrorHint(err);
+    }
+  };
+
+  const fileNameIn = (path) =>
+    (path || '').startsWith(`${TIMELINE_FOLDER}/`) ? path.slice(TIMELINE_FOLDER.length + 1) : null;
+
   const uploadImage = async (eventId, picked) => {
     setUploading((prev) => ({ ...prev, [eventId]: true }));
     const file = await compressImage(picked);
     const ext = file.name.split('.').pop();
-    const path = `timeline/${eventId}.${ext}`;
+    const fileName = `${eventId}.${ext}`;
+    const path = `${TIMELINE_FOLDER}/${fileName}`;
     const { error } = await supabase.storage
       .from('media')
       .upload(path, file, { upsert: true });
@@ -74,13 +108,40 @@ export default function TimelineSettings() {
       toast('Lỗi upload ảnh');
       return;
     }
+
+    // Ảnh cũ của sự kiện này có thể mang đuôi khác, tức là một file khác hẳn chứ
+    // không phải file vừa bị đè lên. Không dọn thì nó nằm lại trong kho mãi và
+    // bản kê vẫn kể tên nó.
+    const stale = fileNameIn(events.find((e) => e.id === eventId)?.image_path);
+    if (stale && stale !== fileName) {
+      await supabase.storage.from('media').remove([`${TIMELINE_FOLDER}/${stale}`]);
+    }
+
     updateEvent(eventId, 'image_path', path);
     // Auto-save the path to DB
     await supabase
       .from('timeline_events')
       .update({ image_path: path, updated_at: new Date().toISOString() })
       .eq('id', eventId);
-    toast('Đã upload ảnh!');
+
+    const hint = await writeManifest(async (m) => {
+      // Thư mục chưa có trong bản kê thì chép cả kho vào trước: ghi mỗi tấm vừa
+      // tải lên là những tấm còn lại biến mất khỏi trang khách.
+      let next = await seedFolderFromStorage(m, TIMELINE_FOLDER);
+      if (stale && stale !== fileName) next = withoutEntry(next, TIMELINE_FOLDER, stale);
+      return withEntry(next, TIMELINE_FOLDER, {
+        id: entryId(TIMELINE_FOLDER, fileName),
+        file: fileName,
+        v: nowVersion(),
+        // Ảnh lịch trình đi qua MediaImage, chỉ cần URL chứ không cần số đo;
+        // 0 nghĩa là chưa biết, y như những mục chép sẵn từ kho.
+        w: 0,
+        h: 0,
+        caption: '',
+      });
+    });
+
+    toast(hint ? 'Đã tải ảnh lên kho nhưng chưa ghi được bản kê · ' + hint : 'Đã upload ảnh!');
   };
 
   const removeImage = async (eventId, imagePath) => {
@@ -92,7 +153,12 @@ export default function TimelineSettings() {
       .from('timeline_events')
       .update({ image_path: '', updated_at: new Date().toISOString() })
       .eq('id', eventId);
-    toast('Đã xoá ảnh');
+
+    // Không chép sẵn kho ở đây: thư mục chưa có mục nào trong bản kê thì cũng
+    // chẳng có mục nào để gỡ.
+    const name = fileNameIn(imagePath);
+    const hint = name ? await writeManifest((m) => withoutEntry(m, TIMELINE_FOLDER, name)) : null;
+    toast(hint ? 'Đã xoá file nhưng chưa cập nhật được bản kê · ' + hint : 'Đã xoá ảnh');
   };
 
   const getPublicUrl = (path) => {

@@ -3,11 +3,27 @@ import { findEntry, listFolder, emptyManifest } from './mediaManifest';
 
 const BUCKET = 'media';
 
+// Hết thời gian này mà App vẫn chưa nạp bản kê thì cứ mở cổng, đi đường cũ.
+const GATE_FALLBACK_MS = 3000;
+
 let manifest = emptyManifest();
 
-/** App nạp bản kê vào đây ngay khi nội dung chữ về. */
+// Cổng chờ bản kê. Mọi lượt đọc kho phải đợi ở đây tới khi App nạp xong bản kê.
+// Không có cổng, Nav/Hero/mọi MediaImage đều hỏi kho ngay ở lượt commit đầu tiên —
+// tức là trước khi site_config kịp về — nên đi hết đường liệt kê cũ; bản kê về sau
+// cũng chẳng ai đọc lại: đúng 14 lượt gọi mà task này sinh ra để bỏ.
+let openGate;
+const manifestReady = new Promise((resolve) => { openGate = resolve; });
+
+// Van an toàn: lỡ setManifest không bao giờ được gọi thì ảnh vẫn phải tải được
+// theo đường cũ, chứ không treo vĩnh viễn ở cổng.
+const gateTimer = setTimeout(() => openGate(), GATE_FALLBACK_MS);
+
+/** App nạp bản kê vào đây khi nội dung chữ về. Gọi bao nhiêu lần cũng vô hại. */
 export function setManifest(next) {
   manifest = next || emptyManifest();
+  clearTimeout(gateTimer);
+  openGate();
 }
 
 // Danh sách file mỗi thư mục, kèm mốc sửa đổi. Map: folder -> Map(tên -> version)
@@ -94,6 +110,7 @@ function splitPath(path) {
  */
 export async function getMediaUrlAsync(path) {
   if (!path || !supabaseConfigured) return null;
+  await manifestReady;
   const known = findEntry(manifest, path);
   if (known) return buildPublicUrl(path, known.v);
   const { folder, name } = splitPath(path);
@@ -119,6 +136,7 @@ export function getMediaUrl(path) {
  * Trả về mảng { name, url }, kèm { w, h, caption } khi bản kê có sẵn.
  */
 export async function listMedia(folder) {
+  await manifestReady;
   const fromManifest = listFolder(manifest, folder);
   if (fromManifest.length) {
     return fromManifest.map((e) => ({

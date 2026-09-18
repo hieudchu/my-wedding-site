@@ -16,10 +16,11 @@ import { setManifest } from './lib/storage';
 const GATE_RELEASE_MS = 1500;
 
 export default function App() {
-  const { config, siteText, manifest } = useSiteConfig();
-  // Gọi thẳng trong thân component: tầng lưu trữ phải có bản kê TRƯỚC lượt render
-  // đầu tiên của các component con; useEffect chạy sau lượt đó thì đã muộn.
-  setManifest(manifest);
+  const { config, siteText, manifest, loading } = useSiteConfig();
+  // Chỉ nạp khi nội dung chữ đã về. Nạp ngay lượt render đầu tiên là mở cổng bằng
+  // bản kê rỗng — đúng cái lỗi cần tránh. Vẫn gọi thẳng trong thân component
+  // (không đặt trong useEffect) để tầng lưu trữ có bản kê trước lượt render của con.
+  if (!loading) setManifest(manifest);
   const [gateOpened, setGateOpened] = useState(false);
   const [navVisible, setNavVisible] = useState(false);
 

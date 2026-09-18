@@ -53,4 +53,19 @@ describe('getMediaUrlAsync', () => {
     });
     expect(await getMediaUrlAsync('icons/medallion-ink.png')).toContain('medallion-ink.png');
   });
+
+  it('có bản kê thì không hỏi kho lấy một lượt', async () => {
+    const { getMediaUrlAsync, setManifest } = await import('./storage');
+    setManifest({
+      version: 1,
+      folders: {
+        icons: [{ id: 'icons-medallion-ink.png', file: 'medallion-ink.png', v: 1767225600, w: 0, h: 0, caption: '' }],
+      },
+    });
+
+    const url = await getMediaUrlAsync('icons/medallion-ink.png');
+
+    expect(url).toBe('https://kho.test/icons/medallion-ink.png?v=1767225600');
+    expect(listMock).not.toHaveBeenCalled();
+  });
 });

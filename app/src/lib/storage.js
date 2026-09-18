@@ -5,6 +5,8 @@ const BUCKET = 'media';
 // Danh sách file mỗi thư mục, kèm mốc sửa đổi. Map: folder -> Map(tên -> version)
 const folderCache = new Map();
 
+const resolvedCache = new Map();   // folder -> Map(tên → version), chỉ có khi đã xong
+
 /** Đổi mốc sửa đổi của file thành một chuỗi ngắn để gắn vào URL */
 function versionOf(file) {
   const stamp = file.updated_at || file.created_at || file.last_accessed_at;
@@ -18,28 +20,37 @@ function versionOf(file) {
 async function getCachedFolder(folder) {
   if (folderCache.has(folder)) return folderCache.get(folder);
   if (!supabaseConfigured) {
-    folderCache.set(folder, new Map());
-    return folderCache.get(folder);
+    const empty = Promise.resolve(new Map());
+    folderCache.set(folder, empty);
+    return empty;
   }
 
-  try {
+  // Nhớ LỜI HỨA, không phải kết quả: bốn component cùng hỏi một thư mục thì cùng
+  // chờ chung một lượt gọi, thay vì mỗi đứa bắn một lượt y hệt nhau.
+  const pending = (async () => {
     const { data, error } = await supabase.storage
       .from(BUCKET)
       .list(folder, { sortBy: { column: 'name', order: 'asc' } });
 
+    if (error) throw error;
+
     const files = new Map();
-    if (!error && data) {
-      for (const f of data) {
-        if (f.id?.endsWith('/') || f.name === '.emptyFolderPlaceholder') continue;
-        files.set(f.name, versionOf(f));
-      }
+    for (const f of data || []) {
+      if (f.id?.endsWith('/') || f.name === '.emptyFolderPlaceholder') continue;
+      files.set(f.name, versionOf(f));
     }
-    folderCache.set(folder, files);
+    resolvedCache.set(folder, files);
     return files;
-  } catch {
-    folderCache.set(folder, new Map());
-    return folderCache.get(folder);
-  }
+  })();
+
+  // Hỏng thì quên đi, để lần sau còn thử lại thay vì nhớ mãi cái rỗng
+  const guarded = pending.catch(() => {
+    folderCache.delete(folder);
+    return new Map();
+  });
+
+  folderCache.set(folder, guarded);
+  return guarded;
 }
 
 /**
@@ -85,8 +96,8 @@ export async function getMediaUrlAsync(path) {
 export function getMediaUrl(path) {
   if (!path || !supabaseConfigured) return null;
   const { folder, name } = splitPath(path);
-  if (!folderCache.has(folder)) return null;
-  const files = folderCache.get(folder);
+  if (!resolvedCache.has(folder)) return null;
+  const files = resolvedCache.get(folder);
   if (!files.has(name)) return null;
   return buildPublicUrl(path, files.get(name));
 }

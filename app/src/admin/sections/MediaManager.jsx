@@ -3,11 +3,16 @@ import { compressImage, describeSaving } from '../../lib/compressImage';
 import { runQueue } from '../../lib/uploadQueue';
 import {
   parseManifest, serializeManifest, withEntry, withoutEntry, withOrder, listFolder,
+  buildFromListing, MEDIA_FOLDERS,
 } from '../../lib/mediaManifest';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
 const BUCKET = 'media';
+
+// Thư mục duy nhất có ô chú thích. Caption nằm ở hai chỗ nên chỗ nào cũng phải
+// gọi đúng tên thư mục này.
+const CAPTION_FOLDER = 'carousel';
 
 /* ── Single-file slots: upload any file → auto-renamed to the expected name ── */
 const SINGLE_SLOTS = [
@@ -133,6 +138,41 @@ function getPublicUrl(path) {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+/**
+ * Liệt kê TẤT CẢ file trong một thư mục kho.
+ *
+ * supabase.storage.list() mặc định chỉ trả 100 dòng và không hề báo là còn nữa.
+ * Ở những chỗ chỉ để xem thì thiếu vài dòng là chuyện nhỏ; ở đây thì không —
+ * danh sách này được ghi thẳng vào bản kê, nên đọc thiếu 100 dòng là ảnh biến
+ * mất khỏi trang khách, do chính cái nút sinh ra để chữa chuyện đó gây ra.
+ *
+ * Nên đọc hết từng trang một chứ không từ chối thư mục đông file: từ chối nghĩa
+ * là thư mục hơn 100 ảnh vĩnh viễn không có đường dựng lại, mà đó lại đúng là
+ * thư mục có nhiều thứ để mất nhất. Hết MAX_LIST_PAGES mà kho vẫn còn trả đầy
+ * trang thì ném lỗi — thà không ghi gì còn hơn ghi một bản kê thiếu file.
+ */
+const LIST_PAGE_SIZE = 100;
+const MAX_LIST_PAGES = 100;   // 10.000 file/thư mục; quá ngần ấy là có chuyện khác
+
+async function listAllInFolder(folder) {
+  const all = [];
+  for (let page = 0; page < MAX_LIST_PAGES; page += 1) {
+    const { data, error } = await supabase.storage.from(BUCKET).list(folder, {
+      limit: LIST_PAGE_SIZE,
+      offset: page * LIST_PAGE_SIZE,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+    // Liệt kê hỏng thì ném ra, đừng coi là thư mục rỗng: coi là rỗng nghĩa là
+    // ghi một bản kê trắng cho thư mục vẫn còn nguyên ảnh.
+    if (error) throw error;
+    const batch = data || [];
+    all.push(...batch);
+    // Trang chưa đầy nghĩa là đã hết. Trang đầy thì còn có thể còn nữa, đọc tiếp.
+    if (batch.length < LIST_PAGE_SIZE) return all;
+  }
+  throw new Error(`Thư mục "${folder}" có quá nhiều file để quét một lượt`);
+}
+
 // Ảnh hỏng có thể không bắn cả onload lẫn onerror. Không có mốc dừng thì luồng
 // treo, khối finally không chạy, và bảng upload kẹt ở "Đang tải lên…" với ô chọn
 // file bị khoá cho tới khi tải lại trang — trang này chỉ có một người dùng và
@@ -234,14 +274,13 @@ function storageVersion(file) {
 async function seedFolderFromStorage(m, folder, captionsByFile) {
   if (listFolder(m, folder).length) return m;   // đã có bản kê rồi thì không đụng vào
 
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .list(folder, { sortBy: { column: 'name', order: 'asc' } });
-  // Không liệt kê được thì thà đừng ghi bản kê, còn hơn ghi một bản thiếu ảnh cũ
-  if (error) throw error;
+  // Đọc hết chứ không chỉ 100 dòng đầu: chép thiếu ở đây cũng là mất ảnh, y hệt
+  // lúc quét lại kho. Không liệt kê được thì ném ra, thà đừng ghi bản kê còn hơn
+  // ghi một bản thiếu ảnh cũ.
+  const data = await listAllInFolder(folder);
 
   let next = m;
-  for (const f of data || []) {
+  for (const f of data) {
     if (!f?.name || f.name === '.emptyFolderPlaceholder') continue;
     next = withEntry(next, folder, {
       id: entryId(folder, f.name),
@@ -257,8 +296,85 @@ async function seedFolderFromStorage(m, folder, captionsByFile) {
   return next;
 }
 
+/**
+ * Đọc hàng caption của carousel. Hỏng thì trả {} chứ không ném: caption trong
+ * bản kê vẫn là nguồn chính, mất phần vá thêm còn hơn huỷ cả lượt quét.
+ */
+async function loadStoredCaptions() {
+  const { data, error } = await supabase
+    .from('site_config').select('value').eq('key', 'carousel_captions').maybeSingle();
+  if (error) {
+    console.error('Không đọc được carousel_captions:', error);
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(data?.value || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Vá caption cho những mục vừa dựng lại mà đang trống.
+ *
+ * buildFromListing chỉ giữ được caption của file mà bản kê CŨ từng biết. Nhưng
+ * cảnh hay phải quét lại nhất lại là cảnh bản kê ghi hỏng giữa chừng: file nằm
+ * trong kho mà bản kê không có, caption của nó chỉ còn ở hàng carousel_captions.
+ * Không lấy lại từ đó thì nút này chữa được ảnh nhưng vẫn xoá trắng lời đề.
+ *
+ * Chỉ đắp vào chỗ đang trống, không đè lên caption bản kê đang giữ — người dùng
+ * xoá trắng một caption thì hàng carousel_captions cũng đã xoá hẳn khoá đó, nên
+ * hai bên không cãi nhau.
+ */
+function withStoredCaptions(m, captionsByFile) {
+  let next = m;
+  for (const entry of listFolder(m, CAPTION_FOLDER)) {
+    if (entry.caption) continue;
+    const stored = captionsByFile?.[entry.file];
+    if (!stored) continue;
+    // withEntry thay tại chỗ theo tên file, nên thứ tự vừa dựng không xê dịch
+    next = withEntry(next, CAPTION_FOLDER, { ...entry, caption: stored });
+  }
+  return next;
+}
+
+/**
+ * Dựng lại bản kê từ kho — đường chữa cho mọi kiểu lệch: ghi hỏng giữa chừng,
+ * file bị xoá thẳng trên Supabase Dashboard, file tải lên ngoài trang này.
+ *
+ * Ba điều phải giữ đúng:
+ *
+ * 1. Đi qua applyToManifest. Bản kê cũ mà hàm nhận được chính là bản đọc trong
+ *    hàng đợi, nên lượt quét không đè lên một lượt ghi đang dở, và cũng không bị
+ *    lượt ghi nào chen vào giữa lúc đọc và lúc ghi.
+ *
+ * 2. Liệt kê kho BÊN TRONG hàng đợi, sau khi đã đọc bản kê. Kho bao giờ cũng có
+ *    file trước khi bản kê có (upload đẩy file lên rồi mới ghi bản kê), nên đọc
+ *    bản kê trước rồi mới liệt kê thì danh sách kho luôn phủ hết bản kê — không
+ *    có file nào vừa nằm trong bản kê cũ vừa lọt khỏi danh sách mới.
+ *
+ * 3. Gom đủ cả sáu thư mục rồi mới dựng. buildFromListing dựng từ con số không:
+ *    thư mục nào vắng mặt trong listing là mất sạch khỏi bản kê. Một thư mục đọc
+ *    hỏng thì ném ra ngay tại đây, applyToManifest không gọi tới saveManifest, và
+ *    bản kê cũ còn nguyên — ghi ba thư mục rồi bỏ rơi ba thư mục còn tệ hơn nhiều.
+ */
+async function rebuildManifestFromStorage() {
+  return applyToManifest(async (previous) => {
+    const listing = {};
+    for (const folder of MEDIA_FOLDERS) {
+      listing[folder] = await listAllInFolder(folder);
+    }
+    // previous là bản kê cũ: nhờ nó mà caption, thứ tự, id và kích thước của
+    // những file vẫn còn trong kho sống sót qua lượt dựng lại. Thiếu tham số này
+    // là nút chữa bản kê biến thành nút xoá trắng caption.
+    const rebuilt = buildFromListing(listing, previous);
+    return withStoredCaptions(rebuilt, await loadStoredCaptions());
+  });
+}
+
 /* ── SlotUploader: single-file slot with preview ── */
-function SlotUploader({ slot, onToast }) {
+function SlotUploader({ slot, onToast, reloadKey }) {
   const [url, setUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -280,7 +396,9 @@ function SlotUploader({ slot, onToast }) {
     setLoading(false);
   };
 
-  useEffect(() => { checkExisting(); }, [slot.storagePath]);
+  // reloadKey đổi sau mỗi lượt quét lại kho: ảnh vừa bị xoá tay trên Dashboard
+  // phải biến khỏi ô xem trước, nếu không người dùng tưởng quét hụt.
+  useEffect(() => { checkExisting(); }, [slot.storagePath, reloadKey]);
 
   const handleUpload = async (e) => {
     const picked = e.target.files?.[0];
@@ -400,7 +518,7 @@ function SlotUploader({ slot, onToast }) {
 }
 
 /* ── MultiFileManager: folder with multiple files ── */
-function MultiFileManager({ config, onToast }) {
+function MultiFileManager({ config, onToast, reloadKey }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -413,7 +531,7 @@ function MultiFileManager({ config, onToast }) {
   const inputRef = useRef(null);
   const dragFrom = useRef(null);                      // { index, name } của thẻ đang nhấc
   const dragBlocked = useRef(false);
-  const hasCaptions = config.folder === 'carousel';
+  const hasCaptions = config.folder === CAPTION_FOLDER;
 
   // Đang ghi thứ tự thì khoá mọi thứ khác động vào `files`: lỡ ghi hỏng còn trả
   // lưới về đúng bản trước đó được.
@@ -555,7 +673,9 @@ function MultiFileManager({ config, onToast }) {
     }
   };
 
-  useEffect(() => { fetchFiles(); fetchCaptions(); }, [config.folder]);
+  // Quét lại kho ghi đè bản kê, mà lưới này xếp theo bản kê — đọc lại cả hai
+  // sau mỗi lượt quét, nếu không màn hình một đằng dữ liệu một nẻo.
+  useEffect(() => { fetchFiles(); fetchCaptions(); }, [config.folder, reloadKey]);
 
   const handleUpload = async (e) => {
     const selected = Array.from(e.target.files);
@@ -800,31 +920,86 @@ function MultiFileManager({ config, onToast }) {
 /* ── Main MediaManager ── */
 export default function MediaManager() {
   const { toast, ToastEl } = useToast();
+  const [rescanning, setRescanning] = useState(false);
+  const [rescanError, setRescanError] = useState(null);
+  // Tăng sau mỗi lượt quét xong, để các bảng con đọc lại kho và bản kê
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleRescan = async () => {
+    // Bấm hai lần thì lượt sau xếp hàng sau lượt trước và quét lại y hệt — vô
+    // hại, nhưng nút vẫn khoá cho khỏi tưởng lần đầu hụt.
+    if (rescanning) return;
+    setRescanning(true);
+    setRescanError(null);
+    try {
+      await rebuildManifestFromStorage();
+      toast('Đã dựng lại bản kê từ kho');
+    } catch (err) {
+      // Lỗi ở đây KHÔNG chắc là bản kê còn nguyên: hỏng lúc liệt kê kho thì
+      // chưa ghi gì thật, nhưng mất mạng sau khi lệnh ghi đã tới máy chủ cũng
+      // ném đúng lỗi này. Nên đừng hứa hẹn gì về bản kê — chỉ mời bấm lại, mà
+      // bấm lại thì an toàn: quét lại kho chạy mấy lần cũng ra đúng một kết quả.
+      console.error('Quét lại kho không xong:', err);
+      setRescanError(err?.message || String(err));
+      toast('Quét lại kho không xong · bấm quét lại lần nữa');
+    } finally {
+      // Đọc lại ngả nào cũng vậy, kể cả khi hỏng: không biết bản kê đã đổi hay
+      // chưa thì phải đi đọc, chứ đoán là lại rơi vào cảnh màn hình một đằng
+      // dữ liệu một nẻo.
+      setReloadKey((n) => n + 1);
+      // finally chứ không phải cuối khối try: ném lỗi mà nút kẹt ở "Đang quét…"
+      // là hết đường bấm lại, phải tải lại trang mới chữa được.
+      setRescanning(false);
+    }
+  };
 
   return (
     <div>
-      <h1>Media · Quản lý ảnh & nhạc</h1>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <h1>Media · Quản lý ảnh & nhạc</h1>
+        <button
+          className="admin-btn admin-btn-secondary"
+          onClick={handleRescan}
+          disabled={rescanning}
+          style={rescanning ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          title="Đọc lại toàn bộ kho và dựng lại bản kê · giữ nguyên chú thích và thứ tự"
+        >
+          {rescanning ? 'Đang quét…' : 'Quét lại kho'}
+        </button>
+      </div>
       <p className="page-desc">
         Upload ảnh/nhạc vào đúng vị trí — file sẽ tự động được đặt tên và hiển thị trên trang cưới.
         <br />
         <span style={{ fontSize: 12, color: '#c4b8b5' }}>
           Không cần đổi tên file trước khi upload · No need to rename files before uploading
+          <br />
+          Trang khách hiện sai so với kho (thiếu ảnh, thừa ô hỏng)? Bấm <strong>Quét lại kho</strong> —
+          chú thích và thứ tự của những file còn trong kho được giữ nguyên.
         </span>
       </p>
+
+      {rescanError && (
+        <div className="admin-card" style={{ borderColor: '#c0392b', color: '#c0392b', padding: 16, fontSize: 13 }}>
+          Quét lại kho không xong. Danh sách bên dưới vừa được đọc lại, nên nó đang hiện đúng
+          tình hình thật. <strong>Bấm “Quét lại kho” lần nữa là an toàn</strong> — quét bao nhiêu
+          lần cũng ra cùng một kết quả.
+          <div style={{ fontSize: 12, marginTop: 6, color: '#A89996' }}>{rescanError}</div>
+        </div>
+      )}
 
       {SINGLE_SLOTS.map((group) => (
         <div key={group.group} className="admin-card">
           <h3>{group.group}</h3>
           <div className="slot-grid">
             {group.slots.map((slot) => (
-              <SlotUploader key={slot.storagePath} slot={slot} onToast={toast} />
+              <SlotUploader key={slot.storagePath} slot={slot} onToast={toast} reloadKey={reloadKey} />
             ))}
           </div>
         </div>
       ))}
 
       {MULTI_SLOTS.map((config) => (
-        <MultiFileManager key={config.folder} config={config} onToast={toast} />
+        <MultiFileManager key={config.folder} config={config} onToast={toast} reloadKey={reloadKey} />
       ))}
 
       {ToastEl}

@@ -46,16 +46,13 @@ Supabase free cho 5 GB băng thông và 1 GB lưu trữ.
 ```
 Khách  ─────────────► Vercel (HTML, JS, CSS, font)
         │
-        ├───────────► Worker trên *.workers.dev ──► R2 (ảnh, nhạc)
+        ├───────────► Supabase, MỘT truy vấn: nội dung chữ + bản kê media
         │
-        ├───────────► /api/media  (Vercel Function, cache biên)
-        │                └─ liệt kê file trong R2
-        │
-        └───────────► Supabase  (site_config, family_members,
-                                 timeline_events, rsvps)
+        └───────────► Worker trên *.workers.dev ──► R2 (ảnh, nhạc)
 
 Admin  ─────────────► /api/upload, /api/media/delete  (Vercel Function)
-                        └─ kiểm tra JWT Supabase rồi ghi vào R2
+        │               └─ kiểm tra JWT Supabase rồi ghi vào R2
+        └───────────► ghi lại bản kê vào Supabase sau mỗi thay đổi
 ```
 
 Điểm mấu chốt: **khoá R2 không bao giờ rời khỏi máy chủ**. Trình duyệt chỉ đọc
@@ -80,6 +77,11 @@ listMedia(folder)        // → [{ name, url }]
 URL vẫn mang `?v=<mốc sửa đổi>` như hiện tại, để CDN cache được mà upload ảnh mới
 vẫn thấy ngay.
 
+Sửa kèm một lỗi đã đo được: `getCachedFolder` chỉ ghi cache **sau khi** có kết quả,
+nên bốn component cùng hỏi thư mục `icons` một lúc thì bốn lượt gọi y hệt cùng bay
+đi. Nhớ **lời hứa** thay vì nhớ kết quả là hết trùng. Vẫn cần sửa dù đã có bản kê,
+vì đường đọc thẳng từ kho còn dùng khi quét lại.
+
 ### 4.2 Worker phục vụ file
 
 Cloudflare ghi rõ tên miền `*.r2.dev` **bị giới hạn tốc độ và không dành cho
@@ -90,21 +92,50 @@ immutable` (an toàn vì URL đã có `?v=`).
 Hạn mức free 100.000 lượt/ngày. Ước tính 3.000 khách × ~8 file = 24.000 lượt, trải
 ra nhiều tháng — không tới một ngày hạn mức.
 
-### 4.3 Hàm liệt kê `/api/media`
+### 4.3 Bản kê media
 
-Trình duyệt không tự liệt kê được R2 vì cần khoá bí mật. Hàm này làm việc đó và
-trả JSON:
+Đo trên trang đang chạy: trước khi tấm ảnh đầu tiên bắt đầu tải, khách gọi Supabase
+**14 lượt** — 10 lượt liệt kê thư mục (khoảng 4 lượt trùng nhau) và 4 truy vấn
+bảng. Ảnh đầu tiên khởi động ở **+1213ms**.
+
+Danh sách file chỉ đổi khi chủ nhà upload — vài lần trong cả đời trang web. Bắt mỗi
+khách tự đi hỏi lại là sai chỗ. Thay bằng **một bản kê** do admin ghi sẵn:
 
 ```json
-{ "carousel": [{ "name": "01.jpg", "v": 1776787609 }], "music": [...] }
+{
+  "carousel": [
+    { "id": "a1b2c3", "file": "L2220731.jpg", "v": 1776787609,
+      "w": 1066, "h": 1600, "caption": "Đà Lạt · 2024" }
+  ],
+  "portraits": [...], "background": [...], "icons": [...],
+  "music": [...], "timeline": [...]
+}
 ```
 
-Trả kèm `Cache-Control: s-maxage=60, stale-while-revalidate=600` để phần lớn khách
-ăn cache ở biên, không chạm tới hàm. Lọc bỏ biến thể `@600` khỏi danh sách để
-carousel không hiện ảnh trùng.
+Cất trong `site_config` dưới khoá `media_manifest`. `useSiteConfig()` vốn đã truy
+vấn bảng đó, nên bản kê **về cùng chuyến, không thêm một lượt gọi nào**.
 
-Sáu thư mục cần liệt kê, đúng như cấu trúc hiện tại: `carousel`, `portraits`,
-`background`, `icons`, `music`, `timeline`.
+```
+14 lượt gọi  →  1
+ảnh đầu tiên +1213ms  →  ~400ms
+```
+
+Ba cái lợi kèm theo:
+
+- **Thứ tự tách khỏi tên file.** Hiện muốn ảnh lên đầu phải đổi tên thành `01-`,
+  mà đổi tên thì phá cache và làm mồ côi caption. Bản kê giữ thứ tự bằng vị trí
+  trong mảng, kéo thả thoải mái, file vẫn nguyên tên.
+- **Hết nhảy layout.** `Hero` đang phải đợi `onLoad` mới biết ảnh dọc hay ngang để
+  tính khổ thẻ. Có sẵn `w`/`h` thì thẻ đúng khổ ngay khung hình đầu tiên.
+- **Caption không mồ côi.** Hiện caption khoá theo tên file; bộ nén đổi `.png`
+  thành `.jpg` là mất. Bản kê dùng `id` ổn định.
+
+**Kho là sự thật, bản kê chỉ là bản sao cho nhanh.** Nếu hai bên lệch nhau — ghi
+hỏng giữa chừng, hoặc ai đó upload thẳng vào R2 — admin có nút **"Quét lại kho"**
+liệt kê R2 và dựng lại bản kê. Đây cũng là đường khôi phục khi bản kê hỏng.
+
+Nhờ bản kê, **không cần hàm `/api/media`** như bản thảo trước. Kiến trúc bớt một
+thành phần.
 
 ### 4.4 Upload và xoá
 
@@ -177,13 +208,26 @@ Một lượt khách trên điện thoại: 2 ảnh carousel + 2 chân dung + 3 
 So với 92 MB đo được lúc đầu: nhẹ hơn **65 lần**. Bộ nhớ giải nén mỗi ảnh còn
 khoảng 1 MB thay vì 92 MB — đây mới là thứ chấm dứt hẳn chuyện giật khi cuộn.
 
-### 4.6 Cron chống ngủ
+### 4.6 Luồng làm việc trong admin
+
+1. Kéo thả nhiều ảnh cùng lúc vào khu vực upload.
+2. Trình duyệt nén ngay và **hiện thumbnail tức thì** từ file cục bộ — không đợi
+   mạng, nên biết mình chọn đúng ảnh chưa trước cả khi tải xong.
+3. Upload **song song 3 luồng** với tiến độ thật `5/30`, thay cho chữ "Uploading…"
+   đứng im như hiện nay. Với 30 ảnh thì khác biệt là vài phút.
+4. Gõ caption ngay dưới từng thumbnail.
+5. **Kéo thả để sắp thứ tự** — chỉ ghi lại mảng thứ tự trong bản kê, không đổi tên
+   file, không phá cache của khách.
+6. Xong thì admin ghi bản kê một lần. Kích thước ảnh (`w`/`h`) lấy luôn từ bước
+   nén, không phải đo lại.
+
+### 4.7 Cron chống ngủ
 
 Thêm vào `vercel.json` một cron chạy mỗi ngày gọi `/api/keepalive`; hàm truy vấn
 một dòng của `site_config`. Ngưỡng ngủ là 7 ngày nên một lần/ngày là dư. Vercel
 Hobby cho phép đúng nhịp này.
 
-### 4.7 Đóng băng sau cưới
+### 4.8 Đóng băng sau cưới
 
 `scripts/freeze.mjs`, chạy tay khoảng một tháng sau ngày cưới:
 
@@ -226,6 +270,10 @@ SUPABASE_JWT_SECRET    để hàm upload xác minh đăng nhập
   nhìn 390px.
 - **Đo lại băng thông** bằng CDP như đã làm: mục tiêu dưới 2 MB một lượt trên
   điện thoại.
+- **Đếm lại số lượt gọi trước tấm ảnh đầu tiên**: mục tiêu 1 lượt, ảnh khởi động
+  dưới 500ms (hiện tại 14 lượt, +1213ms).
+- **Thử lệch bản kê**: xoá thẳng một file trên R2 rồi bấm "Quét lại kho", bản kê
+  phải khớp lại.
 - **Đo hiệu năng** khi cuộn và vuốt carousel, so với số hiện tại.
 - **So ảnh từng pixel** với bản thiết kế để chắc không có hồi quy giao diện.
 

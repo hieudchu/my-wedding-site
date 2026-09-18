@@ -256,7 +256,10 @@ export default function Hero({ config, siteText = {}, visible }) {
               style={cardStyle(i)}
               onClick={() => {
                 if (wasDrag()) return;
-                if (i === slide) openLightbox(p.url, p.name);
+                // Chú thích chưa hiện ra thành chữ ở đâu cả, nhưng nó là lời tả
+                // ảnh do chủ nhà viết — đưa vào đây thì ít ra trình đọc màn hình
+                // đọc được, thay cho cái tên file vô nghĩa.
+                if (i === slide) openLightbox(p.url, p.caption || p.name);
                 else go(i);
               }}
             >

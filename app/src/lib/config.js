@@ -1,14 +1,18 @@
+/**
+ * Giá trị dự phòng khi chưa lấy được dữ liệu từ Supabase.
+ * Nguồn thật là bảng site_config — sửa nội dung ở trang admin, không sửa ở đây.
+ */
 export const WEDDING_CONFIG = {
   groomName: 'Chu Đăng Hiếu',
   groomShort: 'Hiếu',
   brideName: 'Nguyễn Thu Thiện Minh',
   brideShort: 'Minh',
-  weddingDate: '2026-11-08',
-  weddingTime: '17:00',
-  venueName: 'White Palace Phạm Văn Đồng',
-  venueAddress: '108 Phạm Văn Đồng, P. Hiệp Bình Chánh, TP. Thủ Đức, TP.HCM',
-  phone: '+84 912 345 678',
-  mapUrl: 'https://maps.google.com/?q=White+Palace+Pham+Van+Dong',
+  weddingDate: '2027-01-15',
+  weddingTime: '18:00',
+  venueName: 'Long Vỹ Palace',
+  venueAddress: '3A P. Đào Duy Anh, Phương Mai, Kim Liên, Hà Nội',
+  phone: '+84 919229000',
+  mapUrl: 'https://maps.app.goo.gl/YixfJipe3sQNtBocA',
   musicTrack: 'Canon in D — Pachelbel',
 };
 

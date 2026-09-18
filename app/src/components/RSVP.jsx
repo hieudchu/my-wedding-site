@@ -1,189 +1,183 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatDateParts } from '../lib/config';
-import MediaImage from './MediaImage';
 
+/**
+ * Xác nhận tham dự.
+ *
+ * Khách chọn một trong hai thẻ lớn: trái tim (đồng ý) hoặc bồ câu đưa thư
+ * (gửi lời chúc). Chọn trái tim mới hiện form; chọn bồ câu thì hiện luôn lời
+ * cảm ơn theo đúng bản vẽ tay của designer.
+ *
+ * Form giữ ba trường: họ tên, số người, số điện thoại. Bản vẽ chỉ có hai trường
+ * sau, nhưng bảng `rsvps` bắt buộc có tên — và không có tên thì chủ nhà cũng
+ * không biết ai đã xác nhận.
+ */
 export default function RSVP({ config, siteText = {} }) {
-  const [form, setForm] = useState({
-    name: '', phone: '', email: '',
-    attend: '', guests: '1', side: 'bride',
-    dietary: '', message: '',
-  });
-  const [nameStatus, setNameStatus] = useState({ state: 'idle', msg: '' });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const timerRef = useRef(null);
+  const [mode, setMode] = useState(null);
+  const [name, setName] = useState('');
+  const [guests, setGuests] = useState('2');
+  const [phone, setPhone] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const checkDuplicate = (name) => {
-    clearTimeout(timerRef.current);
-    if (!name.trim()) { setNameStatus({ state: 'idle', msg: '' }); return; }
-    setNameStatus({ state: 'checking', msg: 'Đang kiểm tra trùng tên…' });
-    timerRef.current = setTimeout(async () => {
-      try {
-        const { data, error } = await supabase.from('rsvps').select('name').ilike('name', name.trim());
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setNameStatus({ state: 'error', msg: `"${name}" đã xác nhận trước đó.` });
-        } else {
-          setNameStatus({ state: 'ok', msg: 'Tên hợp lệ' });
-        }
-      } catch {
-        setNameStatus({ state: 'ok', msg: '' });
-      }
-    }, 700);
-  };
+  const parts = formatDateParts(config.weddingDate);
 
-  const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const pickYes = () => { setMode('yes'); setSent(false); };
+  const pickNo = () => { setMode('no'); setSent(true); };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.attend || nameStatus.state === 'error') return;
-    setSubmitting(true);
+  const submit = async () => {
+    if (sending || !name.trim()) return;
+    setSending(true);
     try {
-      await supabase.from('rsvps').insert({
-        name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(),
-        attending: form.attend === 'yes', guest_count: parseInt(form.guests, 10),
-        side: form.side, dietary: form.dietary, message: form.message.trim(),
+      const { error } = await supabase.from('rsvps').insert({
+        name: name.trim(),
+        phone: phone.trim(),
+        attending: true,
+        guest_count: parseInt(guests, 10) || 1,
       });
-    } catch { /* ignore */ }
-    setSubmitting(false);
-    setSubmitted(true);
-    setTimeout(() => document.getElementById('rsvp')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      if (error) throw error;
+    } catch (err) {
+      // Không chặn khách lại vì lỗi mạng — vẫn hiện lời cảm ơn,
+      // nhưng ghi log để chủ nhà còn lần ra được khi đối soát danh sách.
+      console.error('Không lưu được xác nhận tham dự:', err);
+    }
+    setSending(false);
+    setSent(true);
   };
 
-  const headingText = siteText.rsvp_heading || 'Cảm ơn bạn đã đến với chúng em';
-  // Split to wrap italic part
-  const headingParts = headingText.split(/(đến với chúng em)/);
+  const headingText = siteText.rsvp_heading || 'Cảm ơn bạn và gia đình!';
+  const headingParts = headingText.split(/(và gia đình!)/);
+
+  const showForm = mode === 'yes' && !sent;
+  const showThanks = sent;
 
   return (
     <section className="rsvp" id="rsvp">
-      <div className="container">
-        <div className="rsvp-head reveal">
-          <MediaImage
-            storagePath="icons/medallion-ink.png"
-            localFallback="/assets/medallion-ink.png"
-            alt=""
-            className="medallion-ink"
-            style={{ width: 90, height: 'auto', objectFit: 'contain' }}
-          />
+      <div className="rsvp-inner">
+        <div className="rv">
           <span className="eyebrow">{siteText.rsvp_eyebrow || 'Xác nhận tham dự'}</span>
           <h2>
             {headingParts.length > 1
-              ? headingParts.map((part, i) =>
-                  part === 'đến với chúng em' ? <em key={i}>{part}</em> : part
-                )
+              ? headingParts.map((p, i) => (p === 'và gia đình!' ? <em key={i}>{p}</em> : p))
               : headingText}
           </h2>
-          <p>
-            {siteText.rsvp_paragraph ||
-              (() => {
-                const d = new Date(config.weddingDate + 'T12:00:00');
-                d.setDate(d.getDate() - 14);
-                const dl = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
-                return `Sự hiện diện của bạn là món quà quý giá nhất. Xin bạn vui lòng xác nhận trước ngày ${dl} để chúng em chuẩn bị chu đáo.`;
-              })()}
-          </p>
+          <p className="rsvp-lede">{siteText.rsvp_paragraph}</p>
         </div>
 
-        <form className="rsvp-form reveal d1" onSubmit={handleSubmit}>
-          {submitted ? (
-            <div className="success-card show">
-              <div className="check">&#10003;</div>
-              <h3>{siteText.rsvp_success_title || 'Đã xác nhận'}</h3>
-              <p>
-                {(siteText.rsvp_success_message || 'Cảm ơn {name}! Chúng em sẽ liên lạc lại với bạn sớm nhất.').replace('{name}', form.name)}<br />
-                <em>Hẹn gặp bạn ngày {formatDateParts(config.weddingDate).dd}.{formatDateParts(config.weddingDate).mm}.{formatDateParts(config.weddingDate).yyyy}</em>
-              </p>
+        {/* Hoạt cảnh: chú rể và cô dâu tiến lại gần nhau khi cuộn tới */}
+        <div className="rsvp-scene">
+          <div className="rsvp-scene-row">
+            <svg className="person fig-l" viewBox="0 0 80 150" width="86" height="160" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="40" cy="24" r="15" />
+              <path d="M25 14c6-9 24-9 30 0" />
+              <path d="M40 39v22" />
+              <path d="M22 66c4-6 32-6 36 0l4 44H18z" />
+              <path d="M40 61l-8 12 8 10 8-10-8-12" />
+              <path d="M22 110v34M58 110v34" />
+              <path d="M18 78l-8 26M62 78l9 24" />
+            </svg>
+
+            <svg className="heart" viewBox="0 0 40 40" width="40" height="40" fill="none" strokeWidth="2" aria-hidden="true">
+              <path d="M20 34S6 25 6 15a8 8 0 0114-5 8 8 0 0114 5c0 10-14 19-14 19z" strokeLinejoin="round" />
+            </svg>
+
+            <svg className="person fig-r" viewBox="0 0 80 150" width="86" height="160" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="40" cy="26" r="15" />
+              <path d="M22 22c-2-14 38-14 36 0 0 0-4 6-18 6s-18-6-18-6z" />
+              <path d="M40 41v18" />
+              <path d="M24 60h32l12 50H12z" />
+              <path d="M24 64l-12 22M56 64l13 20" />
+              <path d="M34 110v34M48 110v34" />
+            </svg>
+          </div>
+          <p>{config.groomShort} &amp; {config.brideShort} · sắp về chung một nhà</p>
+        </div>
+
+        <div className="rsvp-picks">
+          <button className={`pick-card ${mode === 'yes' ? 'active' : ''}`} onClick={pickYes}>
+            <svg viewBox="0 0 40 40" width="46" height="46" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M20 34S6 25 6 15a8 8 0 0114-5 8 8 0 0114 5c0 10-14 19-14 19z" strokeLinejoin="round" />
+            </svg>
+            <span className="title">{siteText.rsvp_attend_yes || 'Đồng ý tham dự'}</span>
+            <span className="sub">{siteText.rsvp_attend_yes_sub || 'Vâng, chúng tôi sẽ đến'}</span>
+          </button>
+
+          <button className={`pick-card ${mode === 'no' ? 'active' : ''}`} onClick={pickNo}>
+            <svg viewBox="0 0 44 40" width="50" height="46" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 20c6-10 17-13 26-9 3 1.4 6 1 8-1l3-3-1 6c-1 5-5 9-10 10-5 1-8 4-9 8" />
+              <path d="M12 17c4 5 10 7 16 6" />
+              <path d="M30 10h.01" />
+              <rect x="13" y="24" width="12" height="9" rx="1" />
+              <path d="M13 24l6 5 6-5" />
+            </svg>
+            <span className="title">{siteText.rsvp_attend_no || 'Gửi lời chúc'}</span>
+            <span className="sub">{siteText.rsvp_attend_no_sub || 'Không thể tham dự'}</span>
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="rsvp-form">
+            <div className="rsvp-fields">
+              <label className="rsvp-field full">
+                <span>Họ và tên</span>
+                <input
+                  type="text"
+                  value={name}
+                  placeholder="VD: Nguyễn Văn A"
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="rsvp-field">
+                <span>Số người tham dự</span>
+                <select value={guests} onChange={(e) => setGuests(e.target.value)}>
+                  <option value="1">1 người</option>
+                  <option value="2">2 người</option>
+                  <option value="3">3 người</option>
+                  <option value="4">4 người</option>
+                  <option value="5">5 người trở lên</option>
+                </select>
+              </label>
+              <label className="rsvp-field">
+                <span>Số điện thoại liên hệ</span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  placeholder="09xx xxx xxx"
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </label>
             </div>
-          ) : (
-            <>
-              <div className="attend-toggle">
-                <button type="button" className={form.attend === 'yes' ? 'active' : ''} onClick={() => update('attend', 'yes')}>
-                  {siteText.rsvp_attend_yes || 'Tham dự'}<span className="sub">{siteText.rsvp_attend_yes_sub || 'Có, tôi sẽ đến'}</span>
-                </button>
-                <button type="button" className={form.attend === 'no' ? 'active' : ''} onClick={() => update('attend', 'no')}>
-                  {siteText.rsvp_attend_no || 'Gửi lời chúc'}<span className="sub">{siteText.rsvp_attend_no_sub || 'Không thể tham dự'}</span>
-                </button>
-              </div>
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Họ và tên</label>
-                  <input type="text" value={form.name} onChange={(e) => { update('name', e.target.value); checkDuplicate(e.target.value); }} placeholder="VD: Nguyễn Văn A" required />
-                  {nameStatus.msg && (
-                    <div className={`hint ${nameStatus.state === 'error' ? 'error' : nameStatus.state === 'ok' ? 'ok' : ''}`}>
-                      <span className={`check-icon ${nameStatus.state === 'checking' ? 'checking' : nameStatus.state === 'ok' ? 'ok' : ''}`} />
-                      {nameStatus.msg}
-                    </div>
-                  )}
-                </div>
-                <div className="form-field">
-                  <label>Số điện thoại</label>
-                  <input type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="09xx xxx xxx" />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Email</label>
-                  <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" />
-                </div>
-                <div className="form-field">
-                  <label>Bạn là khách của</label>
-                  <select value={form.side} onChange={(e) => update('side', e.target.value)}>
-                    <option value="bride">Nhà gái</option>
-                    <option value="groom">Nhà trai</option>
-                    <option value="both">Cả hai</option>
-                  </select>
-                </div>
-              </div>
-              {form.attend === 'yes' && (
-                <div className="form-row">
-                  <div className="form-field">
-                    <label>Số người tham dự</label>
-                    <select value={form.guests} onChange={(e) => update('guests', e.target.value)}>
-                      <option value="1">1 người</option>
-                      <option value="2">2 người</option>
-                      <option value="3">3 người</option>
-                      <option value="4">4 người</option>
-                    </select>
-                  </div>
-                  <div className="form-field">
-                    <label>Yêu cầu ăn uống</label>
-                    <select value={form.dietary} onChange={(e) => update('dietary', e.target.value)}>
-                      <option value="">Không có</option>
-                      <option value="veg">Chay</option>
-                      <option value="halal">Halal</option>
-                      <option value="allergy">Dị ứng</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-              <div className="form-row full">
-                <div className="form-field">
-                  <label>Lời nhắn</label>
-                  <textarea rows="3" value={form.message} onChange={(e) => update('message', e.target.value)} placeholder="Gửi đôi lời chúc phúc…" />
-                </div>
-              </div>
-              <div className="dress-code">
-                <div className="icon">&#9825;</div>
-                <div className="txt">
-                  <h5>Trang phục</h5>
-                  <p>
-                    {siteText.rsvp_dress_code || 'Tông màu gợi ý: kem, be, vàng ánh kim, burgundy — để cùng hoà vào không khí ấm áp của buổi tiệc.'}
-                  </p>
-                </div>
-              </div>
-              <div className="submit-row">
-                <div className="legal">Bằng việc xác nhận, bạn đồng ý để chúng em lưu thông tin phục vụ việc sắp xếp chỗ ngồi.</div>
-                <button type="submit" className="btn btn-primary" disabled={!form.name || !form.attend || nameStatus.state === 'error' || submitting}>
-                  {submitting ? 'Đang gửi…' : 'Xác nhận'}
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            </>
-          )}
-        </form>
+
+            <button className="rsvp-submit" onClick={submit} disabled={sending || !name.trim()}>
+              {sending ? 'Đang gửi…' : 'Xác nhận tham dự'}
+            </button>
+
+            <p className="rsvp-invite">Trân trọng kính mời</p>
+            <p className="rsvp-quote">
+              “Sự hiện diện của bạn và gia đình là niềm hạnh phúc lớn nhất trong ngày trọng đại của chúng tôi.”
+            </p>
+          </div>
+        )}
+
+        {showThanks && (
+          <div className="rsvp-thanks">
+            <div className="check">✓</div>
+            <p className="title">
+              {mode === 'no' ? 'Cảm ơn lời chúc của bạn!' : 'Đã nhận xác nhận của bạn!'}
+            </p>
+            <p className="body">
+              {mode === 'no'
+                ? 'Tuy không thể có mặt, lời chúc của bạn vẫn là món quà lớn với chúng em. Xin cảm ơn bạn và gia đình.'
+                : `Chúng em đã ghi nhận ${guests} người tham dự. Hai gia đình xin trân trọng cảm ơn và rất mong được gặp bạn.`}
+            </p>
+            <p className="see-you">
+              Hẹn gặp bạn ngày {parts.dd}.{parts.mm}.{parts.yyyy}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -3,56 +3,42 @@ import { useMediaUrl } from '../hooks/useMedia';
 import { useLightbox } from './Lightbox';
 
 /**
- * Renders an image from Supabase Storage.
- * Fallback chain: Supabase URL → localFallback → placeholder URL → .ph div
- * Clicking opens the lightbox overlay.
+ * Ảnh lấy từ Supabase Storage.
+ * Chuỗi fallback: URL Supabase → localFallback → ô .ph kẻ sọc có nhãn.
+ * Bấm vào mở lightbox (trừ khi clickable={false}).
+ *
+ * Style do CSS của từng section quyết định — component chỉ gắn class.
  */
 export default function MediaImage({
   storagePath,
   localFallback,
-  placeholder,
   label,
   alt = '',
   className = '',
-  style,
   clickable = true,
 }) {
-  const remoteUrl = useMediaUrl(storagePath);
-  const [failedSrc, setFailedSrc] = useState(new Set());
+  const remoteUrl = useMediaUrl(storagePath, localFallback);
+  const [failed, setFailed] = useState(false);
   const openLightbox = useLightbox();
 
-  const sources = [remoteUrl, localFallback, placeholder].filter(Boolean);
-  const activeSrc = sources.find((s) => !failedSrc.has(s));
+  const src = failed ? null : remoteUrl;
+  const handleClick = clickable && openLightbox ? () => openLightbox(src, label) : undefined;
+  const interactive = handleClick
+    ? { onClick: handleClick, role: 'button', tabIndex: 0 }
+    : {};
 
-  const handleClick = clickable && openLightbox
-    ? () => openLightbox(activeSrc, label)
-    : undefined;
-
-  const clickProps = handleClick
-    ? { onClick: handleClick, role: 'button', tabIndex: 0, style: { cursor: 'pointer', width: '100%', height: '100%', ...style } }
-    : { style: { width: '100%', height: '100%', ...style } };
-
-  if (!activeSrc) {
-    return (
-      <div
-        className={`ph ${className}`}
-        data-label={label}
-        {...clickProps}
-      />
-    );
+  if (!src) {
+    return <div className={`ph ${className}`.trim()} data-label={label} {...interactive} />;
   }
 
   return (
     <img
-      src={activeSrc}
+      src={src}
       alt={alt || label || ''}
-      className={className}
-      style={{ objectFit: 'cover', ...clickProps.style }}
-      onClick={handleClick}
-      role={handleClick ? 'button' : undefined}
-      tabIndex={handleClick ? 0 : undefined}
-      onError={() => setFailedSrc((prev) => new Set(prev).add(activeSrc))}
+      className={className || undefined}
+      onError={() => setFailed(true)}
       loading="lazy"
+      {...interactive}
     />
   );
 }

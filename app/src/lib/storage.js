@@ -37,7 +37,7 @@ const cacheBust = Date.now();
  * Appends a cache-bust param so CDN serves the latest version.
  */
 function buildPublicUrl(path) {
-  if (!supabaseConfigured) return null;
+  if (!path || !supabaseConfigured) return null;
   try {
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
     if (!data?.publicUrl) return null;
@@ -52,7 +52,7 @@ function buildPublicUrl(path) {
  * Checks the folder listing cache. Returns null if file is not found.
  */
 export async function getMediaUrlAsync(path) {
-  if (!supabaseConfigured) return null;
+  if (!path || !supabaseConfigured) return null;
   const lastSlash = path.lastIndexOf('/');
   const folder = lastSlash > 0 ? path.substring(0, lastSlash) : '';
   const fileName = lastSlash > 0 ? path.substring(lastSlash + 1) : path;
@@ -67,7 +67,7 @@ export async function getMediaUrlAsync(path) {
  * and the file is known to exist. Otherwise returns null.
  */
 export function getMediaUrl(path) {
-  if (!supabaseConfigured) return null;
+  if (!path || !supabaseConfigured) return null;
   const lastSlash = path.lastIndexOf('/');
   const folder = lastSlash > 0 ? path.substring(0, lastSlash) : '';
   const fileName = lastSlash > 0 ? path.substring(lastSlash + 1) : path;

@@ -50,7 +50,7 @@ Khách  ─────────────► Vercel (HTML, JS, CSS, font)
         │
         └───────────► Worker trên *.workers.dev ──► R2 (ảnh, nhạc)
 
-Admin  ─────────────► /api/upload, /api/media/delete  (Vercel Function)
+Admin  ─────────────► /api/upload, /api/delete  (Vercel Function)
         │               └─ kiểm tra JWT Supabase rồi ghi vào R2
         └───────────► ghi lại bản kê vào Supabase sau mỗi thay đổi
 ```
@@ -71,8 +71,9 @@ listMedia(folder)        // → [{ name, url }]
 ```
 
 **Giữ nguyên ba chữ ký này.** Chỉ thay phần bên trong: thay vì gọi
-`supabase.storage`, gọi `/api/media` một lần rồi dựng URL trỏ tới Worker. Nhờ vậy
-9 component dùng chúng không phải sửa dòng nào.
+`supabase.storage`, đọc **bản kê** (mục 4.3) đã về sẵn cùng nội dung chữ, rồi dựng
+URL trỏ tới Worker. Nhờ vậy 9 component dùng chúng không phải sửa dòng nào, và
+không phát sinh lượt gọi mạng nào.
 
 URL vẫn mang `?v=<mốc sửa đổi>` như hiện tại, để CDN cache được mà upload ảnh mới
 vẫn thấy ngay.
@@ -139,7 +140,7 @@ thành phần.
 
 ### 4.4 Upload và xoá
 
-`/api/upload` và `/api/media/delete` xác thực bằng **chính Supabase Auth đang
+`/api/upload` và `/api/delete` xác thực bằng **chính Supabase Auth đang
 dùng**: admin gửi kèm JWT, hàm xác minh chữ ký rồi mới ghi/xoá trên R2 bằng khoá
 trong biến môi trường. Không dựng hệ đăng nhập mới.
 
@@ -191,8 +192,8 @@ Trang dùng thẻ `<picture>`: trình duyệt mới lấy WebP, máy cũ tự l�
 Safari chỉ hỗ trợ WebP từ iOS 14, mà khách lớn tuổi thường dùng máy đời cũ — thiếu
 lớp lùi này thì họ **không thấy ảnh nào cả**.
 
-`/api/media` lọc bỏ biến thể `.webp` và `@600` khỏi danh sách để carousel không
-hiện ảnh trùng.
+Bản kê chỉ ghi **một mục cho mỗi tấm ảnh**; các biến thể `.webp` và `@600` suy ra
+từ tên file gốc chứ không liệt kê riêng, nên carousel không bao giờ hiện ảnh trùng.
 
 #### Ảnh nền mờ ở Hero
 

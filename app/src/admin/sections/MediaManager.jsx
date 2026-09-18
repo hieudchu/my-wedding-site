@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { compressImage, describeSaving } from '../../lib/compressImage';
 import { runQueue } from '../../lib/uploadQueue';
 import {
-  parseManifest, serializeManifest, withEntry, withoutEntry, withOrder, listFolder,
-  buildFromListing, MEDIA_FOLDERS,
+  withEntry, withoutEntry, withOrder, listFolder,
+  buildFromListing, entryId, nowVersion, MEDIA_FOLDERS,
 } from '../../lib/mediaManifest';
+import {
+  BUCKET, loadManifest, applyToManifest, seedFolderFromStorage, listAllInFolder,
+  manifestErrorHint,
+} from '../../lib/manifestStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
-
-const BUCKET = 'media';
 
 // Thư mục duy nhất có ô chú thích. Caption nằm ở hai chỗ nên chỗ nào cũng phải
 // gọi đúng tên thư mục này.
@@ -185,48 +187,8 @@ function isVideo(name) {
   return /\.(mp4|webm|mov)$/i.test(name);
 }
 
-function getFileExtension(name) {
-  const m = name.match(/\.([^.]+)$/);
-  return m ? m[1].toLowerCase() : '';
-}
-
 function getPublicUrl(path) {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
-/**
- * Liệt kê TẤT CẢ file trong một thư mục kho.
- *
- * supabase.storage.list() mặc định chỉ trả 100 dòng và không hề báo là còn nữa.
- * Ở những chỗ chỉ để xem thì thiếu vài dòng là chuyện nhỏ; ở đây thì không —
- * danh sách này được ghi thẳng vào bản kê, nên đọc thiếu 100 dòng là ảnh biến
- * mất khỏi trang khách, do chính cái nút sinh ra để chữa chuyện đó gây ra.
- *
- * Nên đọc hết từng trang một chứ không từ chối thư mục đông file: từ chối nghĩa
- * là thư mục hơn 100 ảnh vĩnh viễn không có đường dựng lại, mà đó lại đúng là
- * thư mục có nhiều thứ để mất nhất. Hết MAX_LIST_PAGES mà kho vẫn còn trả đầy
- * trang thì ném lỗi — thà không ghi gì còn hơn ghi một bản kê thiếu file.
- */
-const LIST_PAGE_SIZE = 100;
-const MAX_LIST_PAGES = 100;   // 10.000 file/thư mục; quá ngần ấy là có chuyện khác
-
-async function listAllInFolder(folder) {
-  const all = [];
-  for (let page = 0; page < MAX_LIST_PAGES; page += 1) {
-    const { data, error } = await supabase.storage.from(BUCKET).list(folder, {
-      limit: LIST_PAGE_SIZE,
-      offset: page * LIST_PAGE_SIZE,
-      sortBy: { column: 'name', order: 'asc' },
-    });
-    // Liệt kê hỏng thì ném ra, đừng coi là thư mục rỗng: coi là rỗng nghĩa là
-    // ghi một bản kê trắng cho thư mục vẫn còn nguyên ảnh.
-    if (error) throw error;
-    const batch = data || [];
-    all.push(...batch);
-    // Trang chưa đầy nghĩa là đã hết. Trang đầy thì còn có thể còn nữa, đọc tiếp.
-    if (batch.length < LIST_PAGE_SIZE) return all;
-  }
-  throw new Error(`Thư mục "${folder}" có quá nhiều file để quét một lượt`);
 }
 
 // Ảnh hỏng có thể không bắn cả onload lẫn onerror. Không có mốc dừng thì luồng
@@ -256,101 +218,6 @@ const measure = (file) =>
     img.onerror = () => done({ w: 0, h: 0 });
     img.src = url;
   });
-
-/**
- * Cả sáu thư mục media ghi vào cùng một hàng site_config. Hai thư mục đọc–sửa–ghi
- * chồng lên nhau thì bản ghi sau đè mất phần của bản ghi trước, mà chẳng có lỗi
- * nào báo. Xếp hàng lại: mỗi lượt đọc–sửa–ghi chạy trọn vẹn rồi mới đến lượt kế.
- */
-let manifestChain = Promise.resolve();
-function queueManifestWrite(task) {
-  const run = manifestChain.then(task, task);
-  // Nuốt lỗi ở bản lưu hàng đợi, nếu không một lượt hỏng sẽ chặn mọi lượt sau
-  manifestChain = run.then(() => {}, () => {});
-  return run;
-}
-
-/** Đọc bản kê media. Ném lỗi khi đọc hỏng — người gọi phải biết để đừng ghi đè. */
-async function loadManifest() {
-  const { data, error } = await supabase
-    .from('site_config').select('value').eq('key', 'media_manifest').maybeSingle();
-  // Supabase trả lỗi trong kết quả chứ không ném. Nuốt lỗi ở đây là coi bản kê
-  // rỗng, rồi ghi đè mất sạch những gì đã ghi trước đó.
-  if (error) throw error;
-  return parseManifest(data?.value);
-}
-
-/** Ghi bản kê media. Ném lỗi khi ghi hỏng. */
-async function saveManifest(m) {
-  const { error } = await supabase.from('site_config').upsert(
-    {
-      key: 'media_manifest',
-      value: serializeManifest(m),
-      section: 'media',
-      label: 'Bản kê media (trang tự ghi)',
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'key' }
-  );
-  if (error) throw error;
-}
-
-/**
- * Đọc bản kê hiện tại, sửa, rồi ghi lại — trọn vẹn một lượt, không ai chen ngang.
- * Không bao giờ ghi một bản kê dựng riêng cho mẻ này: làm thế là xoá sạch phần
- * của những thư mục khác. `mutate` được phép là hàm async.
- */
-function applyToManifest(mutate) {
-  return queueManifestWrite(async () => {
-    const manifest = await loadManifest();
-    await saveManifest(await mutate(manifest));
-  });
-}
-
-// Một id bền: thư mục + tên file. Cùng công thức với buildFromListing, nên nút
-// dựng lại kho sau này không làm đổi id của thứ gì đang có.
-const entryId = (folder, file) => `${folder}-${file}`;
-
-/** Mốc sửa đổi của file trong kho, đổi ra giây — dùng làm `v` trong bản kê */
-function storageVersion(file) {
-  const stamp = file?.updated_at || file?.created_at;
-  const ms = stamp ? Date.parse(stamp) : NaN;
-  return Number.isNaN(ms) ? 0 : Math.floor(ms / 1000);
-}
-
-/**
- * Lần đầu ghi bản kê cho một thư mục thì phải chép luôn những file đã nằm sẵn
- * trong kho vào đó.
- *
- * listMedia() chuyển hẳn sang đọc bản kê ngay khi thư mục có dù chỉ một mục.
- * Thành ra nếu chỉ ghi mấy file vừa tải lên, thư mục đang có ba ảnh mà tải thêm
- * hai sẽ còn đúng hai — ba ảnh cũ biến mất khỏi trang khách, và ở thời điểm này
- * chưa có nút dựng lại kho để chữa.
- */
-async function seedFolderFromStorage(m, folder, captionsByFile) {
-  if (listFolder(m, folder).length) return m;   // đã có bản kê rồi thì không đụng vào
-
-  // Đọc hết chứ không chỉ 100 dòng đầu: chép thiếu ở đây cũng là mất ảnh, y hệt
-  // lúc quét lại kho. Không liệt kê được thì ném ra, thà đừng ghi bản kê còn hơn
-  // ghi một bản thiếu ảnh cũ.
-  const data = await listAllInFolder(folder);
-
-  let next = m;
-  for (const f of data) {
-    if (!f?.name || f.name === '.emptyFolderPlaceholder') continue;
-    next = withEntry(next, folder, {
-      id: entryId(folder, f.name),
-      file: f.name,
-      // Không đo được ảnh nằm sẵn trong kho mà không tải nó về. 0 nghĩa là chưa
-      // biết, và trang khách đã tự xoay xở được với số 0 (Hero.jsx kiểm tra p.w && p.h).
-      v: storageVersion(f),
-      w: 0,
-      h: 0,
-      caption: captionsByFile?.[f.name] || '',
-    });
-  }
-  return next;
-}
 
 /**
  * Đọc hàng caption của carousel. Hỏng thì trả {} chứ không ném: caption trong
@@ -414,6 +281,12 @@ function withStoredCaptions(m, captionsByFile) {
  *    thư mục nào vắng mặt trong listing là mất sạch khỏi bản kê. Một thư mục đọc
  *    hỏng thì ném ra ngay tại đây, applyToManifest không gọi tới saveManifest, và
  *    bản kê cũ còn nguyên — ghi ba thư mục rồi bỏ rơi ba thư mục còn tệ hơn nhiều.
+ *
+ * Đây là đường DUY NHẤT được phép đọc một bản kê hỏng mà vẫn ghi tiếp
+ * (`tolerateCorrupt`). Mọi đường ghi khác dừng lại trước bản kê hỏng, nên nếu
+ * nút này cũng dừng thì hàng hỏng sẽ không còn cách nào chữa. Đổi lại, cái mất
+ * chỉ là caption và thứ tự đọc không ra từ bản cũ — danh sách ảnh dựng lại từ
+ * kho, và caption của carousel còn vá thêm được từ hàng carousel_captions.
  */
 async function rebuildManifestFromStorage() {
   return applyToManifest(async (previous) => {
@@ -426,7 +299,7 @@ async function rebuildManifestFromStorage() {
     // là nút chữa bản kê biến thành nút xoá trắng caption.
     const rebuilt = buildFromListing(listing, previous);
     return withStoredCaptions(rebuilt, await loadStoredCaptions());
-  });
+  }, { tolerateCorrupt: true });
 }
 
 /* ── SlotUploader: single-file slot with preview ── */
@@ -465,16 +338,20 @@ function SlotUploader({ slot, onToast, reloadKey }) {
     const file = await compressImage(picked);
     const saved = describeSaving(picked, file);
 
-    // Keep the target extension for images, or use original for audio/video
-    const ext = getFileExtension(file.name);
-    const targetBase = fileName.replace(/\.[^.]+$/, '');
-    const targetName = `${targetBase}.${ext}`;
-    const targetPath = `${folder}/${targetName}`;
-
-    // If extension differs from expected, remove old file first
-    if (targetName !== fileName) {
-      await supabase.storage.from(BUCKET).remove([slot.storagePath]);
-    }
+    // Tải lên ĐÚNG đường dẫn của ô, không đặt lại tên theo đuôi file người dùng chọn.
+    //
+    // Mấy ô này là ô cố định: trang khách đọc thẳng đường dẫn viết trong code
+    // (Family.jsx đọc portraits/groom.jpg). Còn compressImage có lúc trả lại
+    // nguyên file — ảnh đã dưới 1600px và dưới 600KB, hoặc JPEG nén lại không
+    // nhẹ hơn — nên một tấm PNG vẫn là .png, và ảnh iPhone vẫn là .heic. Đặt tên
+    // theo đuôi đó thì kho có groom.png còn trang khách vẫn đi tìm groom.jpg:
+    // khách thấy ô trống, ô xem trước ở đây cũng trắng ở lần vào sau, và tấm
+    // groom.png thành file mồ côi không xoá được từ trang này.
+    //
+    // Tên không khớp đuôi thật thì không sao: Supabase lưu content-type của
+    // chính khối dữ liệu, và trình duyệt tự nhận dạng ảnh, nên một tấm PNG nằm ở
+    // tên .jpg vẫn hiện bình thường.
+    const targetPath = slot.storagePath;
 
     // Đo trước khi tải lên, để bản kê biết ảnh dọc hay ngang
     const { w, h } = await measure(file);
@@ -498,13 +375,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
     // Đi chung applyToManifest với các bảng thư mục để không giẫm chân nhau.
     try {
       await applyToManifest(async (m) => {
-        let next = await seedFolderFromStorage(m, folder);
-        // Đổi đuôi file thì bản cũ đã bị xoá khỏi kho, gỡ luôn khỏi bản kê
-        if (targetName !== fileName) next = withoutEntry(next, folder, fileName);
+        const next = await seedFolderFromStorage(m, folder);
         return withEntry(next, folder, {
-          id: entryId(folder, targetName),
-          file: targetName,
-          v: Math.floor(Date.now() / 1000),
+          id: entryId(folder, fileName),
+          file: fileName,
+          v: nowVersion(),
           w,
           h,
           caption: '',
@@ -512,7 +387,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
       });
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
-      onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · thử lại hoặc quét lại kho');
+      onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · ' + manifestErrorHint(err));
     }
 
     setUploading(false);
@@ -520,7 +395,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
   };
 
   const handleDelete = async () => {
-    // Try removing with various extensions
+    // Ô cố định chỉ từng có đúng một đường dẫn, nên xoá đúng đường dẫn đó là hết.
     await supabase.storage.from(BUCKET).remove([slot.storagePath]);
     setUrl(null);
     try {
@@ -528,7 +403,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
       onToast('Deleted ' + slot.label);
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
-      onToast('Đã xoá file nhưng chưa cập nhật được bản kê · thử lại');
+      onToast('Đã xoá file nhưng chưa cập nhật được bản kê · ' + manifestErrorHint(err));
     }
   };
 
@@ -659,7 +534,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       });
     } catch (err) {
       console.error('Không ghi được caption vào bản kê media:', err);
-      onToast('Đã lưu caption nhưng chưa ghi được vào bản kê · thử lại');
+      onToast('Đã lưu caption nhưng chưa ghi được vào bản kê · ' + manifestErrorHint(err));
     }
   };
 
@@ -743,7 +618,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       // đằng dữ liệu một nẻo.
       setFiles(before);
       await fetchFiles();
-      onToast('Lưu thứ tự không xong · đã đọc lại danh sách');
+      onToast('Lưu thứ tự không xong · đã đọc lại danh sách · ' + manifestErrorHint(err));
     } finally {
       setReordering(false);
     }
@@ -797,7 +672,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       if (ok > 0) {
         // Đọc bản kê ngay trước lúc ghi chứ không đọc từ đầu mẻ: mẻ 30 ảnh chạy
         // vài phút, giữ bản đọc cũ suốt ngần ấy thời gian là mời người khác đè lên.
-        const stamp = Math.floor(Date.now() / 1000);
+        const stamp = nowVersion();
         await applyToManifest(async (m) => {
           // Thư mục chưa có trong bản kê thì chép cả kho vào trước, rồi mới đặt
           // mấy file vừa tải lên đè lên trên. Thiếu bước này, lần tải đầu tiên
@@ -824,7 +699,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       // File đã nằm trong kho rồi, chỉ bản kê là chưa kịp ghi. Nói rõ để còn quét lại,
       // chứ im lặng thì trang khách thiếu ảnh mà không ai hiểu vì sao.
       console.error('Không ghi được bản kê media:', err);
-      onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · thử lại hoặc quét lại kho');
+      onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · ' + manifestErrorHint(err));
     } finally {
       setPending([]);
       setProgress(null);
@@ -855,7 +730,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       onToast('Đã xoá');
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
-      onToast('Đã xoá file nhưng chưa cập nhật được bản kê · thử lại');
+      onToast('Đã xoá file nhưng chưa cập nhật được bản kê · ' + manifestErrorHint(err));
     }
   };
 
@@ -955,14 +830,20 @@ function MultiFileManager({ config, onToast, reloadKey }) {
               )}
               <div className="file-name">{f.name}</div>
               {hasCaptions && (
-                <input
-                  type="text"
-                  className="caption-input"
-                  placeholder="Chú thích · Caption"
-                  value={captions[f.name] || ''}
-                  onChange={(e) => handleCaptionChange(f.name, e.target.value)}
-                  onBlur={() => handleCaptionBlur(f.name)}
-                />
+                <>
+                  <input
+                    type="text"
+                    className="caption-input"
+                    placeholder="Chú thích · Caption"
+                    value={captions[f.name] || ''}
+                    onChange={(e) => handleCaptionChange(f.name, e.target.value)}
+                    onBlur={() => handleCaptionBlur(f.name)}
+                  />
+                  {/* Nói trước cho khỏi ngồi viết chú thích rồi mở trang khách đi tìm */}
+                  <div style={{ fontSize: 11, color: '#A89996', marginTop: 4, lineHeight: 1.4 }}>
+                    Chú thích được lưu lại nhưng chưa hiện trên trang khách.
+                  </div>
+                </>
               )}
               {/* Khoá lúc đang ghi thứ tự: xoá giữa chừng thì không còn lưới cũ để trả về */}
               <button

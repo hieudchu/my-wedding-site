@@ -542,10 +542,14 @@ function MultiFileManager({ config, onToast }) {
       onToast('Đã lưu thứ tự');
     } catch (err) {
       console.error('Không ghi được thứ tự vào bản kê media:', err);
-      // Bản kê không đổi thì lưới cũng không được đổi, nếu không người dùng đóng
-      // trang với niềm tin vào một thứ tự chưa hề được lưu.
+      // Lỗi ở đây KHÔNG có nghĩa là bản kê còn nguyên: mất mạng sau khi lệnh ghi
+      // đã tới máy chủ cũng ném đúng lỗi này. Trả lưới về bản cũ cho đỡ trống mắt,
+      // rồi đọc lại từ bản kê để lưới hiện đúng thứ tự đang thực sự được lưu,
+      // ngả nào cũng vậy — đoán thay vì đọc là lại rơi vào cảnh màn hình một
+      // đằng dữ liệu một nẻo.
       setFiles(before);
-      onToast('Chưa lưu được thứ tự · đã trả lại như cũ');
+      await fetchFiles();
+      onToast('Lưu thứ tự không xong · đã đọc lại danh sách');
     } finally {
       setReordering(false);
     }

@@ -367,6 +367,27 @@
   background: rgba(181,130,133,0.06);
 }
 
+/* Kéo thả sắp thứ tự */
+.media-item[draggable='true'] { cursor: grab; }
+.media-item[draggable='true']:active { cursor: grabbing; }
+/* Ô caption vẫn phải ra dáng gõ chữ được, đừng để bàn tay của thẻ cha lấn sang */
+.media-item .caption-input { cursor: text; }
+/* Chỉ tô viền, không dịch thẻ: thẻ nhích đi là chuột rơi ra ngoài rồi vào lại,
+   viền chớp liên hồi ngay dưới con trỏ */
+.media-item.drag-over {
+  outline: 2px solid var(--rose, #B58285);
+  outline-offset: 2px;
+  background: #fdf5f5;
+}
+/* Ảnh đang chờ tải lên: mờ đi cho khỏi lẫn với ảnh đã nằm trong kho */
+.file-card.pending { opacity: 0.55; }
+.upload-progress {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #B58285;
+}
+
 .upload-zone {
   border: 2px dashed #e8e2e0;
   border-radius: 10px;

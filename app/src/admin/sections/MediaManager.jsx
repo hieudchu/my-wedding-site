@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { compressImage, describeSaving } from '../../lib/compressImage';
 import { runQueue } from '../../lib/uploadQueue';
 import {
-  parseManifest, serializeManifest, withEntry, withoutEntry, listFolder,
+  parseManifest, serializeManifest, withEntry, withoutEntry, withOrder, listFolder,
 } from '../../lib/mediaManifest';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
@@ -94,14 +94,14 @@ const MULTI_SLOTS = [
   {
     folder: 'carousel',
     label: 'Album ảnh · Hero Slider',
-    desc: 'Hiển thị trong slider ảnh toàn màn hình ở trang chủ (sau trang tiêu đề). Ảnh sẽ được sắp xếp theo tên file.',
+    desc: 'Hiển thị trong slider ảnh toàn màn hình ở trang chủ (sau trang tiêu đề). Kéo thả ảnh để đổi thứ tự.',
     section: 'Hero',
     accept: 'image/*',
   },
   {
     folder: 'music',
     label: 'Nhạc nền · Danh sách phát',
-    desc: 'Các bài phát khi khách mở thiệp. Tải lên nhiều bài đều được — khách bấm ⏮ ⏭ để chuyển bài. Thứ tự theo tên file.',
+    desc: 'Các bài phát khi khách mở thiệp. Tải lên nhiều bài đều được — khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát.',
     section: 'Nav (trình phát nhạc)',
     accept: 'audio/*',
   },
@@ -408,8 +408,16 @@ function MultiFileManager({ config, onToast }) {
   const [pending, setPending] = useState([]);       // thumbnail tạm, dựng từ file cục bộ
   const [captions, setCaptions] = useState({});
   const [savingCaptions, setSavingCaptions] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const [overIndex, setOverIndex] = useState(null);   // thẻ đang được nhắm thả vào
   const inputRef = useRef(null);
+  const dragFrom = useRef(null);                      // { index, name } của thẻ đang nhấc
+  const dragBlocked = useRef(false);
   const hasCaptions = config.folder === 'carousel';
+
+  // Đang ghi thứ tự thì khoá mọi thứ khác động vào `files`: lỡ ghi hỏng còn trả
+  // lưới về đúng bản trước đó được.
+  const busy = uploading || reordering;
 
   const fetchCaptions = async () => {
     if (!hasCaptions) return;
@@ -467,16 +475,80 @@ function MultiFileManager({ config, onToast }) {
       .from(BUCKET)
       .list(config.folder, { sortBy: { column: 'name', order: 'asc' } });
     if (!error && data) {
+      const listed = data.filter((f) => f.name !== '.emptyFolderPlaceholder');
+
+      // Trang khách xếp ảnh theo bản kê, nên lưới ở đây cũng phải theo bản kê —
+      // nếu không, kéo xong tải lại trang là thấy thứ tự cũ và tưởng mất công vô ích.
+      // Đọc bản kê hỏng thì lùi về thứ tự tên file, vẫn hơn là không hiện gì.
+      let order = [];
+      try {
+        order = listFolder(await loadManifest(), config.folder).map((e) => e.file);
+      } catch (err) {
+        console.error('Không đọc được bản kê media:', err);
+      }
+      const rank = new Map(order.map((file, i) => [file, i]));
+      // File có trong kho mà chưa có trong bản kê thì dồn về cuối, giữ thứ tự tên.
+      const sorted = listed
+        .map((f, i) => ({ f, key: rank.has(f.name) ? rank.get(f.name) : order.length + i }))
+        .sort((a, b) => a.key - b.key)
+        .map(({ f }) => f);
+
       setFiles(
-        data
-          .filter((f) => f.name !== '.emptyFolderPlaceholder')
-          .map((f) => ({
-            ...f,
-            url: getPublicUrl(`${config.folder}/${f.name}`) + '?t=' + Date.now(),
-          }))
+        sorted.map((f) => ({
+          ...f,
+          url: getPublicUrl(`${config.folder}/${f.name}`) + '?t=' + Date.now(),
+        }))
       );
     }
     setLoading(false);
+  };
+
+  /**
+   * Kéo thả chỉ ghi lại thứ tự trong bản kê — KHÔNG đổi tên file và KHÔNG tải lại
+   * gì cả, vì đổi tên là phá cache ảnh của khách và làm caption mồ côi.
+   */
+  const handleReorder = async (source, to) => {
+    const from = source?.index;
+    if (from == null || to == null || from === to) return;
+    const before = files;
+    if (from < 0 || from >= before.length || to < 0 || to >= before.length) return;
+    // Lưới có thể đã đổi giữa lúc nhấc và lúc thả. Chỉ số cũ khi đó trỏ sang ảnh
+    // khác, thả theo là sắp nhầm ảnh mà không ai biết.
+    if (before[from].name !== source.name) {
+      onToast('Danh sách vừa thay đổi · thử kéo lại');
+      return;
+    }
+
+    const next = [...before];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setFiles(next);
+    setReordering(true);
+
+    try {
+      await applyToManifest(async (m) => {
+        // Thư mục chưa có bản kê thì chép cả kho vào trước: withOrder không tạo
+        // được mục mới, nên không chép thì thứ tự này chẳng lưu vào đâu cả — mà
+        // chép thiếu thì trang khách mất ảnh.
+        const seeded = await seedFolderFromStorage(m, config.folder, captions);
+        const list = listFolder(seeded, config.folder);
+        // Lấy id thật trong bản kê chứ không tự dựng lại: mục cũ có thể mang id
+        // đời trước. Mục không có trong lưới thì withOrder giữ nguyên, dồn về cuối.
+        const ids = next
+          .map((f) => list.find((en) => en.file === f.name)?.id)
+          .filter(Boolean);
+        return withOrder(seeded, config.folder, ids);
+      });
+      onToast('Đã lưu thứ tự');
+    } catch (err) {
+      console.error('Không ghi được thứ tự vào bản kê media:', err);
+      // Bản kê không đổi thì lưới cũng không được đổi, nếu không người dùng đóng
+      // trang với niềm tin vào một thứ tự chưa hề được lưu.
+      setFiles(before);
+      onToast('Chưa lưu được thứ tự · đã trả lại như cũ');
+    } finally {
+      setReordering(false);
+    }
   };
 
   useEffect(() => { fetchFiles(); fetchCaptions(); }, [config.folder]);
@@ -596,17 +668,14 @@ function MultiFileManager({ config, onToast }) {
       <div className="slot-section" style={{ marginBottom: 16 }}>Used in: <strong>{config.section}</strong></div>
 
       {progress && (
-        <div
-          className="upload-progress"
-          style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: '#B58285' }}
-        >
+        <div className="upload-progress">
           Đang tải lên {progress.done}/{progress.total}…
         </div>
       )}
       {pending.length > 0 && (
         <div className="media-grid file-grid">
           {pending.map((p) => (
-            <div key={p.url} className="media-item file-card pending" style={{ opacity: 0.55 }}>
+            <div key={p.url} className="media-item file-card pending">
               {p.isImage ? (
                 <img src={p.url} alt="" />
               ) : (
@@ -626,8 +695,45 @@ function MultiFileManager({ config, onToast }) {
         </div>
       ) : (
         <div className="media-grid">
-          {files.map((f) => (
-            <div key={f.name} className="media-item">
+          {files.map((f, index) => (
+            <div
+              key={f.name}
+              className={'media-item' + (overIndex === index ? ' drag-over' : '')}
+              draggable={!busy}
+              // Bấm vào ô caption, nút xoá hay thanh nhạc thì không được kéo cả
+              // thẻ: Firefox bắt đầu kéo thẻ cha ngay cả khi nhấn trong ô nhập,
+              // và ở đó dragstart báo thẻ cha nên chỉ xem e.target là không đủ.
+              onPointerDown={(e) => {
+                dragBlocked.current = !!e.target?.closest?.('input, textarea, button, audio, a');
+              }}
+              onDragStart={(e) => {
+                if (dragBlocked.current) { e.preventDefault(); return; }
+                dragFrom.current = { index, name: f.name };
+                e.dataTransfer.effectAllowed = 'move';
+                // Vài trình duyệt không khởi động kéo nếu dataTransfer rỗng
+                try { e.dataTransfer.setData('text/plain', f.name); } catch { /* không sao */ }
+              }}
+              onDragEnd={() => { dragFrom.current = null; setOverIndex(null); }}
+              onDragOver={(e) => {
+                // Không phải kéo thẻ trong lưới (kéo file từ máy vào) thì mặc kệ
+                if (!dragFrom.current) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (overIndex !== index) setOverIndex(index);
+              }}
+              onDragLeave={(e) => {
+                // Đi từ ảnh sang tên file vẫn là đang ở trong thẻ, đừng tắt viền
+                if (e.currentTarget.contains(e.relatedTarget)) return;
+                setOverIndex((cur) => (cur === index ? null : cur));
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const source = dragFrom.current;
+                dragFrom.current = null;
+                setOverIndex(null);
+                handleReorder(source, index);
+              }}
+            >
               {isImage(f.name) && <img src={f.url} alt={f.name} />}
               {isVideo(f.name) && <video src={f.url} />}
               {isAudio(f.name) && (
@@ -652,7 +758,13 @@ function MultiFileManager({ config, onToast }) {
                   onBlur={() => handleCaptionBlur(f.name)}
                 />
               )}
-              <button className="delete-btn" onClick={() => handleDelete(f.name)} title="Delete">
+              {/* Khoá lúc đang ghi thứ tự: xoá giữa chừng thì không còn lưới cũ để trả về */}
+              <button
+                className="delete-btn"
+                onClick={() => handleDelete(f.name)}
+                disabled={reordering}
+                title="Delete"
+              >
                 &times;
               </button>
             </div>
@@ -660,17 +772,19 @@ function MultiFileManager({ config, onToast }) {
         </div>
       )}
 
-      <div className="upload-zone" onClick={() => { if (!uploading) inputRef.current?.click(); }}>
+      <div className="upload-zone" onClick={() => { if (!busy) inputRef.current?.click(); }}>
         <input
           ref={inputRef}
           type="file"
           multiple
           accept={config.accept}
-          disabled={uploading}
+          disabled={busy}
           onChange={handleUpload}
         />
-        {/* Khoá lúc đang tải: chọn thêm mẻ nữa giữa chừng là hai lượt ghi bản kê đè nhau */}
-        {uploading ? 'Đang tải lên…' : 'Click to upload · Bấm để tải lên'}
+        {/* Khoá lúc đang tải: chọn thêm mẻ nữa giữa chừng là hai lượt ghi bản kê đè nhau.
+            Khoá cả lúc đang ghi thứ tự, vì tải xong là đọc lại danh sách, đè mất
+            thứ tự vừa kéo. */}
+        {uploading ? 'Đang tải lên…' : reordering ? 'Đang lưu thứ tự…' : 'Click to upload · Bấm để tải lên'}
         <div style={{ fontSize: 12, marginTop: 4, color: '#c4b8b5' }}>
           Tải nhiều file cùng lúc · Upload multiple files at once
         </div>

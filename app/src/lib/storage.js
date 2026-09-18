@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigured } from './supabase';
-import { findEntry, listFolder, emptyManifest } from './mediaManifest';
+import { findEntry, listFolder, emptyManifest, storageVersion } from './mediaManifest';
 
 const BUCKET = 'media';
 
@@ -31,13 +31,6 @@ const folderCache = new Map();
 
 const resolvedCache = new Map();   // folder -> Map(tên → version), chỉ có khi đã xong
 
-/** Đổi mốc sửa đổi của file thành một chuỗi ngắn để gắn vào URL */
-function versionOf(file) {
-  const stamp = file.updated_at || file.created_at || file.last_accessed_at;
-  const ms = stamp ? Date.parse(stamp) : NaN;
-  return Number.isNaN(ms) ? '0' : String(Math.floor(ms / 1000));
-}
-
 /**
  * Liệt kê và ghi nhớ các file trong một thư mục của bucket.
  */
@@ -61,7 +54,8 @@ async function getCachedFolder(folder) {
     const files = new Map();
     for (const f of data || []) {
       if (f.id?.endsWith('/') || f.name === '.emptyFolderPlaceholder') continue;
-      files.set(f.name, versionOf(f));
+      // URL cần chuỗi; bản kê cần số. Cùng một mốc, chỉ khác lúc viết ra.
+      files.set(f.name, String(storageVersion(f)));
     }
     resolvedCache.set(folder, files);
     return files;

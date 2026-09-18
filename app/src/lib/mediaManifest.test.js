@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  emptyManifest, parseManifest, serializeManifest, listFolder,
+  emptyManifest, parseManifest, parseManifestStrict, readManifest, ManifestCorruptError,
+  serializeManifest, listFolder, entryId,
   findEntry, withEntry, withoutEntry, withOrder, buildFromListing,
 } from './mediaManifest';
 
@@ -21,10 +22,74 @@ describe('parseManifest', () => {
     expect(listFolder(m, 'carousel')).toEqual([]);
   });
 
+  it('một thư mục hỏng không kéo sập những thư mục còn lại', () => {
+    const m = parseManifest(JSON.stringify({
+      version: 1,
+      folders: { carousel: 'sai', portraits: [entry('groom.jpg', 'g')] },
+    }));
+    expect(listFolder(m, 'carousel')).toEqual([]);
+    expect(listFolder(m, 'portraits').map((e) => e.file)).toEqual(['groom.jpg']);
+  });
+
   it('đọc lại đúng thứ tự đã ghi', () => {
     const m = { version: 1, folders: { carousel: [entry('b.jpg', '2'), entry('a.jpg', '1')] } };
     const back = parseManifest(serializeManifest(m));
     expect(listFolder(back, 'carousel').map((e) => e.file)).toEqual(['b.jpg', 'a.jpg']);
+  });
+});
+
+describe('readManifest nói thật chỗ hỏng', () => {
+  it('hàng chưa tồn tại thì KHÔNG phải hỏng — lần ghi đầu tiên phải đi qua được', () => {
+    expect(readManifest(null).corrupt).toBeNull();
+    expect(readManifest(undefined).corrupt).toBeNull();
+    expect(readManifest('').corrupt).toBeNull();
+  });
+
+  it('bản kê ghi đúng thì không báo hỏng', () => {
+    const raw = serializeManifest({ folders: { carousel: [entry('a.jpg', '1')] } });
+    expect(readManifest(raw).corrupt).toBeNull();
+  });
+
+  it('JSON hỏng: vẫn trả bản kê dùng được, nhưng có báo hỏng', () => {
+    const { manifest, corrupt } = readManifest('{ hỏng');
+    expect(manifest).toEqual(emptyManifest());
+    expect(corrupt).toBeTruthy();
+  });
+
+  it('thiếu hẳn phần folders cũng là hỏng', () => {
+    expect(readManifest(JSON.stringify({ version: 1 })).corrupt).toBeTruthy();
+    expect(readManifest('"chuỗi thôi"').corrupt).toBeTruthy();
+  });
+
+  it('thư mục hỏng và mục hỏng đều bị tính là hỏng', () => {
+    expect(readManifest(JSON.stringify({ folders: { carousel: 'sai' } })).corrupt).toBeTruthy();
+    // Mục không có tên file thì normalizeEntry bỏ đi — bỏ đi trong im lặng là mất ảnh
+    expect(readManifest(JSON.stringify({ folders: { carousel: [{ v: 1 }] } })).corrupt).toBeTruthy();
+  });
+});
+
+describe('parseManifestStrict chặn đường ghi', () => {
+  it('ném ManifestCorruptError khi nội dung hỏng', () => {
+    expect(() => parseManifestStrict('{ hỏng')).toThrow(ManifestCorruptError);
+    expect(() => parseManifestStrict(JSON.stringify({ folders: { carousel: 'sai' } })))
+      .toThrow(ManifestCorruptError);
+  });
+
+  it('không ném khi chưa có bản kê nào', () => {
+    expect(parseManifestStrict(null)).toEqual(emptyManifest());
+    expect(parseManifestStrict('')).toEqual(emptyManifest());
+  });
+
+  it('đọc được bản kê lành y như bản dễ tính', () => {
+    const raw = serializeManifest({ folders: { carousel: [entry('a.jpg', '1')] } });
+    expect(parseManifestStrict(raw)).toEqual(parseManifest(raw));
+  });
+});
+
+describe('entryId', () => {
+  it('cùng một công thức với buildFromListing', () => {
+    const m = buildFromListing({ carousel: [{ name: 'a.jpg' }] }, emptyManifest());
+    expect(listFolder(m, 'carousel')[0].id).toBe(entryId('carousel', 'a.jpg'));
   });
 });
 

@@ -44,7 +44,9 @@ async function getCachedFolder(folder) {
   })();
 
   // Hỏng thì quên đi, để lần sau còn thử lại thay vì nhớ mãi cái rỗng
-  const guarded = pending.catch(() => {
+  const guarded = pending.catch((err) => {
+    // Kêu lên cho biết vì sao ảnh không hiện, đừng nuốt lỗi trong im lặng
+    console.error(`Không liệt kê được thư mục "${folder}" trong bucket ${BUCKET}:`, err);
     folderCache.delete(folder);
     return new Map();
   });

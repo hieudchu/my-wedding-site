@@ -115,18 +115,67 @@ trong biến môi trường. Không dựng hệ đăng nhập mới.
 Trong admin, `MediaManager` và `TimelineSettings` đổi từ `supabase.storage.upload`
 sang gọi hai hàm này. Giao diện và thao tác giữ nguyên.
 
-### 4.5 Hai cỡ ảnh và `srcset`
+### 4.5 Chiến lược ảnh
 
-Bộ nén phía trình duyệt (`lib/compressImage.js`, đã có) sinh **hai file** mỗi lần
-upload:
+Số đo thật, xuất từ canvas trong trình duyệt, lấy `bride.jpg` gốc (4000×6000, 13 MB):
 
-| File | Cạnh dài | Dung lượng ước tính | Dùng cho |
+| Cỡ | JPEG q82 | WebP q82 | WebP q75 |
 |---|---|---|---|
-| `ten.jpg` | 1600px | ~350 KB | máy tính, màn Retina |
-| `ten@600.jpg` | 600px | ~80 KB | điện thoại |
+| 1600px | 315 KB | 263 KB | 192 KB |
+| 600px | 62 KB | 59 KB | 46 KB |
 
-`MediaImage` và `Hero` render `srcset` kèm `sizes` phù hợp. Điện thoại nhờ đó tải
-~80 KB thay vì 350 KB mỗi ảnh.
+WebP nhỏ hơn JPEG 17–39% ở cùng chất lượng. Có hai đường đạt được điều đó, và
+**phải kiểm chứng đường ưu tiên trước khi viết code**.
+
+#### Đường ưu tiên — để Cloudflare tự chuyển đổi
+
+Cloudflare Images cho **5.000 lượt chuyển đổi mỗi tháng miễn phí**, dùng được cho
+ảnh nằm ngoài Images như trong R2, và không đòi gói Cloudflare trả phí. Nhu cầu ở
+đây chỉ khoảng 30–90 lượt/tháng (mỗi ảnh vài biến thể, kết quả được cache).
+
+Nếu dùng được thì kiến trúc gọn hẳn:
+
+- Kho R2 chỉ chứa **một file mỗi ảnh**
+- Trang yêu cầu kích thước tuỳ ý qua tham số: `width=600`, `quality=80`
+- `format=auto` tự trả AVIF hoặc WebP hoặc JPEG **tuỳ trình duyệt của khách** —
+  máy cũ của khách lớn tuổi tự nhận JPEG, không cần thẻ `<picture>`
+- Muốn thêm cỡ khác về sau chỉ là đổi tham số URL, không phải upload lại
+
+**Điều kiện chưa rõ:** tài liệu Cloudflare không nói binding Images có chạy trên
+`*.workers.dev` mà không cần tên miền riêng (zone) hay không. Đây là việc kiểm tra
+đầu tiên sau khi chủ nhà tạo tài khoản, trước khi viết bất kỳ dòng nào.
+
+#### Đường lùi — tự sinh biến thể lúc upload
+
+Nếu chuyển đổi đòi tên miền riêng mà chủ nhà không muốn mua (khoảng $10/năm), thì
+bộ nén phía trình duyệt (`lib/compressImage.js`, đã có) sinh ba file mỗi lần upload:
+
+| File | Dùng cho |
+|---|---|
+| `ten.jpg` — 1600px q82 | dự phòng cho trình duyệt không hiểu WebP |
+| `ten.webp` — 1600px q82 | máy tính, màn Retina |
+| `ten@600.webp` — 600px q78 | điện thoại |
+
+Trang dùng thẻ `<picture>`: trình duyệt mới lấy WebP, máy cũ tự lùi về JPEG.
+Safari chỉ hỗ trợ WebP từ iOS 14, mà khách lớn tuổi thường dùng máy đời cũ — thiếu
+lớp lùi này thì họ **không thấy ảnh nào cả**.
+
+`/api/media` lọc bỏ biến thể `.webp` và `@600` khỏi danh sách để carousel không
+hiện ảnh trùng.
+
+#### Ảnh nền mờ ở Hero
+
+Ảnh nền của Hero bị làm mờ 38px tới mức không nhận ra nội dung, nhưng hiện đang
+tải bản đầy đủ. Cho nó **luôn dùng bản 600px** bất kể thiết bị — tiết kiệm một
+lượt tải nặng trên mọi màn hình, mắt thường không phân biệt được.
+
+#### Kết quả kỳ vọng
+
+Một lượt khách trên điện thoại: 2 ảnh carousel + 2 chân dung + 3 ảnh nền
+≈ 7 × 46 KB ≈ **320 KB ảnh**, cộng code và font là khoảng **1.4 MB**.
+
+So với 92 MB đo được lúc đầu: nhẹ hơn **65 lần**. Bộ nhớ giải nén mỗi ảnh còn
+khoảng 1 MB thay vì 92 MB — đây mới là thứ chấm dứt hẳn chuyện giật khi cuộn.
 
 ### 4.6 Cron chống ngủ
 
@@ -193,6 +242,11 @@ Rủi ro còn lại: Worker hoặc R2 đổi chính sách free tier trong nhiề
 đóng băng ở 4.7 chính là cách xử lý — sau cưới thì không còn phụ thuộc nữa.
 
 ## 9. Câu hỏi còn mở
+
+**Chuyển đổi ảnh của Cloudflare có chạy trên `*.workers.dev` không, hay bắt buộc
+tên miền riêng?** Quyết định giữa hai đường ở mục 4.5. Kiểm tra đầu tiên sau khi có
+tài khoản. Nếu bắt buộc tên miền, chủ nhà cân nhắc mua tên miền ~$10/năm để đổi lấy
+kiến trúc gọn hơn nhiều, hoặc chọn đường lùi.
 
 **R2 có bắt thêm phương thức thanh toán khi đăng ký không?** Trang giá chính thức
 không nói rõ. Chủ nhà yêu cầu miễn phí hoàn toàn, nên cần xác nhận khi tạo tài

@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { compressImage, describeSaving } from '../../lib/compressImage';
+import { runQueue } from '../../lib/uploadQueue';
+import {
+  parseManifest, serializeManifest, withEntry, withoutEntry, listFolder,
+} from '../../lib/mediaManifest';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
@@ -129,6 +133,32 @@ function getPublicUrl(path) {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
+// Đọc kích thước từ chính file đã nén, để bản kê biết ảnh dọc hay ngang.
+// File nhạc thì trả 0 — bản kê chấp nhận 0 và trang khách tự xoay xở.
+const measure = (file) =>
+  new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) return resolve({ w: 0, h: 0 });
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { resolve({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(url); };
+    img.onerror = () => { resolve({ w: 0, h: 0 }); URL.revokeObjectURL(url); };
+    img.src = url;
+  });
+
+/**
+ * Cả ba thư mục media (carousel, music, timeline) cùng ghi vào một hàng
+ * site_config. Hai thư mục đọc–sửa–ghi chồng lên nhau thì bản ghi sau đè mất
+ * phần của bản ghi trước, mà chẳng có lỗi nào báo. Xếp hàng lại: mỗi lượt
+ * đọc–sửa–ghi chạy trọn vẹn rồi mới đến lượt kế.
+ */
+let manifestChain = Promise.resolve();
+function queueManifestWrite(task) {
+  const run = manifestChain.then(task, task);
+  // Nuốt lỗi ở bản lưu hàng đợi, nếu không một lượt hỏng sẽ chặn mọi lượt sau
+  manifestChain = run.then(() => {}, () => {});
+  return run;
+}
+
 /* ── SlotUploader: single-file slot with preview ── */
 function SlotUploader({ slot, onToast }) {
   const [url, setUrl] = useState(null);
@@ -242,10 +272,47 @@ function MultiFileManager({ config, onToast }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(null);   // { done, total } | null
+  const [pending, setPending] = useState([]);       // thumbnail tạm, dựng từ file cục bộ
   const [captions, setCaptions] = useState({});
   const [savingCaptions, setSavingCaptions] = useState(false);
   const inputRef = useRef(null);
   const hasCaptions = config.folder === 'carousel';
+
+  /** Đọc bản kê media. Ném lỗi khi đọc hỏng — người gọi phải biết để đừng ghi đè. */
+  const loadManifest = async () => {
+    const { data, error } = await supabase
+      .from('site_config').select('value').eq('key', 'media_manifest').maybeSingle();
+    // Supabase trả lỗi trong kết quả chứ không ném. Nuốt lỗi ở đây là coi bản kê
+    // rỗng, rồi ghi đè mất sạch những gì đã ghi trước đó.
+    if (error) throw error;
+    return parseManifest(data?.value);
+  };
+
+  /** Ghi bản kê media. Ném lỗi khi ghi hỏng. */
+  const saveManifest = async (m) => {
+    const { error } = await supabase.from('site_config').upsert(
+      {
+        key: 'media_manifest',
+        value: serializeManifest(m),
+        section: 'media',
+        label: 'Bản kê media (trang tự ghi)',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'key' }
+    );
+    if (error) throw error;
+  };
+
+  /**
+   * Đọc bản kê hiện tại, sửa, rồi ghi lại. Không bao giờ ghi một bản kê dựng
+   * riêng cho mẻ này: làm thế là xoá sạch phần của những thư mục khác.
+   */
+  const applyToManifest = (mutate) =>
+    queueManifestWrite(async () => {
+      const manifest = await loadManifest();
+      await saveManifest(mutate(manifest));
+    });
 
   const fetchCaptions = async () => {
     if (!hasCaptions) return;
@@ -306,37 +373,99 @@ function MultiFileManager({ config, onToast }) {
     const selected = Array.from(e.target.files);
     if (!selected.length) return;
     setUploading(true);
-    let count = 0;
+    setProgress({ done: 0, total: selected.length });
+
+    // Hiện thumbnail ngay từ file cục bộ, không đợi mạng
+    const previews = selected.map((f) => ({
+      name: f.name,
+      isImage: f.type.startsWith('image/'),
+      url: URL.createObjectURL(f),
+    }));
+    setPending(previews);
 
     let savedBytes = 0;
-    for (const picked of selected) {
-      const file = await compressImage(picked);
-      savedBytes += Math.max(0, picked.size - file.size);
-      const path = `${config.folder}/${file.name}`;
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: true });
-      if (!error) count++;
-    }
 
-    const savedMb = (savedBytes / 1048576).toFixed(1);
-    onToast(`Đã tải lên ${count}/${selected.length} file` + (savedBytes > 0 ? ` · tiết kiệm ${savedMb} MB` : ''));
-    setUploading(false);
-    if (inputRef.current) inputRef.current.value = '';
-    fetchFiles();
+    try {
+      const results = await runQueue(
+        selected,
+        async (picked) => {
+          const file = await compressImage(picked);
+          savedBytes += Math.max(0, picked.size - file.size);
+          const { w, h } = await measure(file);
+          const path = `${config.folder}/${file.name}`;
+          const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
+          if (error) throw error;
+          return { file: file.name, w, h };
+        },
+        {
+          concurrency: 3,
+          // onProgress báo việc *vừa xong*, không phải việc đang chạy. Ba luồng
+          // cùng bay thì hai thứ đó khác nhau — nên chỉ đếm số việc đã xong,
+          // đừng đọc thành "đang tải ảnh thứ n" kẻo con số nhảy loạn.
+          onProgress: ({ done, total }) => setProgress({ done, total }),
+        }
+      );
+
+      const ok = results.filter((r) => r.ok).length;
+      const savedMb = (savedBytes / 1048576).toFixed(1);
+      onToast(`Đã tải lên ${ok}/${selected.length} file` + (savedBytes > 0 ? ` · tiết kiệm ${savedMb} MB` : ''));
+
+      if (ok > 0) {
+        // Đọc bản kê ngay trước lúc ghi chứ không đọc từ đầu mẻ: mẻ 30 ảnh chạy
+        // vài phút, giữ bản đọc cũ suốt ngần ấy thời gian là mời người khác đè lên.
+        const stamp = Date.now();
+        await applyToManifest((m) => {
+          let next = m;
+          for (const r of results) {
+            if (!r.ok) continue;   // file lỗi thì không được có mặt trong bản kê
+            const old = listFolder(next, config.folder).find((en) => en.file === r.value.file);
+            next = withEntry(next, config.folder, {
+              // Tải đè lên file cũ thì giữ nguyên id, để thứ tự đã sắp không bị xáo
+              id: old?.id || `${config.folder}-${r.value.file}-${stamp}`,
+              file: r.value.file,
+              v: Math.floor(stamp / 1000),
+              w: r.value.w,
+              h: r.value.h,
+              caption: captions[r.value.file] || old?.caption || '',
+            });
+          }
+          return next;
+        });
+      }
+    } catch (err) {
+      // File đã nằm trong kho rồi, chỉ bản kê là chưa kịp ghi. Nói rõ để còn quét lại,
+      // chứ im lặng thì trang khách thiếu ảnh mà không ai hiểu vì sao.
+      console.error('Không ghi được bản kê media:', err);
+      onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · thử lại hoặc quét lại kho');
+    } finally {
+      previews.forEach((p) => URL.revokeObjectURL(p.url));
+      setPending([]);
+      setProgress(null);
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+      fetchFiles();
+    }
   };
 
   const handleDelete = async (fileName) => {
     const { error } = await supabase.storage.from(BUCKET).remove([`${config.folder}/${fileName}`]);
-    if (!error) {
-      setFiles((prev) => prev.filter((f) => f.name !== fileName));
-      if (hasCaptions && captions[fileName]) {
-        const updated = { ...captions };
-        delete updated[fileName];
-        setCaptions(updated);
-        saveCaptions(updated);
-      }
-      onToast('Deleted');
+    if (error) {
+      onToast('Không xoá được file · ' + error.message);
+      return;
+    }
+    setFiles((prev) => prev.filter((f) => f.name !== fileName));
+    if (hasCaptions && captions[fileName]) {
+      const updated = { ...captions };
+      delete updated[fileName];
+      setCaptions(updated);
+      saveCaptions(updated);
+    }
+    try {
+      await applyToManifest((m) => withoutEntry(m, config.folder, fileName));
+      onToast('Đã xoá');
+    } catch (err) {
+      console.error('Không ghi được bản kê media:', err);
+      onToast('Đã xoá file nhưng chưa cập nhật được bản kê · thử lại');
     }
   };
 
@@ -348,9 +477,32 @@ function MultiFileManager({ config, onToast }) {
       </p>
       <div className="slot-section" style={{ marginBottom: 16 }}>Used in: <strong>{config.section}</strong></div>
 
+      {progress && (
+        <div
+          className="upload-progress"
+          style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: '#B58285' }}
+        >
+          Đang tải lên {progress.done}/{progress.total}…
+        </div>
+      )}
+      {pending.length > 0 && (
+        <div className="media-grid file-grid">
+          {pending.map((p) => (
+            <div key={p.url} className="media-item file-card pending" style={{ opacity: 0.55 }}>
+              {p.isImage ? (
+                <img src={p.url} alt="" />
+              ) : (
+                <div className="audio-placeholder"><div style={{ fontSize: 16 }}>&#9835;</div></div>
+              )}
+              <div className="file-name">{p.name}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ padding: 20, textAlign: 'center', color: '#A89996' }}>Loading…</div>
-      ) : files.length === 0 ? (
+      ) : files.length === 0 && pending.length === 0 ? (
         <div style={{ padding: 20, textAlign: 'center', color: '#A89996' }}>
           Chưa có file nào · No files yet
         </div>
@@ -390,15 +542,17 @@ function MultiFileManager({ config, onToast }) {
         </div>
       )}
 
-      <div className="upload-zone" onClick={() => inputRef.current?.click()}>
+      <div className="upload-zone" onClick={() => { if (!uploading) inputRef.current?.click(); }}>
         <input
           ref={inputRef}
           type="file"
           multiple
           accept={config.accept}
+          disabled={uploading}
           onChange={handleUpload}
         />
-        {uploading ? 'Uploading…' : 'Click to upload · Bấm để tải lên'}
+        {/* Khoá lúc đang tải: chọn thêm mẻ nữa giữa chừng là hai lượt ghi bản kê đè nhau */}
+        {uploading ? 'Đang tải lên…' : 'Click to upload · Bấm để tải lên'}
         <div style={{ fontSize: 12, marginTop: 4, color: '#c4b8b5' }}>
           Tải nhiều file cùng lúc · Upload multiple files at once
         </div>

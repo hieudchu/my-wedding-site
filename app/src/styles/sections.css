@@ -294,7 +294,7 @@
 .hero {
   position: relative;
   height: 100vh;
-  min-height: 480px;
+  min-height: min(480px, 100vh);
   overflow: hidden;
   background: var(--ink-bg);
   display: grid;
@@ -320,7 +320,7 @@
 .hero-stage {
   position: relative;
   width: 100%;
-  height: clamp(300px, 68vh, 760px);
+  height: clamp(220px, 62vh, 760px); /* du phong — JS ghi de bang inline style */
   perspective: 2100px;
   transform-style: preserve-3d;
   touch-action: pan-y;
@@ -343,8 +343,8 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  height: 100%;
-  transition: transform 0.9s var(--ease-card), opacity 0.7s ease, filter 0.7s ease, width 0.6s ease;
+  transition: transform 0.9s var(--ease-card), opacity 0.7s ease, filter 0.7s ease,
+    width 0.6s ease, height 0.6s ease;
 }
 
 .hero-card-inner {
@@ -496,6 +496,22 @@
 
 .hero-arrow--left { left: clamp(6px, 2vw, 32px); }
 .hero-arrow--right { right: clamp(6px, 2vw, 32px); }
+
+.hero-swipe-hint {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(clamp(22px, 4vh, 44px) + 22px);
+  z-index: 40;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(216, 183, 120, 0.6);
+  pointer-events: none;
+}
 
 .hero-dots {
   position: absolute;
@@ -1384,53 +1400,85 @@
   color: rgba(246, 235, 214, 0.6);
 }
 
-/* ═══════════ RESPONSIVE ═══════════
-   Thiết kế chủ yếu co giãn bằng clamp() và flex-wrap.
-   Vài chỗ cần tay chỉnh thêm cho màn hình hẹp. */
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   Ngưỡng theo handoff: điện thoại < 760px, tablet 760–1080px.
+   Khổ thẻ carousel KHÔNG nằm ở đây — phải tính bằng JS (Hero.jsx) vì phụ thuộc
+   cả bề ngang, chiều cao màn hình lẫn hướng của từng tấm ảnh.
+   ═══════════════════════════════════════════════════════════ */
 
-@media (max-width: 720px) {
-  .nav {
-    padding: 10px clamp(12px, 4vw, 20px);
-  }
-  .nav-right {
-    gap: 4px 14px;
-    font-size: 14px;
-  }
-  /* Nhà gái trên mobile: trả về căn trái cho dễ đọc */
+/* ───── Thiết bị cảm ứng: bỏ mũi tên, thay bằng lời nhắc vuốt ───── */
+@media (hover: none) and (pointer: coarse) {
+  .hero-arrow { display: none; }
+  .hero-swipe-hint { display: block; }
+}
+
+/* ───── ĐIỆN THOẠI (< 760px) ───── */
+@media (max-width: 759.98px) {
+  .hero-arrow { display: none; }
+  .hero-swipe-hint { display: block; }
+
+  /* Nav: 4 liên kết thu vào hamburger */
+  .nav { padding: 10px clamp(12px, 4vw, 20px); }
+  .nav-link { display: none; }
+  .burger { display: grid; }
+
+  /* Nhà gái: trả về căn trái, đọc dễ hơn khi một cột */
   .family.bride .family-text,
-  .family.bride .family-role {
-    text-align: left;
-  }
-  .family.bride .family-row {
-    justify-content: flex-start;
-    flex-direction: row-reverse;
-  }
+  .family.bride .family-role { text-align: left; }
+  .family.bride .family-row { justify-content: flex-start; flex-direction: row-reverse; }
   .family.bride .family-list,
-  .family.bride .family-bio {
-    margin-left: 0;
+  .family.bride .family-bio { margin-left: 0; }
+
+  /* Lịch trình: mỗi mốc xếp dọc, chữ luôn nằm trên ảnh */
+  .tl-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-left: 54px;
   }
-  /* Lịch trình trên mobile: chữ luôn căn trái, ảnh xuống dưới */
+  .tl-row.alt { flex-direction: column-reverse; }
+  .tl-text,
   .tl-row:not(.alt) .tl-text {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: min(210px, 100%);
     text-align: left;
   }
-  .tl-silk {
-    display: none;
+  .tl-img {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+  /* Nét bút thu về làn trái rộng 48px, vẫn nằm dưới ô ảnh */
+  .tl-silk { width: 48px; }
+
+  /* RSVP: hai thẻ chọn chiếm cả bề ngang, đủ cao để chạm */
+  .pick-card {
+    flex: 1 1 100%;
+    max-width: none;
+    min-height: 170px;
   }
 }
 
+/* ───── Màn hình rất hẹp ───── */
 @media (max-width: 480px) {
-  .hero-arrow {
-    width: 48px;
-    height: 48px;
-    font-size: 22px;
+  .countdown-card { margin-top: -32px; }
+  .cd-unit { min-width: 62px; }
+  .cd-sep { display: none; }
+}
+
+/* ───── Điện thoại xoay ngang ─────
+   Màn chỉ cao ~390px: lời mời ở cổng sẽ chồng lên tem 囍 nếu giữ nguyên
+   kích thước. Thu gọn chiều dọc, bỏ vòng nhịp chạm. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .seal { width: clamp(90px, 22vh, 130px); }
+  .gate-prompt {
+    bottom: 18px;
+    gap: 10px;
   }
-  .countdown-card {
-    margin-top: -32px;
-  }
-  .cd-unit {
-    min-width: 62px;
-  }
-  .cd-sep {
-    display: none;
-  }
+  .gate-prompt .label { font-size: clamp(20px, 5vh, 30px); }
+  .gate-pulse { display: none; }
+  .hero-dots { bottom: 12px; }
+  .hero-swipe-hint { bottom: 32px; }
+  .family, .info, .timeline, .rsvp { padding-top: clamp(48px, 12vh, 80px); padding-bottom: clamp(48px, 12vh, 80px); }
 }

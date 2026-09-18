@@ -28,6 +28,7 @@ export default function Nav({ config, siteText = {}, visible }) {
 
   const [playing, setPlaying] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [volume, setVolume] = useState(0.6);
   const [lastVol, setLastVol] = useState(0.6);
   const [loop, setLoop] = useState(true);
@@ -121,6 +122,7 @@ export default function Nav({ config, siteText = {}, visible }) {
 
   const scrollTo = (id) => (e) => {
     e.preventDefault();
+    setMenu(false); // chọn xong thì đóng menu điện thoại luôn
     const el = document.getElementById(id);
     if (el) {
       window.scrollTo({
@@ -163,6 +165,16 @@ export default function Nav({ config, siteText = {}, visible }) {
           <a key={id} href={`#${id}`} className="nav-link" onClick={scrollTo(id)}>{label}</a>
         ))}
 
+        {/* Hamburger chỉ hiện dưới 760px — media query lo phần ẩn/hiện */}
+        <button
+          className={`burger ${menu ? 'open' : ''}`}
+          onClick={() => setMenu((m) => !m)}
+          aria-label="Menu"
+          aria-expanded={menu}
+        >
+          <span><i /><i /><i /></span>
+        </button>
+
         <div className="music-pill">
           <button
             className={`music-btn ${playing ? 'on' : ''}`}
@@ -182,6 +194,14 @@ export default function Nav({ config, siteText = {}, visible }) {
           </button>
         </div>
       </div>
+
+      {menu && (
+        <div className="nav-menu">
+          {links.map(([id, label]) => (
+            <a key={id} href={`#${id}`} onClick={scrollTo(id)}>{label}</a>
+          ))}
+        </div>
+      )}
 
       {panel && (
         <div className="music-panel">

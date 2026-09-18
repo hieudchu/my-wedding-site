@@ -280,6 +280,63 @@ a:hover {
   color: var(--red);
 }
 
+/* Hamburger + menu dọc — chỉ bật dưới 760px, xem phần responsive ở sections.css */
+.burger {
+  display: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 20, 22, 0.22);
+  background: none;
+  cursor: pointer;
+  place-items: center;
+}
+
+.burger > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 18px;
+}
+
+.burger i {
+  display: block;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--red);
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.burger.open i:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.burger.open i:nth-child(2) { opacity: 0; }
+.burger.open i:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+.nav-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: rgba(251, 245, 236, 0.97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-red);
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.3s var(--ease-soft) both;
+}
+
+.nav-menu a {
+  padding: 16px 24px;
+  font-family: var(--serif);
+  font-size: 21px;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(126, 20, 22, 0.1);
+}
+
+.nav-menu a:last-child {
+  border-bottom: none;
+}
+
 /* ═══════════ NHẠC NỀN ═══════════ */
 
 .music-pill {

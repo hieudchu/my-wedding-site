@@ -14,108 +14,164 @@ const BUCKET = 'media';
 // gọi đúng tên thư mục này.
 const CAPTION_FOLDER = 'carousel';
 
-/* ── Single-file slots: upload any file → auto-renamed to the expected name ── */
-const SINGLE_SLOTS = [
+/**
+ * Mọi ô tải lên của trang này, xếp đúng theo thứ tự khách gặp khi cuộn trang cưới.
+ *
+ * Mỗi ô nói ba điều, vì đó là ba điều người đang cầm tấm ảnh cần biết trước khi thả:
+ *
+ *   where  — ảnh hiện ra ở đâu, gọi theo cách khách gọi chứ không phải tên component
+ *   look   — ở đó ảnh bị cắt thành hình gì, to bằng chừng nào
+ *   empty  — trang khách trông ra sao khi ô này còn trống
+ *
+ * Mục nào có `folder` là một thư mục chứa nhiều file; mục nào có `slots` là một
+ * thẻ gom vài ô cố định, mỗi ô đúng một file.
+ *
+ * Mọi câu ở đây đều phải đối chiếu được với một dòng trong app/src/components.
+ * Một lời chỉ đường sai còn tệ hơn cái tên tiếng Anh khó hiểu mà nó thay thế.
+ */
+const SECTIONS = [
   {
-    group: 'Trang chủ · Gate',
-    slots: [
-      {
-        storagePath: 'icons/medallion-gold.png',
-        label: 'Logo vàng',
-        desc: 'Hiển thị giữa trang chủ khi mở cổng',
-        section: 'Gate Hero',
-        accept: 'image/*',
-      },
-    ],
-  },
-  {
-    group: 'Thanh điều hướng & Thiệp mời · Nav & Info',
+    title: 'Thanh menu trên cùng',
+    hint: 'Hiện ra ngay khi hai cánh cửa mở, rồi bám theo khách suốt cả trang.',
     slots: [
       {
         storagePath: 'icons/medallion-ink.png',
-        label: 'Logo mực',
-        desc: 'Hiển thị trên thanh menu & trong thiệp mời',
-        section: 'Nav + Wedding Info',
+        label: 'Con dấu nhỏ cạnh tên hai đứa',
+        where:
+          'Sát mép trái thanh menu, ngay trước chữ “Hiếu & Minh”. Đúng tấm này còn hiện thêm một lần nữa ở đỉnh tấm thiệp mời.',
+        look:
+          'Rất nhỏ: cao 30px trên thanh menu, 96px trong thiệp. Hợp với hình vẽ nét trên nền trắng — ảnh chụp thu nhỏ cỡ này sẽ thành một vệt tối.',
+        empty: 'Chưa tải lên thì trang khách dùng con dấu mực có sẵn trong bộ cài.',
+        shape: 'round',
         accept: 'image/*',
       },
     ],
   },
   {
-    group: 'Gia đình · Family Portraits',
+    folder: 'music',
+    label: 'Nhạc nền',
+    where:
+      'Phát khi khách bấm nút nhạc ở góc phải thanh menu. Nhạc không tự chạy — trình duyệt chặn, mà khách cũng không nên bị giật mình.',
+    look:
+      'Cả thư mục là một danh sách phát: khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát.',
+    accept: 'audio/*',
+  },
+  {
+    folder: 'carousel',
+    label: 'Album ảnh mở đầu',
+    where:
+      'Màn hình đầu tiên sau khi cửa mở: ảnh chiếm trọn màn hình, khách vuốt ngang để lật từng tấm.',
+    look:
+      'Mỗi tấm là một thẻ lớn giữa màn hình, ảnh dọc hay ngang đều vừa. Tấm đang xem còn được phóng to làm nền mờ phía sau, và bấm vào là mở cỡ lớn. Thẻ đầu tiên là thiệp chữ trang tự dựng, ảnh tải lên xếp tiếp sau đó — kéo thả để đổi thứ tự.',
+    accept: 'image/*',
+  },
+  {
+    title: 'Hai trang gia đình',
+    hint: 'Ngay sau album ảnh: nhà trai một trang, nhà gái một trang ngay dưới.',
     slots: [
       {
         storagePath: 'portraits/groom.jpg',
-        label: 'Ảnh chú rể',
-        desc: 'Ảnh chân dung chú rể trong mục Gia đình Nhà trai',
-        section: 'Family (Groom)',
+        label: 'Chân dung chú rể',
+        where: 'Trang “Nhà trai”, trong khung ảnh nằm cạnh tên chú rể và danh sách gia đình.',
+        look:
+          'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung chú rể”.',
+        shape: 'arch',
         accept: 'image/*',
       },
       {
         storagePath: 'portraits/bride.jpg',
-        label: 'Ảnh cô dâu',
-        desc: 'Ảnh chân dung cô dâu trong mục Gia đình Nhà gái',
-        section: 'Family (Bride)',
+        label: 'Chân dung cô dâu',
+        where: 'Trang “Nhà gái”, trong khung ảnh nằm cạnh tên cô dâu và danh sách gia đình.',
+        look:
+          'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung cô dâu”.',
+        shape: 'arch',
         accept: 'image/*',
       },
     ],
   },
   {
-    group: 'Ảnh nền thiệp mời · Invitation Backgrounds',
+    title: 'Tấm thiệp mời',
+    hint: 'Mục “Thiệp mời” trên thanh menu — tấm thiệp giấy nằm giữa trang. Hai ảnh dưới đây nằm phía sau nó.',
     slots: [
       {
-        storagePath: 'background/left.jpg',
-        label: 'Ảnh nền trái',
-        desc: 'Ảnh blob bên trái thiệp mời',
-        section: 'Wedding Info',
-        accept: 'image/*',
-      },
-      {
         storagePath: 'background/right.jpg',
-        label: 'Ảnh nền phải',
-        desc: 'Ảnh blob bên phải thiệp mời',
-        section: 'Wedding Info',
+        label: 'Ảnh nền phía trên bên phải',
+        where: 'Sau tấm thiệp, phía trên bên phải, tràn ra ngoài mép màn hình.',
+        look:
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, trôi chậm ngược chiều cuộn. Chỉ thấy phần giữa ảnh, nên đừng để mặt người sát mép. Bấm vào vẫn mở được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
+        shape: 'blob',
         accept: 'image/*',
       },
       {
-        storagePath: 'background/moment-1.jpg',
-        label: 'Khoảnh khắc 1',
-        desc: 'Ảnh khoảnh khắc phụ',
-        section: 'Wedding Info',
-        accept: 'image/*',
-      },
-      {
-        storagePath: 'background/moment-2.jpg',
-        label: 'Khoảnh khắc 2',
-        desc: 'Ảnh khoảnh khắc phụ',
-        section: 'Wedding Info',
+        storagePath: 'background/left.jpg',
+        label: 'Ảnh nền phía dưới bên trái',
+        where: 'Sau tấm thiệp, phía dưới bên trái, tràn ra ngoài mép màn hình.',
+        look:
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 4:5, trôi chậm ngược chiều cuộn. Chỉ thấy phần giữa ảnh, nên đừng để mặt người sát mép. Bấm vào vẫn mở được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
+        shape: 'blob',
         accept: 'image/*',
       },
     ],
-  },
-];
-
-/* ── Multi-file slots: upload multiple files, order by name ── */
-const MULTI_SLOTS = [
-  {
-    folder: 'carousel',
-    label: 'Album ảnh · Hero Slider',
-    desc: 'Hiển thị trong slider ảnh toàn màn hình ở trang chủ (sau trang tiêu đề). Kéo thả ảnh để đổi thứ tự.',
-    section: 'Hero',
-    accept: 'image/*',
-  },
-  {
-    folder: 'music',
-    label: 'Nhạc nền · Danh sách phát',
-    desc: 'Các bài phát khi khách mở thiệp. Tải lên nhiều bài đều được — khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát.',
-    section: 'Nav (trình phát nhạc)',
-    accept: 'audio/*',
   },
   {
     folder: 'timeline',
-    label: 'Ảnh lịch trình · Timeline Photos',
-    desc: 'Ảnh minh hoạ cho từng sự kiện trong Lịch trình. Đặt tên trùng với image_path ở mục Timeline hoặc tải lên rồi chọn từ đó.',
-    section: 'Timeline',
+    label: 'Ảnh của từng mốc giờ trong ngày',
+    where:
+      'Mục “Lịch trình”: mỗi mốc giờ có một ảnh, xếp so le hai bên nét lụa đỏ chạy dọc giữa trang.',
+    look:
+      'Ảnh ở đây chỉ hiện lên khi mốc giờ bên trang “Lịch trình” trỏ đúng vào tên file này. Cách chắc ăn là sang trang “Lịch trình” rồi tải ảnh ngay tại mốc giờ đó — trang ấy tự đặt tên file và tự nối vào mốc. Thư mục này để xem lại và xoá những ảnh đã tải.',
     accept: 'image/*',
+  },
+  {
+    title: 'Đồng hồ đếm ngược',
+    hint: 'Ngay cuối mục “Lịch trình”, sau mốc giờ cuối cùng.',
+    slots: [
+      {
+        storagePath: 'background/moment-2.jpg',
+        label: 'Ảnh phía trên đồng hồ đếm ngược',
+        where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, rộng gần hết bề ngang mục.',
+        look:
+          'Dải ngang 16:9, khung đếm ngược đè lên khoảng 50px mép dưới — chọn ảnh chụp ngang và đừng để gì quan trọng ở đáy ảnh.',
+        empty: 'Chưa có ảnh thì chỗ đó là dải kẻ sọc đề chữ “Hiếu và Minh”.',
+        shape: 'wide',
+        accept: 'image/*',
+      },
+    ],
+  },
+  {
+    title: 'Cuối trang',
+    hint: 'Nền nâu đỏ rất sẫm dưới cùng, ngay sau ô xác nhận tham dự.',
+    slots: [
+      {
+        storagePath: 'icons/medallion-gold.png',
+        label: 'Con dấu vàng khép lại trang',
+        where: 'Dòng trên cùng của phần cuối trang, ngay phía trên tên “Hiếu & Minh”.',
+        look:
+          'Huy hiệu tròn rộng 74px đặt trên nền sẫm — nét vàng thì nổi, ảnh chụp thì chìm nghỉm.',
+        empty: 'Chưa tải lên thì trang khách dùng con dấu vàng có sẵn trong bộ cài.',
+        shape: 'round',
+        accept: 'image/*',
+      },
+    ],
+  },
+  {
+    title: 'Không hiện ở đâu cả',
+    hint:
+      'Không mục nào của trang khách đọc tới file dưới đây nữa. Ô vẫn để đây để còn xoá được tấm cũ trong kho — tải ảnh mới lên thì khách sẽ không nhìn thấy ở đâu.',
+    slots: [
+      {
+        storagePath: 'background/moment-1.jpg',
+        label: 'Ảnh không còn chỗ hiển thị',
+        where: 'Không nơi nào cả — không một mục nào của trang khách đọc tới file này.',
+        look: 'Muốn đổi ảnh trên đồng hồ đếm ngược thì tải vào ô “Ảnh phía trên đồng hồ đếm ngược” ở mục ngay phía trên.',
+        empty: 'Đang trống — và trống cũng không ảnh hưởng gì tới trang khách.',
+        accept: 'image/*',
+      },
+    ],
   },
 ];
 
@@ -478,7 +534,13 @@ function SlotUploader({ slot, onToast, reloadKey }) {
 
   return (
     <div className="slot-card">
-      <div className="slot-preview" onClick={() => inputRef.current?.click()}>
+      {/* Ô xem trước mang luôn hình dáng của chỗ ảnh sẽ nằm trên trang khách:
+          vòm, mảng bo mềm, dải ngang hay huy hiệu tròn. Chữ tả một đằng mà ô
+          vuông vức một nẻo thì người xem vẫn phải tự hình dung. */}
+      <div
+        className={`slot-preview${slot.shape ? ` shape-${slot.shape}` : ''}`}
+        onClick={() => inputRef.current?.click()}
+      >
         {loading ? (
           <div className="slot-empty">...</div>
         ) : url && isImage(slot.storagePath) ? (
@@ -489,10 +551,10 @@ function SlotUploader({ slot, onToast, reloadKey }) {
             <audio controls src={url} style={{ width: '100%', marginTop: 8 }} onClick={(e) => e.stopPropagation()} />
           </div>
         ) : url ? (
-          <div className="slot-empty" style={{ color: '#5e7d6f' }}>Uploaded</div>
+          <div className="slot-empty" style={{ color: '#5e7d6f' }}>Đã có file</div>
         ) : (
           <div className="slot-empty">
-            {uploading ? 'Uploading…' : '+ Upload'}
+            {uploading ? 'Đang tải…' : '+ Chọn ảnh'}
           </div>
         )}
         <input
@@ -505,11 +567,25 @@ function SlotUploader({ slot, onToast, reloadKey }) {
       </div>
       <div className="slot-info">
         <div className="slot-label">{slot.label}</div>
-        <div className="slot-desc">{slot.desc}</div>
-        <div className="slot-section">Used in: <strong>{slot.section}</strong></div>
+        <div className="slot-where">{slot.where}</div>
+        {slot.look && <div className="slot-look">{slot.look}</div>}
+        {/* Đang có gì trong ô là câu hỏi đầu tiên của người sắp thả ảnh vào đây:
+            tải lên là đè hẳn lên tấm cũ, không có bản nào giữ lại. */}
+        <div className={`slot-status ${loading ? '' : url ? 'filled' : 'empty'}`}>
+          {loading ? (
+            'Đang xem trong kho có gì…'
+          ) : url ? (
+            <>
+              Đang có ảnh — chính tấm đang hiện trong ô xem trước. Tải tấm khác lên là thay hẳn tấm đó.
+              <span className="slot-path">{slot.storagePath}</span>
+            </>
+          ) : (
+            slot.empty
+          )}
+        </div>
         {url && (
           <button className="admin-btn admin-btn-danger" style={{ marginTop: 8, padding: '5px 12px', fontSize: 11 }} onClick={handleDelete}>
-            Delete
+            Xoá ảnh này
           </button>
         )}
       </div>
@@ -786,10 +862,16 @@ function MultiFileManager({ config, onToast, reloadKey }) {
   return (
     <div className="admin-card">
       <h3>{config.label}</h3>
-      <p style={{ fontSize: 13, color: '#A89996', margin: '-12px 0 4px' }}>
-        {config.desc}
-      </p>
-      <div className="slot-section" style={{ marginBottom: 16 }}>Used in: <strong>{config.section}</strong></div>
+      <p className="card-where">{config.where}</p>
+      {config.look && <p className="card-look">{config.look}</p>}
+      <div className={`slot-status ${loading ? '' : files.length ? 'filled' : 'empty'}`}>
+        {loading
+          ? 'Đang xem trong kho có gì…'
+          : files.length
+            ? `Đang có ${files.length} file — xem bên dưới.`
+            : 'Chưa có file nào, nên chỗ này trên trang khách đang trống.'}
+        <span className="slot-path">{config.folder}/</span>
+      </div>
 
       {progress && (
         <div className="upload-progress">
@@ -968,10 +1050,12 @@ export default function MediaManager() {
         </button>
       </div>
       <p className="page-desc">
-        Upload ảnh/nhạc vào đúng vị trí — file sẽ tự động được đặt tên và hiển thị trên trang cưới.
+        Các mục dưới đây xếp đúng theo thứ tự khách gặp khi cuộn trang cưới: thanh menu, album ảnh
+        mở đầu, hai trang gia đình, tấm thiệp, lịch trình, rồi cuối trang. Mỗi ô nói rõ ảnh thả vào
+        đó sẽ hiện ra chỗ nào và trông ra sao.
         <br />
         <span style={{ fontSize: 12, color: '#c4b8b5' }}>
-          Không cần đổi tên file trước khi upload · No need to rename files before uploading
+          Không cần đổi tên file trước khi tải lên — trang tự đặt tên.
           <br />
           Trang khách hiện sai so với kho (thiếu ảnh, thừa ô hỏng)? Bấm <strong>Quét lại kho</strong> —
           chú thích và thứ tự của những file còn trong kho được giữ nguyên.
@@ -987,20 +1071,24 @@ export default function MediaManager() {
         </div>
       )}
 
-      {SINGLE_SLOTS.map((group) => (
-        <div key={group.group} className="admin-card">
-          <h3>{group.group}</h3>
-          <div className="slot-grid">
-            {group.slots.map((slot) => (
-              <SlotUploader key={slot.storagePath} slot={slot} onToast={toast} reloadKey={reloadKey} />
-            ))}
+      {/* Một danh sách duy nhất, theo thứ tự trang khách — thư mục nhiều file và
+          ô cố định đứng xen nhau đúng chỗ của chúng, thay vì gom thành hai khối
+          rời rạc không ăn nhập gì với đường đi của khách. */}
+      {SECTIONS.map((section) =>
+        section.folder ? (
+          <MultiFileManager key={section.folder} config={section} onToast={toast} reloadKey={reloadKey} />
+        ) : (
+          <div key={section.title} className="admin-card">
+            <h3>{section.title}</h3>
+            <p className="card-where">{section.hint}</p>
+            <div className="slot-grid">
+              {section.slots.map((slot) => (
+                <SlotUploader key={slot.storagePath} slot={slot} onToast={toast} reloadKey={reloadKey} />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-
-      {MULTI_SLOTS.map((config) => (
-        <MultiFileManager key={config.folder} config={config} onToast={toast} reloadKey={reloadKey} />
-      ))}
+        )
+      )}
 
       {ToastEl}
     </div>

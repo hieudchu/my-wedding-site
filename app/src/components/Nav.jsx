@@ -147,7 +147,9 @@ export default function Nav({ config, siteText = {}, visible }) {
       <audio
         ref={audioRef}
         src={musicUrl || undefined}
-        preload="metadata"
+        /* Bản nhạc nặng 5.5 MB. Chỉ nạp khi khách thật sự quan tâm tới nhạc —
+           mở bảng điều khiển hoặc bấm phát — chứ không nạp sẵn cho mọi lượt xem. */
+        preload={panel || playing ? 'metadata' : 'none'}
         loop={loop}
         onTimeUpdate={(e) => { if (dragMode.current !== 'seek') setCur(e.currentTarget.currentTime); }}
         onLoadedMetadata={onMeta}

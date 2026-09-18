@@ -38,6 +38,7 @@ export default function MediaImage({
       className={className || undefined}
       onError={() => setFailed(true)}
       loading="lazy"
+      decoding="async"
       {...interactive}
     />
   );

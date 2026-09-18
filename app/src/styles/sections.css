@@ -1482,3 +1482,54 @@
   .hero-swipe-hint { bottom: 32px; }
   .family, .info, .timeline, .rsvp { padding-top: clamp(48px, 12vh, 80px); padding-bottom: clamp(48px, 12vh, 80px); }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   HIỆU NĂNG
+   Thiết bị cảm ứng thường yếu hơn máy tính nhiều, mà đây lại là nơi phần lớn
+   khách mở thiệp. Vài hiệu ứng đẹp nhưng đắt được giảm bớt ở đó.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Khi đang kéo, thẻ phải bám tay ngay lập tức — giữ transition 0.9s
+   thì mỗi lần ngón tay nhúc nhích lại khởi động lại một chuyển động dài,
+   cảm giác nặng và trễ. */
+.hero-stage.dragging .hero-card {
+  transition: none;
+}
+
+/* Gợi ý trình duyệt tách thẻ ra lớp riêng để kéo không phải vẽ lại nền */
+.hero-card {
+  will-change: transform;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  /* backdrop-filter trên thanh cố định buộc trình duyệt vẽ lại vùng phía sau
+     nó mỗi khung hình khi cuộn — nguyên nhân giật phổ biến nhất trên điện thoại.
+     Đổi sang nền đục, nhìn gần như y hệt mà không tốn gì. */
+  .nav {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(251, 245, 236, 0.97);
+  }
+
+  .nav-menu {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(251, 245, 236, 0.99);
+  }
+
+  .lb-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(14, 6, 6, 0.96);
+  }
+
+  /* Chi phí làm mờ tăng theo bình phương bán kính. Ảnh nền vốn đã mờ tới mức
+     không nhận ra nội dung, nên giảm bán kính gần như không đổi diện mạo. */
+  .hero-bg {
+    filter: blur(18px) brightness(0.34) saturate(0.85);
+  }
+}
+
+/* Đã thử content-visibility: auto cho các section dưới màn hình. Nó giảm chi phí
+   lúc tải, nhưng dồn việc dựng hình vào đúng lúc khách cuộn tới — đo được 2 long
+   task (dài nhất 173ms) và 4 khung hình rớt, trong khi không bật thì 0. Bỏ đi. */

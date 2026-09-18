@@ -26,7 +26,10 @@ export default function Hero({ config, siteText = {}, visible }) {
   const [slide, setSlide] = useState(0);
   const [orient, setOrient] = useState({});
   const [dragging, setDragging] = useState(false);
-  const [dragX, setDragX] = useState(0);
+  const stageRef = useRef(null);
+  // Chỉ nạp ảnh của những thẻ nằm trong tầm nhìn (|d| ≤ 2, đúng tập thẻ mà
+  // thiết kế cho hiện). Ảnh đã nạp thì giữ luôn, khỏi tải lại khi lật qua lại.
+  const [mounted, setMounted] = useState(() => new Set());
 
   const dragStartX = useRef(0);
   const dragged = useRef(0);
@@ -55,6 +58,29 @@ export default function Hero({ config, siteText = {}, visible }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [visible, slide, go]);
+
+  // Mở rộng dần tập ảnh cần nạp mỗi khi khách lật sang thẻ khác.
+  // Điện thoại chỉ giữ thẻ kề (|d| ≤ 1) vì ảnh gốc 24 megapixel ngốn khoảng
+  // 92 MB bộ nhớ mỗi tấm sau khi giải nén — giữ ít tấm là giữ máy không nghẹt.
+  useEffect(() => {
+    const t = 1 + photos.length;
+    if (t <= 1) return;
+    const reach = phone ? 1 : 2;
+    setMounted((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (let i = 1; i < t; i += 1) {
+        let d = i - slide;
+        if (d > t / 2) d -= t;
+        if (d < -t / 2) d += t;
+        if (Math.abs(d) <= reach && !next.has(i)) {
+          next.add(i);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [slide, photos.length, phone]);
 
   /** Chiều cao sân khấu — chừa chỗ cho Nav phía trên và hàng chấm phía dưới */
   const stageH = Math.min(Math.max(vh * 0.62, 220), Math.max(vh - 150, 200), 760);
@@ -99,12 +125,15 @@ export default function Hero({ config, siteText = {}, visible }) {
     const step = phone
       ? cw / 2 + box.w * 0.46 + (a - 1) * box.w * 0.62
       : cw / 2 + box.w * 0.31 + (a - 1) * box.w * 0.5;
-    const x = (d === 0 ? 0 : Math.sign(d) * step) + dragX;
+    const x = d === 0 ? 0 : Math.sign(d) * step;
 
     return {
       width: `${Math.round(box.w)}px`,
       height: `${Math.round(box.h)}px`,
-      transform: `translate(-50%,-50%) translateX(${Math.round(x)}px) translateZ(${-a * (phone ? 90 : 170)}px) rotateY(${phone ? 0 : -d * 20}deg) scale(${1 - a * (phone ? 0.07 : 0.04)})`,
+      // Độ lệch khi kéo nằm trong biến CSS --drag, do trình duyệt cộng vào lúc
+      // dựng hình. Nhờ vậy mỗi lần ngón tay nhúc nhích chỉ ghi một thuộc tính
+      // trên một phần tử, thay vì bắt React dựng lại cả 8 thẻ.
+      transform: `translate(-50%,-50%) translateX(${Math.round(x)}px) translateX(var(--drag, 0px)) translateZ(${-a * (phone ? 90 : 170)}px) rotateY(${phone ? 0 : -d * 20}deg) scale(${1 - a * (phone ? 0.07 : 0.04)})`,
       opacity: far ? 0 : d === 0 ? 1 : a === 1 ? (phone ? 0.3 : 0.72) : phone ? 0 : 0.34,
       zIndex: 20 - a,
       filter: d === 0 ? 'none' : `brightness(${a === 1 ? 0.6 : 0.42}) saturate(.8)`,
@@ -118,6 +147,8 @@ export default function Hero({ config, siteText = {}, visible }) {
     setOrient((prev) => (prev[i] === o ? prev : { ...prev, [i]: o }));
   };
 
+  const setDrag = (px) => stageRef.current?.style.setProperty('--drag', `${px}px`);
+
   const onDragStart = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     dragStartX.current = e.clientX;
@@ -128,13 +159,13 @@ export default function Hero({ config, siteText = {}, visible }) {
   const onDragMove = (e) => {
     if (!dragging) return;
     dragged.current = e.clientX - dragStartX.current;
-    setDragX(Math.max(-140, Math.min(140, dragged.current * 0.45)));
+    setDrag(Math.round(Math.max(-140, Math.min(140, dragged.current * 0.45))));
   };
 
   const onDragEnd = () => {
     if (!dragging) return;
     setDragging(false);
-    setDragX(0);
+    setDrag(0);
     const d = dragged.current;
     if (Math.abs(d) > 45) go(slide + (d < 0 ? 1 : -1));
   };
@@ -158,6 +189,7 @@ export default function Hero({ config, siteText = {}, visible }) {
       <div className="hero-veil" />
 
       <div
+        ref={stageRef}
         className={`hero-stage ${visible ? 'ready' : ''} ${dragging ? 'dragging' : ''}`}
         style={{ height: `${Math.round(stageH)}px` }}
         onPointerDown={onDragStart}
@@ -215,7 +247,15 @@ export default function Hero({ config, siteText = {}, visible }) {
               }}
             >
               <div className="hero-card-inner">
-                <img src={p.url} alt="Ảnh cưới Hiếu và Minh" onLoad={onImgLoad(i)} />
+                {mounted.has(i) && (
+                  <img
+                    src={p.url}
+                    alt="Ảnh cưới Hiếu và Minh"
+                    onLoad={onImgLoad(i)}
+                    decoding="async"
+                    fetchPriority={i === slide ? 'high' : 'low'}
+                  />
+                )}
                 <div className="fade" />
               </div>
             </div>

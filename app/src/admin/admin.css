@@ -367,6 +367,27 @@
   background: rgba(181,130,133,0.06);
 }
 
+/* Kéo thả sắp thứ tự */
+.media-item[draggable='true'] { cursor: grab; }
+.media-item[draggable='true']:active { cursor: grabbing; }
+/* Ô caption vẫn phải ra dáng gõ chữ được, đừng để bàn tay của thẻ cha lấn sang */
+.media-item .caption-input { cursor: text; }
+/* Chỉ tô viền, không dịch thẻ: thẻ nhích đi là chuột rơi ra ngoài rồi vào lại,
+   viền chớp liên hồi ngay dưới con trỏ */
+.media-item.drag-over {
+  outline: 2px solid var(--rose, #B58285);
+  outline-offset: 2px;
+  background: #fdf5f5;
+}
+/* Ảnh đang chờ tải lên: mờ đi cho khỏi lẫn với ảnh đã nằm trong kho */
+.file-card.pending { opacity: 0.55; }
+.upload-progress {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #B58285;
+}
+
 .upload-zone {
   border: 2px dashed #e8e2e0;
   border-radius: 10px;
@@ -384,7 +405,8 @@
 /* Slot-based media manager */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Đủ rộng để câu "ảnh này hiện ra ở đâu" không vỡ thành sáu dòng cụt */
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 16px;
 }
 .slot-card {
@@ -414,6 +436,19 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Ô xem trước mượn hình dáng của chỗ ảnh sẽ nằm trên trang khách: vòm ở hai
+   trang gia đình, mảng bo mềm sau tấm thiệp, dải ngang trên đồng hồ đếm ngược,
+   huy hiệu tròn ở thanh menu và cuối trang. Tả bằng chữ mà ô vẫn vuông vức thì
+   người xem vẫn phải tự hình dung. */
+.slot-preview.shape-arch { border-radius: 52px 52px 8px 8px; }
+.slot-preview.shape-blob { border-radius: 52% 48% 44% 56% / 46% 42% 58% 54%; }
+.slot-preview.shape-round { border-radius: 50%; }
+.slot-preview.shape-wide {
+  width: 142px;
+  min-width: 142px;
+  height: 80px;
 }
 .slot-audio {
   padding: 8px;
@@ -450,6 +485,51 @@
   color: #B58285;
   font-weight: 500;
 }
+
+/* Mỗi ô trả lời ba câu hỏi khác nhau — hiện ra ở đâu, trông ra sao, đang có gì —
+   nên ba câu được tách hẳn ra chứ không dồn thành một đoạn phải đọc hết mới thấy. */
+.slot-where {
+  font-size: 12.5px;
+  color: #8A7B77;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+.slot-look {
+  font-size: 12px;
+  color: #A89996;
+  line-height: 1.45;
+  margin-top: 5px;
+}
+.slot-status {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #A89996;
+  margin-top: 9px;
+}
+.slot-status.filled { color: #5e7d6f; }
+.slot-path {
+  display: block;
+  font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  font-size: 10.5px;
+  color: #c4b8b5;
+  margin-top: 2px;
+}
+
+/* Hai câu mở đầu của một thẻ — chỗ trên trang khách, rồi hình dáng ở chỗ đó */
+.card-where {
+  font-size: 13px;
+  color: #8A7B77;
+  line-height: 1.5;
+  margin: -12px 0 6px;
+}
+.card-look {
+  font-size: 12.5px;
+  color: #A89996;
+  line-height: 1.5;
+  margin: 0 0 4px;
+}
+.admin-card > .slot-status { margin-bottom: 16px; }
+
 @media (max-width: 768px) {
   .slot-grid { grid-template-columns: 1fr; }
   .slot-card { flex-direction: column; align-items: center; text-align: center; }

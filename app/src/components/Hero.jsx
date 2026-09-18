@@ -40,6 +40,20 @@ export default function Hero({ config, siteText = {}, visible }) {
   const phone = vw < PHONE_MAX;
   const tablet = !phone && vw < TABLET_MAX;
 
+  // Bản kê đã biết kích thước từ lúc upload — dùng ngay, khỏi đợi ảnh tải xong.
+  // Thiếu số đo thì `w`/`h` là 0 (bản kê không đo được) hoặc undefined (đang đọc
+  // thẳng từ storage, chưa có bản kê); cả hai đều coi như chưa biết và nhường cho
+  // `onImgLoad`. Tuyệt đối không suy hướng từ số 0, kẻo thẻ nào cũng hoá ảnh ngang.
+  // Trộn kiểu `{ ...known, ...prev }` để giá trị `onImgLoad` đo được (nếu đã có)
+  // đè lên bản kê, nhờ vậy thẻ không đổi khổ hai lần.
+  useEffect(() => {
+    const known = {};
+    photos.forEach((p, k) => {
+      if (p.w && p.h) known[k + 1] = p.w > p.h ? 'l' : 'p';
+    });
+    if (Object.keys(known).length) setOrient((prev) => ({ ...known, ...prev }));
+  }, [photos]);
+
   const go = useCallback(
     (i) => setSlide((prev) => {
       const t = 1 + photos.length;
@@ -242,7 +256,10 @@ export default function Hero({ config, siteText = {}, visible }) {
               style={cardStyle(i)}
               onClick={() => {
                 if (wasDrag()) return;
-                if (i === slide) openLightbox(p.url, p.name);
+                // Chú thích chưa hiện ra thành chữ ở đâu cả, nhưng nó là lời tả
+                // ảnh do chủ nhà viết — đưa vào đây thì ít ra trình đọc màn hình
+                // đọc được, thay cho cái tên file vô nghĩa.
+                if (i === slide) openLightbox(p.url, p.caption || p.name);
                 else go(i);
               }}
             >

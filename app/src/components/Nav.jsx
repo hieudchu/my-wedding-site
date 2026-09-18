@@ -1,7 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { useMediaUrl } from '../hooks/useMedia';
+import { useMediaUrl, useMediaList } from '../hooks/useMedia';
 
 const NAV_OFFSET = 70; // chiều cao thanh nav, trừ đi khi cuộn tới section
+
+// Tên file đặt cho có, không phải tên bài — thì dùng tên bài ghi trong cấu hình
+const PLACEHOLDER_NAME = /^(bgm|music|audio|track|song|nhac)[\s\d-]*$/i;
+
+/** Tên bài lấy từ tên file: "canon-in-d.mp3" → "canon in d" */
+function trackName(file, fallback) {
+  if (!file) return fallback;
+  const base = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+  if (!base || PLACEHOLDER_NAME.test(base)) return fallback;
+  return base;
+}
 
 function fmt(t) {
   const s = Math.max(0, Math.floor(t || 0));
@@ -14,12 +25,14 @@ function fmt(t) {
  * Nav chỉ hiện sau khi khách mở cổng. Trên màn hình hẹp các liên kết tự xuống
  * dòng (flex-wrap) thay vì thu vào menu hamburger.
  *
- * Trình phát: play/pause, lùi/tiến 10 giây (chạy vòng), thanh tua kéo được,
- * âm lượng, tắt tiếng nhớ mức cũ, và công tắc phát lặp lại.
+ * Trình phát đọc cả thư mục `music` trong kho làm danh sách phát: play/pause,
+ * chuyển bài trước/sau, thanh tua kéo được, âm lượng, tắt tiếng nhớ mức cũ, và
+ * công tắc phát lặp lại (hết danh sách thì quay lại bài đầu).
  * Nhạc không tự phát — trình duyệt chặn, và khách cũng không nên bị giật mình.
  */
 export default function Nav({ config, siteText = {}, visible }) {
-  const musicUrl = useMediaUrl('music/bgm.mp3', null);
+  // Cả thư mục music là một danh sách phát — chủ nhà thêm bớt bài tuỳ ý
+  const { files: tracks } = useMediaList('music');
   const navLogoUrl = useMediaUrl('icons/medallion-ink.png', '/assets/medallion-ink.png');
 
   const audioRef = useRef(null);
@@ -29,11 +42,17 @@ export default function Nav({ config, siteText = {}, visible }) {
   const [playing, setPlaying] = useState(false);
   const [panel, setPanel] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [trackIdx, setTrackIdx] = useState(0);
   const [volume, setVolume] = useState(0.6);
   const [lastVol, setLastVol] = useState(0.6);
   const [loop, setLoop] = useState(true);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
+
+  const current = tracks[trackIdx] || null;
+  const musicUrl = current?.url || null;
+  const nowPlaying = trackName(current, config.musicTrack);
+
 
   useEffect(() => {
     const a = audioRef.current;
@@ -91,14 +110,43 @@ export default function Nav({ config, siteText = {}, visible }) {
 
   const endDrag = () => { dragMode.current = null; };
 
-  const nudge = (sec) => () => {
+  /**
+   * Chuyển bài. Chỉ có một bài thì quay về đầu bài đó.
+   * (Trước đây hai nút này nhảy ±10 giây, không khớp với ký hiệu ⏮ ⏭.)
+   */
+  const skip = (step) => () => {
     const a = audioRef.current;
     if (!a) return;
-    const d = a.duration || 0;
-    let t = (a.currentTime || 0) + sec;
-    if (d) t = ((t % d) + d) % d;
-    a.currentTime = Math.max(0, t);
-    setCur(a.currentTime);
+    if (tracks.length <= 1) {
+      a.currentTime = 0;
+      setCur(0);
+      return;
+    }
+    setTrackIdx((i) => (i + step + tracks.length) % tracks.length);
+    setCur(0);
+    setDur(0);
+  };
+
+  // Đổi bài giữa chừng thì phát tiếp bài mới, không bắt bấm lại
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !playing) return;
+    a.play().catch(() => {});
+  }, [trackIdx, playing]);
+
+  const handleEnded = () => {
+    if (tracks.length > 1) {
+      const last = trackIdx === tracks.length - 1;
+      if (last && !loop) { setPlaying(false); return; }
+      setTrackIdx((i) => (i + 1) % tracks.length);
+      return;
+    }
+    if (loop) {
+      const a = audioRef.current;
+      if (a) { a.currentTime = 0; a.play().catch(() => {}); }
+      return;
+    }
+    setPlaying(false);
   };
 
   const toggleMute = () => {
@@ -150,11 +198,11 @@ export default function Nav({ config, siteText = {}, visible }) {
         /* Bản nhạc nặng 5.5 MB. Chỉ nạp khi khách thật sự quan tâm tới nhạc —
            mở bảng điều khiển hoặc bấm phát — chứ không nạp sẵn cho mọi lượt xem. */
         preload={panel || playing ? 'metadata' : 'none'}
-        loop={loop}
+        loop={loop && tracks.length <= 1}
         onTimeUpdate={(e) => { if (dragMode.current !== 'seek') setCur(e.currentTarget.currentTime); }}
         onLoadedMetadata={onMeta}
         onDurationChange={onMeta}
-        onEnded={() => setPlaying(false)}
+        onEnded={handleEnded}
       />
 
       <a href="#hero" className="nav-brand" onClick={scrollTo('hero')}>
@@ -181,7 +229,7 @@ export default function Nav({ config, siteText = {}, visible }) {
           <button
             className={`music-btn ${playing ? 'on' : ''}`}
             onClick={toggleMusic}
-            title={config.musicTrack}
+            title={nowPlaying}
             aria-label="Bật hoặc tắt nhạc nền"
           >
             <span className="music-bars"><span /><span /><span /></span>
@@ -207,15 +255,17 @@ export default function Nav({ config, siteText = {}, visible }) {
 
       {panel && (
         <div className="music-panel">
-          <div className="eyebrow-sm">Nhạc nền</div>
-          <div className="track-name">{config.musicTrack}</div>
+          <div className="eyebrow-sm">
+            Nhạc nền{tracks.length > 1 ? ` · bài ${trackIdx + 1}/${tracks.length}` : ''}
+          </div>
+          <div className="track-name">{nowPlaying}</div>
 
           <div className="music-transport">
-            <button className="mt-btn" onClick={nudge(-10)} aria-label="Lùi 10 giây">⏮</button>
+            <button className="mt-btn" onClick={skip(-1)} aria-label="Bài trước">⏮</button>
             <button className="mt-play" onClick={toggleMusic} aria-label="Phát hoặc tạm dừng">
               {playing ? '❙❙' : '▶'}
             </button>
-            <button className="mt-btn" onClick={nudge(10)} aria-label="Tiến 10 giây">⏭</button>
+            <button className="mt-btn" onClick={skip(1)} aria-label="Bài sau">⏭</button>
           </div>
 
           <div

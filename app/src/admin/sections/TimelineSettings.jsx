@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { compressImage } from '../../lib/compressImage';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
@@ -60,8 +61,9 @@ export default function TimelineSettings() {
     }
   };
 
-  const uploadImage = async (eventId, file) => {
+  const uploadImage = async (eventId, picked) => {
     setUploading((prev) => ({ ...prev, [eventId]: true }));
+    const file = await compressImage(picked);
     const ext = file.name.split('.').pop();
     const path = `timeline/${eventId}.${ext}`;
     const { error } = await supabase.storage

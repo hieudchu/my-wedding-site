@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { compressImage, describeSaving } from '../../lib/compressImage';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
@@ -82,18 +83,6 @@ const SINGLE_SLOTS = [
       },
     ],
   },
-  {
-    group: 'Nhạc nền · Background Music',
-    slots: [
-      {
-        storagePath: 'music/bgm.mp3',
-        label: 'Nhạc nền',
-        desc: 'Bài nhạc phát khi khách mở thiệp',
-        section: 'Nav (music toggle)',
-        accept: 'audio/*',
-      },
-    ],
-  },
 ];
 
 /* ── Multi-file slots: upload multiple files, order by name ── */
@@ -104,6 +93,13 @@ const MULTI_SLOTS = [
     desc: 'Hiển thị trong slider ảnh toàn màn hình ở trang chủ (sau trang tiêu đề). Ảnh sẽ được sắp xếp theo tên file.',
     section: 'Hero',
     accept: 'image/*',
+  },
+  {
+    folder: 'music',
+    label: 'Nhạc nền · Danh sách phát',
+    desc: 'Các bài phát khi khách mở thiệp. Tải lên nhiều bài đều được — khách bấm ⏮ ⏭ để chuyển bài. Thứ tự theo tên file.',
+    section: 'Nav (trình phát nhạc)',
+    accept: 'audio/*',
   },
   {
     folder: 'timeline',
@@ -159,9 +155,13 @@ function SlotUploader({ slot, onToast }) {
   useEffect(() => { checkExisting(); }, [slot.storagePath]);
 
   const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = e.target.files?.[0];
+    if (!picked) return;
     setUploading(true);
+
+    // Nén trước khi tải lên để kho ảnh không bao giờ chứa file 24 megapixel
+    const file = await compressImage(picked);
+    const saved = describeSaving(picked, file);
 
     // Keep the target extension for images, or use original for audio/video
     const ext = getFileExtension(file.name);
@@ -181,7 +181,7 @@ function SlotUploader({ slot, onToast }) {
     if (error) {
       onToast('Upload failed: ' + error.message);
     } else {
-      onToast('Uploaded ' + slot.label);
+      onToast('Đã tải lên ' + slot.label + (saved ? ` · nén ${saved}` : ''));
       setUrl(getPublicUrl(targetPath) + '?t=' + Date.now());
     }
 
@@ -308,7 +308,10 @@ function MultiFileManager({ config, onToast }) {
     setUploading(true);
     let count = 0;
 
-    for (const file of selected) {
+    let savedBytes = 0;
+    for (const picked of selected) {
+      const file = await compressImage(picked);
+      savedBytes += Math.max(0, picked.size - file.size);
       const path = `${config.folder}/${file.name}`;
       const { error } = await supabase.storage
         .from(BUCKET)
@@ -316,7 +319,8 @@ function MultiFileManager({ config, onToast }) {
       if (!error) count++;
     }
 
-    onToast(`Uploaded ${count}/${selected.length} files`);
+    const savedMb = (savedBytes / 1048576).toFixed(1);
+    onToast(`Đã tải lên ${count}/${selected.length} file` + (savedBytes > 0 ? ` · tiết kiệm ${savedMb} MB` : ''));
     setUploading(false);
     if (inputRef.current) inputRef.current.value = '';
     fetchFiles();

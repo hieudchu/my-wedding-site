@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { emptyManifest } from './mediaManifest';
 
 const listMock = vi.fn();
 
@@ -27,7 +28,9 @@ describe('getMediaUrlAsync', () => {
         error: null,
       }), 10))
     );
-    const { getMediaUrlAsync } = await import('./storage');
+    const { getMediaUrlAsync, setManifest } = await import('./storage');
+    // Mở cổng y như App làm khi site_config về mà chưa có bản kê nào
+    setManifest(emptyManifest());
 
     const urls = await Promise.all([
       getMediaUrlAsync('icons/medallion-ink.png'),
@@ -43,7 +46,8 @@ describe('getMediaUrlAsync', () => {
 
   it('liệt kê hỏng thì không nhớ kết quả hỏng vĩnh viễn', async () => {
     listMock.mockResolvedValueOnce({ data: null, error: new Error('mạng lỗi') });
-    const { getMediaUrlAsync } = await import('./storage');
+    const { getMediaUrlAsync, setManifest } = await import('./storage');
+    setManifest(emptyManifest());
 
     expect(await getMediaUrlAsync('icons/medallion-ink.png')).toBeNull();
 
@@ -67,5 +71,30 @@ describe('getMediaUrlAsync', () => {
 
     expect(url).toBe('https://kho.test/icons/medallion-ink.png?v=1767225600');
     expect(listMock).not.toHaveBeenCalled();
+  });
+
+  it('không ai nạp bản kê thì van an toàn vẫn mở cổng', async () => {
+    // Đồng hồ giả: chứng minh van hoạt động mà không phải ngồi chờ thật 3 giây
+    vi.useFakeTimers();
+    try {
+      listMock.mockResolvedValue({
+        data: [{ name: 'medallion-ink.png', updated_at: '2026-01-01T00:00:00Z' }],
+        error: null,
+      });
+      const { getMediaUrlAsync } = await import('./storage');
+
+      // Cố tình KHÔNG gọi setManifest: chỉ còn van an toàn mới mở được cổng
+      let settled = false;
+      const pending = getMediaUrlAsync('icons/medallion-ink.png')
+        .then((u) => { settled = true; return u; });
+
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(settled).toBe(false);          // chưa tới giờ thì vẫn đứng chờ ở cổng
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await pending).toContain('medallion-ink.png');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

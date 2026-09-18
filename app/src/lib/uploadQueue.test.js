@@ -41,4 +41,21 @@ describe('runQueue', () => {
   it('danh sách rỗng thì trả mảng rỗng', async () => {
     expect(await runQueue([], async () => 1, {})).toEqual([]);
   });
+
+  it('người nghe tiến độ ném lỗi cũng không làm sập cả mẻ', async () => {
+    const onProgress = vi.fn(() => { throw new Error('tay nghe hỏng'); });
+    const res = await runQueue([1, 2, 3], async (n) => n, { concurrency: 2, onProgress });
+    expect(onProgress).toHaveBeenCalledTimes(3);
+    expect(res.map((r) => r.ok)).toEqual([true, true, true]);
+    expect(res.map((r) => r.value)).toEqual([1, 2, 3]);
+  });
+
+  it('concurrency bằng 0 thì vẫn chạy hết chứ không trả mảng rỗng chỗ', async () => {
+    const seen = [];
+    const res = await runQueue([1, 2, 3], async (n) => { seen.push(n); return n; }, { concurrency: 0 });
+    expect(seen).toEqual([1, 2, 3]);
+    expect(res).toHaveLength(3);
+    expect(res.map((r) => r && r.ok)).toEqual([true, true, true]);
+    expect(res[2]).toMatchObject({ item: 3, ok: true, value: 3 });
+  });
 });

@@ -10,6 +10,10 @@ export async function runQueue(items, worker, { concurrency = 3, onProgress } = 
   const results = new Array(list.length);
   if (!list.length) return results;
 
+  // Ít nhất một luồng: concurrency bằng 0 hay số âm mà cho chạy 0 luồng thì
+  // hàng đợi trả về mảng toàn chỗ trống mà chẳng upload gì, lại không báo lỗi.
+  const lanes = Math.max(1, Math.min(concurrency, list.length));
+
   let next = 0;
   let done = 0;
 
@@ -25,10 +29,17 @@ export async function runQueue(items, worker, { concurrency = 3, onProgress } = 
         results[i] = { item, ok: false, error };
       }
       done++;
-      onProgress?.({ done, total: list.length, item, ok: results[i].ok, error: results[i].error });
+      // Báo tiến độ chỉ để vẽ lại màn hình. Kết quả của việc này đã ghi xong
+      // rồi, nên người nghe có ném lỗi thì cũng nuốt luôn: cả mẻ upload không
+      // được chết vì cái thanh tiến độ. Vẫn ghi log để còn lần ra lỗi lập trình.
+      try {
+        onProgress?.({ done, total: list.length, item, ok: results[i].ok, error: results[i].error });
+      } catch (err) {
+        console.error('Lỗi khi báo tiến độ upload:', err);
+      }
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(concurrency, list.length) }, lane));
+  await Promise.all(Array.from({ length: lanes }, lane));
   return results;
 }

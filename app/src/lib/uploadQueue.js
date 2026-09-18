@@ -1,3 +1,6 @@
+// Ba luồng: đủ nhanh mà không làm nghẽn mạng nhà.
+const LUONG_MAC_DINH = 3;
+
 /**
  * Chạy nhiều việc song song nhưng có giới hạn, và báo tiến độ.
  *
@@ -5,14 +8,18 @@
  * màn hình chỉ hiện chữ "Uploading…" đứng im. Ba luồng là đủ nhanh mà không làm
  * nghẽn mạng nhà hay bị kho chặn vì gọi quá dày.
  */
-export async function runQueue(items, worker, { concurrency = 3, onProgress } = {}) {
+export async function runQueue(items, worker, { concurrency = LUONG_MAC_DINH, onProgress } = {}) {
   const list = Array.from(items || []);
   const results = new Array(list.length);
   if (!list.length) return results;
 
+  // NaN hay Infinity thì coi như không truyền gì, quay về mặc định: Math.min
+  // với NaN ra NaN, Array.from({ length: NaN }) ra mảng rỗng, thành ra không
+  // chạy luồng nào mà cũng chẳng báo lỗi.
+  const muon = Number.isFinite(concurrency) ? concurrency : LUONG_MAC_DINH;
   // Ít nhất một luồng: concurrency bằng 0 hay số âm mà cho chạy 0 luồng thì
   // hàng đợi trả về mảng toàn chỗ trống mà chẳng upload gì, lại không báo lỗi.
-  const lanes = Math.max(1, Math.min(concurrency, list.length));
+  const lanes = Math.max(1, Math.min(muon, list.length));
 
   let next = 0;
   let done = 0;

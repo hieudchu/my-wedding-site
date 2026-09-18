@@ -58,4 +58,22 @@ describe('runQueue', () => {
     expect(res.map((r) => r && r.ok)).toEqual([true, true, true]);
     expect(res[2]).toMatchObject({ item: 3, ok: true, value: 3 });
   });
+
+  it('concurrency là NaN thì quay về mặc định chứ không đứng im', async () => {
+    let now = 0;
+    let peak = 0;
+    const seen = [];
+    const res = await runQueue([1, 2, 3, 4, 5], async (n) => {
+      now++; peak = Math.max(peak, now);
+      seen.push(n);
+      await wait(5);
+      now--;
+      return n;
+    }, { concurrency: NaN });
+    expect(seen.slice().sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+    expect(res).toHaveLength(5);
+    expect(res.map((r) => r && r.ok)).toEqual([true, true, true, true, true]);
+    expect(res[4]).toMatchObject({ item: 5, ok: true, value: 5 });
+    expect(peak).toBe(3);
+  });
 });

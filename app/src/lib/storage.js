@@ -1,6 +1,14 @@
 import { supabase, supabaseConfigured } from './supabase';
+import { findEntry, listFolder, emptyManifest } from './mediaManifest';
 
 const BUCKET = 'media';
+
+let manifest = emptyManifest();
+
+/** App nạp bản kê vào đây ngay khi nội dung chữ về. */
+export function setManifest(next) {
+  manifest = next || emptyManifest();
+}
 
 // Danh sách file mỗi thư mục, kèm mốc sửa đổi. Map: folder -> Map(tên -> version)
 const folderCache = new Map();
@@ -86,6 +94,8 @@ function splitPath(path) {
  */
 export async function getMediaUrlAsync(path) {
   if (!path || !supabaseConfigured) return null;
+  const known = findEntry(manifest, path);
+  if (known) return buildPublicUrl(path, known.v);
   const { folder, name } = splitPath(path);
   const files = await getCachedFolder(folder);
   if (!files.has(name)) return null;
@@ -106,9 +116,19 @@ export function getMediaUrl(path) {
 
 /**
  * Liệt kê file trong một thư mục, sắp theo tên.
- * Trả về mảng { name, url }.
+ * Trả về mảng { name, url }, kèm { w, h, caption } khi bản kê có sẵn.
  */
 export async function listMedia(folder) {
+  const fromManifest = listFolder(manifest, folder);
+  if (fromManifest.length) {
+    return fromManifest.map((e) => ({
+      name: e.file,
+      url: buildPublicUrl(`${folder}/${e.file}`, e.v),
+      w: e.w,
+      h: e.h,
+      caption: e.caption,
+    }));
+  }
   const files = await getCachedFolder(folder);
   return [...files.entries()].map(([name, version]) => ({
     name,

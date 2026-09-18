@@ -9,13 +9,17 @@ import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
 import { LightboxProvider } from './components/Lightbox';
+import { setManifest } from './lib/storage';
 
 // Cửa trượt hết 1.8s; mở khoá cuộn ở 1.5s để khách kịp thấy Hero hiện ra
 // ngay khi cánh cửa vừa rời khỏi khung hình.
 const GATE_RELEASE_MS = 1500;
 
 export default function App() {
-  const { config, siteText } = useSiteConfig();
+  const { config, siteText, manifest } = useSiteConfig();
+  // Gọi thẳng trong thân component: tầng lưu trữ phải có bản kê TRƯỚC lượt render
+  // đầu tiên của các component con; useEffect chạy sau lượt đó thì đã muộn.
+  setManifest(manifest);
   const [gateOpened, setGateOpened] = useState(false);
   const [navVisible, setNavVisible] = useState(false);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { WEDDING_CONFIG } from '../lib/config';
+import { parseManifest, emptyManifest } from '../lib/mediaManifest';
 
 const DB_KEY_TO_CONFIG = {
   groom_name: 'groomName',
@@ -18,6 +19,7 @@ const DB_KEY_TO_CONFIG = {
 export function useSiteConfig() {
   const [config, setConfig] = useState(WEDDING_CONFIG);
   const [siteText, setSiteText] = useState({});
+  const [manifest, setManifest] = useState(emptyManifest());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,6 +42,9 @@ export function useSiteConfig() {
             merged[DB_KEY_TO_CONFIG[row.key]] = row.value;
           }
           texts[row.key] = row.value;
+          if (row.key === 'media_manifest') {
+            setManifest(parseManifest(row.value));
+          }
         }
 
         setConfig(merged);
@@ -55,5 +60,5 @@ export function useSiteConfig() {
     return () => { cancelled = true; };
   }, []);
 
-  return { config, siteText, loading };
+  return { config, siteText, manifest, loading };
 }

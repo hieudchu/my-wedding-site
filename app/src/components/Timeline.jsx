@@ -78,22 +78,36 @@ export default function Timeline({ config, siteText = {} }) {
         </div>
 
         <div className="tl-rows">
-          {items.map((it, i) => (
-            <div key={it.id || i} className={`tl-row ${i % 2 ? 'alt' : ''}`} data-rv>
-              <div className="tl-text">
+          {items.map((it, i) => {
+            const alt = i % 2 === 1;
+
+            const text = (
+              <div className="tl-text" key="text">
                 <div className="tl-time">{it.time}</div>
                 <div className="tl-label">{it.label_vi}</div>
                 {it.label_en && <div className="tl-en">{it.label_en}</div>}
               </div>
-              <div className="tl-img">
+            );
+
+            const image = (
+              <div className="tl-img" key="img">
                 <MediaImage
                   storagePath={it.image_path}
                   label={`Ảnh ${it.time} · chờ ảnh thật`}
                   alt={it.label_vi}
                 />
               </div>
-            </div>
-          ))}
+            );
+
+            // Mốc so le nhau bằng THỨ TỰ DOM, không phải bằng CSS:
+            // mốc chẵn đặt ảnh trước, mốc lẻ đặt chữ trước. Trên điện thoại hàng
+            // xếp dọc và mốc chẵn dùng column-reverse, nên chữ luôn nằm trên ảnh.
+            return (
+              <div key={it.id || i} className={`tl-row ${alt ? 'alt' : ''}`} data-rv>
+                {alt ? [image, text] : [text, image]}
+              </div>
+            );
+          })}
         </div>
       </div>
 

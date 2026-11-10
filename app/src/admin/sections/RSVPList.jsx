@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toE164VN } from '../../lib/phone';
 import { useToast } from '../components/Toast';
+import { downloadExcel, excelDateVN, datedName } from '../exportExcel';
 
 const SIDE_LABEL = { groom: 'Nhà trai', bride: 'Nhà gái' };
 
@@ -19,21 +20,6 @@ function timeVN(iso) {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
     hour12: false, timeZone: 'Asia/Ho_Chi_Minh',
   }).replace(',', '');
-}
-
-/** CSV phải có BOM thì Excel mới đọc đúng tiếng Việt */
-function downloadCSV(filename, rows) {
-  const esc = (v) => {
-    const s = v == null ? '' : String(v);
-    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 export default function RSVPList() {
@@ -110,15 +96,27 @@ export default function RSVPList() {
   const totalGuests = summary.reduce((a, s) => a + Number(s.guests), 0);
   const anyOver10 = summary.some((s) => Number(s.over_10) > 0);
 
-  const exportCSV = () => {
-    downloadCSV(`khach-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Thời gian', 'Họ tên', 'Bên', 'Số người', 'SĐT', 'Ghi chú'],
-      ...visible.map((r) => [
-        timeVN(r.created_at), r.name, SIDE_LABEL[r.side] || '—',
-        guestText(r), r.phone || '', r.message || '',
-      ]),
-    ]);
-    toast('Đã tải CSV');
+  // Xuất đúng những dòng đang hiện (theo bộ lọc, ô tìm kiếm, công tắc "Hiện dòng đã ẩn").
+  // Số người là SỐ để cộng tổng được trong Excel; "Trên 10 người" lưu 10 kèm cột đánh dấu.
+  const exportExcel = async () => {
+    try {
+      await downloadExcel(datedName('khach-xac-nhan'), 'Khách xác nhận', [
+        { header: 'Thời gian', width: 17 },
+        { header: 'Họ tên', width: 26 },
+        { header: 'Bên', width: 10 },
+        { header: 'Số người', width: 9 },
+        { header: 'Trên 10 người', width: 13 },
+        { header: 'SĐT', width: 16 },
+        { header: 'Ghi chú', width: 40, wrap: true },
+      ], visible.map((r) => [
+        excelDateVN(r.created_at), r.name, SIDE_LABEL[r.side] || '',
+        r.guest_count ?? null, r.guests_over_10 ? 'Có' : '', r.phone || '', r.message || '',
+      ]));
+      toast('Đã tải file Excel');
+    } catch (err) {
+      console.error('[admin] xuất Excel lỗi', err);
+      toast('Không xuất được file Excel');
+    }
   };
 
   if (loading) return <div>Loading…</div>;
@@ -216,8 +214,8 @@ export default function RSVPList() {
 
       <div className="admin-actions">
         <button className="admin-btn admin-btn-secondary" onClick={fetchAll}>Tải lại</button>
-        <button className="admin-btn admin-btn-primary" onClick={exportCSV} disabled={!visible.length}>
-          Xuất CSV
+        <button className="admin-btn admin-btn-primary" onClick={exportExcel} disabled={!visible.length}>
+          Xuất Excel
         </button>
       </div>
       {ToastEl}

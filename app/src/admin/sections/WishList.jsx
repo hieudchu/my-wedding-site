@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
+import { downloadExcel, excelDateVN, datedName } from '../exportExcel';
 
 function timeVN(iso) {
   if (!iso) return '—';
@@ -8,21 +9,6 @@ function timeVN(iso) {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
     hour12: false, timeZone: 'Asia/Ho_Chi_Minh',
   }).replace(',', '');
-}
-
-/** CSV phải có BOM thì Excel mới đọc đúng tiếng Việt */
-function downloadCSV(filename, rows) {
-  const esc = (v) => {
-    const s = v == null ? '' : String(v);
-    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }
 
 export default function WishList() {
@@ -60,12 +46,19 @@ export default function WishList() {
   const visible = rows.filter((w) => showHidden || !w.hidden);
   const preset = rows.filter((w) => w.is_preset).length;
 
-  const exportCSV = () => {
-    downloadCSV(`loi-chuc-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Thời gian', 'Tên', 'Lời chúc', 'Soạn sẵn'],
-      ...visible.map((w) => [timeVN(w.created_at), w.name || '', w.message, w.is_preset ? 'x' : '']),
-    ]);
-    toast('Đã tải CSV');
+  const exportExcel = async () => {
+    try {
+      await downloadExcel(datedName('loi-chuc'), 'Lời chúc', [
+        { header: 'Thời gian', width: 17 },
+        { header: 'Tên', width: 20 },
+        { header: 'Lời chúc', width: 70, wrap: true },
+        { header: 'Soạn sẵn', width: 10 },
+      ], visible.map((w) => [excelDateVN(w.created_at), w.name || '', w.message, w.is_preset ? 'Có' : '']));
+      toast('Đã tải file Excel');
+    } catch (err) {
+      console.error('[admin] xuất Excel lỗi', err);
+      toast('Không xuất được file Excel');
+    }
   };
 
   if (loading) return <div>Loading…</div>;
@@ -128,8 +121,8 @@ export default function WishList() {
 
       <div className="admin-actions">
         <button className="admin-btn admin-btn-secondary" onClick={fetchAll}>Tải lại</button>
-        <button className="admin-btn admin-btn-primary" onClick={exportCSV} disabled={!visible.length}>
-          Xuất CSV
+        <button className="admin-btn admin-btn-primary" onClick={exportExcel} disabled={!visible.length}>
+          Xuất Excel
         </button>
       </div>
       {ToastEl}

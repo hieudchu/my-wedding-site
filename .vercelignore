@@ -3,6 +3,7 @@
 # admin (supabase/migrations).
 handoff/
 handoff-mobile/
+handoff-admin/
 fonts-handoff/
 project/
 docs/

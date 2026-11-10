@@ -67,13 +67,15 @@ export default function RSVPList() {
   }, [rows]);
 
   const visible = useMemo(() => {
-    const needle = q.trim().toLowerCase();
+    // Tìm tên không phân biệt hoa thường và dấu: "ngo thanh" ra "Ngô Thanh Tâm"
+    const fold = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+    const needle = fold(q.trim());
     const asPhone = toE164VN(q);
     return rows.filter((r) => {
       if (!showHidden && r.hidden) return false;
       if (sideFilter === 'unknown' ? r.side : sideFilter !== 'all' && r.side !== sideFilter) return false;
       if (!needle) return true;
-      if ((r.name || '').toLowerCase().includes(needle)) return true;
+      if (fold(r.name).includes(needle)) return true;
       if (asPhone && r.phone_e164 === asPhone) return true;
       return (r.phone || '').replace(/\s/g, '').includes(q.replace(/\s/g, ''));
     });

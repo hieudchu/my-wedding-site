@@ -97,20 +97,21 @@ export default function RSVPList() {
   const anyOver10 = summary.some((s) => Number(s.over_10) > 0);
 
   // Xuất đúng những dòng đang hiện (theo bộ lọc, ô tìm kiếm, công tắc "Hiện dòng đã ẩn").
-  // Số người là SỐ để cộng tổng được trong Excel; "Trên 10 người" lưu 10 kèm cột đánh dấu.
+  // Số người là SỐ để cộng tổng được trong Excel. Khách chọn "Trên 10 người" vẫn là số 10,
+  // chỉ đổi cách hiện thành "Trên 10" bằng định dạng số — một cột như trong app, SUM vẫn đúng.
   const exportExcel = async () => {
     try {
       await downloadExcel(datedName('khach-xac-nhan'), 'Khách xác nhận', [
         { header: 'Thời gian', width: 17 },
         { header: 'Họ tên', width: 26 },
         { header: 'Bên', width: 10 },
-        { header: 'Số người', width: 9 },
-        { header: 'Trên 10 người', width: 13 },
+        { header: 'Số người', width: 10 },
         { header: 'SĐT', width: 16 },
         { header: 'Ghi chú', width: 40, wrap: true },
       ], visible.map((r) => [
         excelDateVN(r.created_at), r.name, SIDE_LABEL[r.side] || '',
-        r.guest_count ?? null, r.guests_over_10 ? 'Có' : '', r.phone || '', r.message || '',
+        r.guests_over_10 ? { value: 10, format: '"Trên "0' } : (r.guest_count ?? null),
+        r.phone || '', r.message || '',
       ]));
       toast('Đã tải file Excel');
     } catch (err) {

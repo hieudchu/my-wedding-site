@@ -219,8 +219,10 @@ Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,
 - **RLS is on for all of them** (migration `20261110000000`). Guests (anon) may only
   INSERT into `rsvps`/`wishes` and SELECT the three content tables. Admin access is an
   allowlist: `public.is_admin()` checks the JWT email against `admin_emails`. It is
-  **not** `auth.role() = 'authenticated'`, because self-signup is enabled on the
-  project — anyone could register and become an admin.
+  **not** `auth.role() = 'authenticated'`. Self-signup was enabled until 2026-11-11
+  (now disabled; there is exactly one admin account), so never rely on "logged in"
+  alone. The Storage `media` write policies use `is_admin()` too (migration
+  `20261111000100`); before that, any self-registered user could delete every photo.
 - `rsvps` keeps its original columns (`guest_count` is an **integer**). "Trên 10 người"
   is stored as `guest_count = 10` plus `guests_over_10 = true`. The form's "Ghi chú"
   field reuses the existing `message` column.

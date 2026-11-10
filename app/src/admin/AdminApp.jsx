@@ -11,6 +11,7 @@ import MediaManager from './sections/MediaManager';
 import RSVPList from './sections/RSVPList';
 import WishList from './sections/WishList';
 import './admin.css';
+import './admin-isolation.css';
 
 const NAV_ITEMS = [
   { path: '/admin', label: 'Thông tin chung · General', icon: '&#9881;' },
@@ -41,6 +42,19 @@ export default function AdminApp() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Trên điện thoại (≤ 768px) sidebar là ngăn kéo, mở bằng nút ☰ ở thanh trên.
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Đổi trang thì đóng ngăn kéo
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+  // Hai tab danh sách được rộng hơn các tab cài đặt (.admin-main.wide)
+  const wide = location.pathname === '/admin/rsvp' || location.pathname === '/admin/wishes';
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -75,7 +89,23 @@ export default function AdminApp() {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
+      <header className="admin-topbar">
+        <button
+          type="button"
+          className="admin-menu-btn"
+          aria-label="Mở menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(true)}
+        >
+          <span /><span /><span />
+        </button>
+        <nav className="admin-quicktabs" aria-label="Chuyển nhanh">
+          <Link to="/admin/rsvp" className={location.pathname === '/admin/rsvp' ? 'active' : ''}>Khách xác nhận</Link>
+          <Link to="/admin/wishes" className={location.pathname === '/admin/wishes' ? 'active' : ''}>Lời chúc</Link>
+        </nav>
+      </header>
+      {menuOpen && <div className="admin-backdrop" onClick={() => setMenuOpen(false)} />}
+      <aside className={`admin-sidebar${menuOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <h2>Wedding Admin</h2>
           <a href="/" target="_blank" rel="noreferrer" className="site-link">
@@ -91,6 +121,7 @@ export default function AdminApp() {
                 key={item.path}
                 to={item.path}
                 className={location.pathname === item.path ? 'active' : ''}
+                onClick={() => setMenuOpen(false)}
               >
                 <span dangerouslySetInnerHTML={{ __html: item.icon }} />
                 {item.label}
@@ -107,7 +138,7 @@ export default function AdminApp() {
           </button>
         </div>
       </aside>
-      <main className="admin-main">
+      <main className={`admin-main${wide ? ' wide' : ''}`}>
         {adminConfig.loading ? (
           <div style={{ color: '#A89996', padding: 40 }}>Loading config…</div>
         ) : (

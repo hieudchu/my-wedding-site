@@ -187,6 +187,20 @@ Two traps found during the mobile port:
   propagating to the viewport, and the lightbox scroll lock (`body.style.overflow`)
   silently stops working.
 
+## Admin
+
+- The **Khách xác nhận** and **Lời chúc** tabs (`admin/sections/RSVPList.jsx`,
+  `WishList.jsx`) were redesigned by Claude Design in 11/2026; source bundle in
+  `handoff-admin/`. Their styles are the `rw-` classes at the end of `admin.css`.
+  `admin.css` is kept **byte-identical** to the design file so a future redesign can
+  simply be copied over it.
+- The admin route also loads the guest site's `globals.css`. Its
+  `-webkit-font-smoothing: antialiased` thins the admin text on macOS, so
+  `admin/admin-isolation.css` resets it. Put any future admin-vs-guest CSS
+  conflict fixes there, not in `admin.css`.
+- The "Đã gọi" button is intentionally disabled: it waits on backend request **BR-1**
+  (`rsvps.called_at`, see `handoff-admin/BACKEND-REQUESTS.md`), not built yet.
+
 ## Database
 
 Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,

@@ -1,0 +1,14 @@
+/*
+ * Trang admin nạp chung CSS của trang khách (styles/globals.css), trong đó
+ * `body { -webkit-font-smoothing: antialiased }` làm chữ admin trên Mac mảnh hơn bản
+ * thiết kế — giảm đúng độ tương phản mà màu chữ phụ #7F706C được chọn để đạt 4.5:1.
+ * Đưa admin về như bản thiết kế.
+ *
+ * Tách thành file riêng để admin.css giữ y nguyên file thiết kế: lần sau Claude Design
+ * gửi bản mới thì chép đè admin.css là xong, không mất phần này.
+ */
+.admin-layout,
+.admin-login {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}

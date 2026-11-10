@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Đọc một dòng site_config
         run: |
-          html=$(curl -sSf --retry 3 https://my-wedding-site-seven.vercel.app/)
+          html=$(curl -sSf --retry 3 https://hieu-minh-wedding.vercel.app/)
           url=$(printf '%s' "$html" | grep -oE "var url = '[^']+'" | cut -d"'" -f2)
           key=$(printf '%s' "$html" | grep -oE "key = '[^']+'" | cut -d"'" -f2)
           [ -n "$url" ] && [ -n "$key" ] || { echo "Không tìm thấy địa chỉ Supabase trong trang"; exit 1; }

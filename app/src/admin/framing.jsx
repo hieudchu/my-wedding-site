@@ -11,7 +11,7 @@ import { canFrame } from './framerFrames';
 import { compressImage } from '../lib/compressImage';
 import { uploadVariants, CACHE_SECONDS } from '../lib/imageVariants';
 import { rotateFile } from '../lib/rotateImage';
-import { withEntry, listFolder, entryId, nowVersion, variantPaths, fitFor } from '../lib/mediaManifest';
+import { withEntry, listFolder, entryId, nowVersion, variantPaths, fitFor, OPT_DIR } from '../lib/mediaManifest';
 import { BUCKET, applyToManifest, seedFolderFromStorage, manifestErrorHint } from '../lib/manifestStore';
 import { supabase } from '../lib/supabase';
 
@@ -51,6 +51,17 @@ export function entrySrc(folder, entry) {
   const variants = variantPaths(folder, entry);
   if (variants.length) return publicUrl(variants[variants.length - 1].path, entry.opt.v);
   return publicUrl(`${folder}/${entry.file}`, entry.v);
+}
+
+/**
+ * Đường dẫn mọi bản nén của một mục trong kho, để xoá cùng ảnh gốc. Không lọc theo
+ * `opt.v` như variantPaths: bản nén cũ cũng là file thừa cần dọn.
+ */
+export function variantStoragePaths(folder, entry) {
+  const opt = entry?.opt;
+  if (!opt?.w?.length) return [];
+  const base = entry.file.replace(/\.[^.]+$/, '');
+  return opt.w.map((w) => `${OPT_DIR}/${folder}/${base}-${w}.${opt.fmt}`);
 }
 
 /** Câu trạng thái dưới ô ảnh. */

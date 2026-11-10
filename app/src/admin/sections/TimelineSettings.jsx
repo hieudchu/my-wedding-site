@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { withoutEntry, findEntry, fitFor } from '../../lib/mediaManifest';
 import { applyToManifest, loadManifest, manifestErrorHint } from '../../lib/manifestStore';
-import { useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb } from '../framing';
+import { useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb, variantStoragePaths } from '../framing';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
@@ -116,6 +116,7 @@ export default function TimelineSettings() {
         // không phải file vừa bị đè lên. Không dọn thì nó nằm lại trong kho mãi và
         // bản kê vẫn kể tên nó.
         const stale = fileNameIn(events.find((e) => e.id === eventId)?.image_path);
+        const staleOpt = stale ? variantStoragePaths(TIMELINE_FOLDER, findEntry(manifest, `${TIMELINE_FOLDER}/${stale}`)) : [];
         const { manifest: next, name } = await uploadFramed({
           folder: TIMELINE_FOLDER,
           fileName: (file) => `${eventId}.${file.name.split('.').pop()}`,
@@ -126,7 +127,7 @@ export default function TimelineSettings() {
         });
         setManifest(next);
         if (stale && stale !== name) {
-          await supabase.storage.from('media').remove([`${TIMELINE_FOLDER}/${stale}`]);
+          await supabase.storage.from('media').remove([`${TIMELINE_FOLDER}/${stale}`, ...staleOpt]);
         }
         const path = `${TIMELINE_FOLDER}/${name}`;
         updateEvent(eventId, 'image_path', path);
@@ -158,7 +159,9 @@ export default function TimelineSettings() {
 
   const removeImage = async (eventId, imagePath) => {
     if (imagePath) {
-      await supabase.storage.from('media').remove([imagePath]);
+      // Xoá cùng các bản nén trong _opt/, nếu không chúng nằm lại trong kho mãi
+      const opt = variantStoragePaths(TIMELINE_FOLDER, findEntry(manifest, imagePath));
+      await supabase.storage.from('media').remove([imagePath, ...opt]);
     }
     updateEvent(eventId, 'image_path', '');
     await supabase

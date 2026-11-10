@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 import {
   useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb, FitImg, canFrame, measure,
+  variantStoragePaths,
 } from '../framing';
 
 // Thư mục duy nhất có ô chú thích. Caption nằm ở hai chỗ nên chỗ nào cũng phải
@@ -406,8 +407,9 @@ function SlotUploader({ slot, onToast, reloadKey, manifest, onManifest, framer }
   };
 
   const handleDelete = async () => {
-    // Ô cố định chỉ từng có đúng một đường dẫn, nên xoá đúng đường dẫn đó là hết.
-    await supabase.storage.from(BUCKET).remove([slot.storagePath]);
+    // Ô cố định chỉ từng có đúng một đường dẫn — xoá nó cùng các bản nén trong _opt/,
+    // nếu không bản nén nằm lại trong kho mãi mà không ai đọc tới.
+    await supabase.storage.from(BUCKET).remove([slot.storagePath, ...variantStoragePaths(folder, entry)]);
     setUrl(null);
     try {
       onManifest(await applyToManifest((m) => withoutEntry(m, folder, fileName)));
@@ -815,7 +817,10 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
   };
 
   const handleDelete = async (fileName) => {
-    const { error } = await supabase.storage.from(BUCKET).remove([`${config.folder}/${fileName}`]);
+    const entry = findEntry(manifest, `${config.folder}/${fileName}`);
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .remove([`${config.folder}/${fileName}`, ...variantStoragePaths(config.folder, entry)]);
     if (error) {
       onToast('Không xoá được file · ' + error.message);
       return;

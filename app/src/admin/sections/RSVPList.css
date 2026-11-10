@@ -1,0 +1,14 @@
+/*
+ * BR-1 "Đã gọi" — làm sau bản thiết kế 11/2026 nên để riêng ở đây,
+ * admin.css giữ y nguyên file thiết kế.
+ */
+.rw-btn.called {
+  color: #2E6B47;
+  border-color: #BBD8C6;
+  background: #F2F8F4;
+}
+.rw-btn.called:hover { background: #E6F2EA; border-color: #2E6B47; }
+.rw-g-called { color: #2E6B47; }
+/* Thêm "Đã gọi …" thì dòng phụ dài hơn: cho xuống dòng nguyên cụm, không gãy giữa ngày và giờ */
+.rw-g-meta { flex-wrap: wrap; row-gap: 2px; }
+.rw-g-meta > span { white-space: nowrap; }

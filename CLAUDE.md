@@ -198,8 +198,9 @@ Two traps found during the mobile port:
   `-webkit-font-smoothing: antialiased` thins the admin text on macOS, so
   `admin/admin-isolation.css` resets it. Put any future admin-vs-guest CSS
   conflict fixes there, not in `admin.css`.
-- The "Đã gọi" button is intentionally disabled: it waits on backend request **BR-1**
-  (`rsvps.called_at`, see `handoff-admin/BACKEND-REQUESTS.md`), not built yet.
+- "Đã gọi" (BR-1, 11/2026) stores the call time in `rsvps.called_at` (null = not
+  called; click again to clear). Guests cannot set it: the anon insert policy requires
+  `called_at is null`. Its styles live in `sections/RSVPList.css`, not `admin.css`.
 
 ## Database
 

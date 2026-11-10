@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { toE164VN } from '../../lib/phone';
 import { useToast } from '../components/Toast';
 import { downloadExcel, excelDateVN, datedName } from '../exportExcel';
+import './RSVPList.css';
 
 const SIDE_LABEL = { groom: 'Nhà trai', bride: 'Nhà gái' };
 
@@ -61,6 +62,7 @@ export default function RSVPList() {
   const [showHidden, setShowHidden] = useState(false);
   const [onlyDup, setOnlyDup] = useState(false);
   const [onlyNote, setOnlyNote] = useState(false);
+  const [onlyUncalled, setOnlyUncalled] = useState(false);
   const [sort, setSort] = useState('new');
   const { toast, ToastEl } = useToast();
 
@@ -71,7 +73,7 @@ export default function RSVPList() {
       const [{ data, error }, { data: sum, error: sumError }] = await Promise.all([
         supabase
           .from('rsvps')
-          .select('id, created_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden')
+          .select('id, created_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden, called_at')
           .eq('attending', true)
           .order('created_at', { ascending: false }),
         supabase.from('rsvp_summary').select('*'),
@@ -102,6 +104,15 @@ export default function RSVPList() {
     toast(r.hidden ? 'Đã hiện lại' : 'Đã ẩn');
   };
 
+  // BR-1: lưu thời điểm gọi; bấm lần nữa để bỏ đánh dấu
+  const toggleCalled = async (r) => {
+    const called_at = r.called_at ? null : new Date().toISOString();
+    const { error } = await supabase.from('rsvps').update({ called_at }).eq('id', r.id);
+    if (error) { toast('Không lưu được'); return; }
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, called_at } : x)));
+    toast(called_at ? 'Đã đánh dấu đã gọi' : 'Đã bỏ đánh dấu');
+  };
+
   const dupKeys = useMemo(() => {
     const count = {};
     rows.forEach((r) => {
@@ -128,7 +139,8 @@ export default function RSVPList() {
 
   const visible = useMemo(() => {
     const list = base.filter((r) => (!onlyDup || dupKeys.has(dupKeyOf(r)))
-      && (!onlyNote || (r.message || '').trim()));
+      && (!onlyNote || (r.message || '').trim())
+      && (!onlyUncalled || (r.phone && !r.called_at)));
     const by = {
       new: (a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0),
       old: (a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0),
@@ -137,10 +149,12 @@ export default function RSVPList() {
       guests: (a, b) => (b.guest_count ?? -1) - (a.guest_count ?? -1) || Number(b.guests_over_10) - Number(a.guests_over_10),
     }[sort];
     return [...list].sort(by);
-  }, [base, onlyDup, onlyNote, sort, dupKeys]);
+  }, [base, onlyDup, onlyNote, onlyUncalled, sort, dupKeys]);
 
   const dupCount = base.filter((r) => dupKeys.has(dupKeyOf(r))).length;
   const noteCount = base.filter((r) => (r.message || '').trim()).length;
+  // Chỉ tính khách có SĐT — không có số thì không có gì để gọi
+  const uncalledCount = base.filter((r) => r.phone && !r.called_at).length;
   const hiddenCount = rows.filter((r) => r.hidden).length;
   const visGuests = visible.reduce((a, r) => a + (r.guest_count || 0), 0);
   const visOver = visible.some((r) => r.guests_over_10);
@@ -156,12 +170,12 @@ export default function RSVPList() {
     }), { responses: 0, guests: 0, over: 0, none: 0 });
   const total = stat('all');
 
-  const filtered = Boolean(q.trim()) || sideFilter !== 'all' || onlyDup || onlyNote;
-  const clearFilters = () => { setQ(''); setSideFilter('all'); setOnlyDup(false); setOnlyNote(false); };
+  const filtered = Boolean(q.trim()) || sideFilter !== 'all' || onlyDup || onlyNote || onlyUncalled;
+  const clearFilters = () => { setQ(''); setSideFilter('all'); setOnlyDup(false); setOnlyNote(false); setOnlyUncalled(false); };
 
   // Bấm nhãn "Trùng" → hiện cả nhóm (kể cả dòng đã ẩn) để chọn dòng nào giữ
   const showGroup = (r) => {
-    setSideFilter('all'); setOnlyDup(false); setOnlyNote(false); setShowHidden(true);
+    setSideFilter('all'); setOnlyDup(false); setOnlyNote(false); setOnlyUncalled(false); setShowHidden(true);
     setQ(r.phone_e164 ? r.phone : (r.name || '').trim());
   };
 
@@ -177,10 +191,12 @@ export default function RSVPList() {
         { header: 'Số người', width: 10 },
         { header: 'SĐT', width: 16 },
         { header: 'Ghi chú', width: 40, wrap: true },
+        { header: 'Đã gọi', width: 17 },
       ], visible.map((r) => [
         excelDateVN(r.created_at), r.name, SIDE_LABEL[r.side] || '',
         r.guests_over_10 ? { value: 10, format: '"Trên "0' } : (r.guest_count ?? null),
         r.phone || '', r.message || '',
+        r.called_at ? excelDateVN(r.called_at) : null,
       ]));
       toast('Đã tải file Excel');
     } catch (err) {
@@ -288,6 +304,9 @@ export default function RSVPList() {
           <button type="button" className={`rw-chip${onlyNote ? ' on' : ''}`} aria-pressed={onlyNote} onClick={() => setOnlyNote(!onlyNote)}>
             Có ghi chú <span className="n">{noteCount}</span>
           </button>
+          <button type="button" className={`rw-chip${onlyUncalled ? ' on' : ''}`} aria-pressed={onlyUncalled} onClick={() => setOnlyUncalled(!onlyUncalled)} title="Khách có SĐT mà chưa đánh dấu đã gọi">
+            Chưa gọi <span className="n">{uncalledCount}</span>
+          </button>
           <label className={`rw-chip${showHidden ? ' on' : ''}`}>
             <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
             Hiện dòng đã ẩn <span className="n">{hiddenCount}</span>
@@ -342,6 +361,7 @@ export default function RSVPList() {
                   <span className="rw-g-meta">
                     <span className={`rw-tag side-${r.side || 'none'}`}>{SIDE_LABEL[r.side] || 'Chưa chọn bên'}</span>
                     <span>{timeVN(r.created_at)}</span>
+                    {r.called_at && <span className="rw-g-called">Đã gọi {timeVN(r.called_at)}</span>}
                   </span>
                 </div>
                 <div className={`rw-g-count${r.guest_count == null ? ' none' : ''}`} title={r.guest_count == null ? 'Khách không chọn số người' : undefined}>
@@ -355,8 +375,15 @@ export default function RSVPList() {
                 <div className={`rw-g-note${note ? '' : ' empty'}`}>{note ? r.message : <span className="rw-dim">—</span>}</div>
                 <div className="rw-g-act">
                   {r.phone && (
-                    // Chờ backend — BR-1 trong BACKEND-REQUESTS.md. Chưa lưu được nên để mờ.
-                    <button type="button" className="rw-btn pending" disabled title="Chờ backend (BR-1): chưa lưu được “đã gọi”">Đã gọi</button>
+                    <button
+                      type="button"
+                      className={`rw-btn${r.called_at ? ' called' : ''}`}
+                      aria-pressed={Boolean(r.called_at)}
+                      onClick={() => toggleCalled(r)}
+                      title={r.called_at ? `Đã gọi lúc ${timeVN(r.called_at)} — bấm để bỏ đánh dấu` : 'Đánh dấu đã gọi xác nhận lại'}
+                    >
+                      {r.called_at ? '✓ Đã gọi' : 'Đã gọi'}
+                    </button>
                   )}
                   <button type="button" className="rw-btn" onClick={() => toggleHidden(r)}>{r.hidden ? 'Hiện lại' : 'Ẩn'}</button>
                 </div>
@@ -366,7 +393,7 @@ export default function RSVPList() {
         </div>
       )}
       {visible.length > 0 && (
-        <p className="rw-pending-note">Nút &ldquo;Đã gọi&rdquo; đang chờ backend (BR-1) nên chưa bấm được. Khách không bao giờ bị xoá — chỉ ẩn.</p>
+        <p className="rw-pending-note">Khách không bao giờ bị xoá — chỉ ẩn.</p>
       )}
       {ToastEl}
     </div>

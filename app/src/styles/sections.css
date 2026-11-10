@@ -1959,8 +1959,18 @@
   }
   .info-blob-2 { grid-row: 1; }
   .info-blob-1 { grid-row: 3; }
-  /* Ảnh gốc (scan phim) có viền trắng hai bên → phóng nhẹ để cắt sát hơn */
-  .info-blob img { transform: scale(1.1); }
+  /* Khung ảnh admin đã chỉnh (img.has-fit, xem globals.css): bố cục điện thoại dùng
+     bộ biến --fm*. Không có khung riêng thì lib/fit.js đã chép --fd* sang --fm*.
+     Những chỗ chỉnh cứng cũ (cô dâu phóng 1.45, chú rể 50%/40%, ảnh nền thiệp phóng 1.1
+     để cắt viền phim) giờ là dữ liệu trong bản kê media, sửa ở admin › Media. */
+  img.has-fit {
+    --fx: var(--fmx, var(--fdx, 50%));
+    --fy: var(--fmy, var(--fdy, 50%));
+    --fz: var(--fmz, var(--fdz, 1));
+  }
+  /* Ảnh đếm ngược trên điện thoại (dọc lẫn ngang) hiện trọn ảnh, không cắt —
+     khung không áp, nếu không độ phóng của máy tính sẽ cắt mất mép ảnh. */
+  .countdown-photo img.has-fit { object-position: 50% 50%; transform: none; }
 
   .info-card {
     grid-column: 1 / -1;
@@ -2524,10 +2534,6 @@
   .info-address { font-size: 16px; line-height: 1.55; }
   .info-actions .btn { font-size: 16px; letter-spacing: 0.02em; text-transform: none; }
 
-  .family.bride .family-photo-frame img {
-    transform: scale(1.45);
-    transform-origin: 56% 42%;
-  }
 }
 
 /* "Lễ thành hôn" to hơn, thêm khoảng thở trên/dưới */
@@ -2912,11 +2918,6 @@
     height: 100%;
     aspect-ratio: auto;
     object-fit: cover;
-  }
-  /* Zoom gần vào chú rể: mặt ở khoảng 51% / 21% của ảnh gốc */
-  .family.groom .family-photo-frame img {
-    object-position: 50% 40%;
-    transform: none;
   }
 
   /* Nhãn một hàng, cột nhãn rộng cố định → mọi tên bắt đầu cùng một vị trí */

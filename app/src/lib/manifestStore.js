@@ -85,7 +85,10 @@ export async function saveManifest(m) {
 export function applyToManifest(mutate, options) {
   return queueManifestWrite(async () => {
     const manifest = await loadManifest(options);
-    await saveManifest(await mutate(manifest));
+    const next = await mutate(manifest);
+    await saveManifest(next);
+    // Trả bản vừa ghi, để trang admin cập nhật bản sao đang hiện mà khỏi đọc lại
+    return next;
   });
 }
 

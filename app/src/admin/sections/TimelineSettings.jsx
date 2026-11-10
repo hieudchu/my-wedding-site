@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { compressImage } from '../../lib/compressImage';
-import { uploadVariants, CACHE_SECONDS } from '../../lib/imageVariants';
-import { withEntry, withoutEntry, entryId, nowVersion } from '../../lib/mediaManifest';
-import { applyToManifest, seedFolderFromStorage, manifestErrorHint } from '../../lib/manifestStore';
+import { withoutEntry, findEntry, fitFor } from '../../lib/mediaManifest';
+import { applyToManifest, loadManifest, manifestErrorHint } from '../../lib/manifestStore';
+import { useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb } from '../framing';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 
@@ -12,8 +11,13 @@ const TIMELINE_FOLDER = 'timeline';
 export default function TimelineSettings() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState({});
   const { toast, ToastEl } = useToast();
+  const framer = useFramer();
+  // Bản kê — để biết khung đã lưu của từng ảnh. Hỏng thì null: ảnh hiện như chưa chỉnh.
+  const [manifest, setManifest] = useState(null);
+  useEffect(() => {
+    loadManifest().then(setManifest, (err) => console.error('Không đọc được bản kê media:', err));
+  }, []);
 
   const fetchEvents = async () => {
     const { data } = await supabase
@@ -95,58 +99,61 @@ export default function TimelineSettings() {
   const fileNameIn = (path) =>
     (path || '').startsWith(`${TIMELINE_FOLDER}/`) ? path.slice(TIMELINE_FOLDER.length + 1) : null;
 
-  const uploadImage = async (eventId, picked) => {
-    setUploading((prev) => ({ ...prev, [eventId]: true }));
-    const file = await compressImage(picked);
-    const ext = file.name.split('.').pop();
-    const fileName = `${eventId}.${ext}`;
-    const path = `${TIMELINE_FOLDER}/${fileName}`;
-    const { error } = await supabase.storage
-      .from('media')
-      .upload(path, file, { upsert: true, cacheControl: CACHE_SECONDS });
-    if (error) {
-      setUploading((prev) => ({ ...prev, [eventId]: false }));
-      toast('Lỗi upload ảnh');
-      return;
-    }
-    const opt = await uploadVariants(TIMELINE_FOLDER, fileName, file);
-    const v = nowVersion();
-    setUploading((prev) => ({ ...prev, [eventId]: false }));
-
-    // Ảnh cũ của sự kiện này có thể mang đuôi khác, tức là một file khác hẳn chứ
-    // không phải file vừa bị đè lên. Không dọn thì nó nằm lại trong kho mãi và
-    // bản kê vẫn kể tên nó.
-    const stale = fileNameIn(events.find((e) => e.id === eventId)?.image_path);
-    if (stale && stale !== fileName) {
-      await supabase.storage.from('media').remove([`${TIMELINE_FOLDER}/${stale}`]);
-    }
-
-    updateEvent(eventId, 'image_path', path);
-    // Auto-save the path to DB
-    await supabase
-      .from('timeline_events')
-      .update({ image_path: path, updated_at: new Date().toISOString() })
-      .eq('id', eventId);
-
-    const hint = await writeManifest(async (m) => {
-      // Thư mục chưa có trong bản kê thì chép cả kho vào trước: ghi mỗi tấm vừa
-      // tải lên là những tấm còn lại biến mất khỏi trang khách.
-      let next = await seedFolderFromStorage(m, TIMELINE_FOLDER);
-      if (stale && stale !== fileName) next = withoutEntry(next, TIMELINE_FOLDER, stale);
-      return withEntry(next, TIMELINE_FOLDER, {
-        id: entryId(TIMELINE_FOLDER, fileName),
-        file: fileName,
-        v,
-        ...(opt ? { opt: { ...opt, v } } : {}),
-        // Ảnh lịch trình đi qua MediaImage, chỉ cần URL chứ không cần số đo;
-        // 0 nghĩa là chưa biết, y như những mục chép sẵn từ kho.
-        w: 0,
-        h: 0,
-        caption: '',
-      });
+  /**
+   * Chọn ảnh cho một mốc giờ: mở trình chỉnh khung trước, chưa tải gì. Bấm "Tải lên"
+   * thì xoay/nén/tải/sinh bản nén/ghi bản kê kèm khung (framing.uploadFramed), rồi
+   * mới nối đường dẫn vào mốc giờ.
+   */
+  const uploadImage = (ev, picked) => {
+    const eventId = ev.id;
+    framer.openNew({
+      slot: `${TIMELINE_FOLDER}/${eventId}.jpg`,
+      label: `${ev.time} · ${ev.label_vi || 'Sự kiện'}`,
+      file: picked,
+      onPickAnother: () => document.getElementById(`tl-upload-${eventId}`)?.click(),
+      onSave: async (result, report) => {
+        // Ảnh cũ của sự kiện này có thể mang đuôi khác, tức là một file khác hẳn chứ
+        // không phải file vừa bị đè lên. Không dọn thì nó nằm lại trong kho mãi và
+        // bản kê vẫn kể tên nó.
+        const stale = fileNameIn(events.find((e) => e.id === eventId)?.image_path);
+        const { manifest: next, name } = await uploadFramed({
+          folder: TIMELINE_FOLDER,
+          fileName: (file) => `${eventId}.${file.name.split('.').pop()}`,
+          picked,
+          result,
+          report,
+          extra: (m, v, fileName) => (stale && stale !== fileName ? withoutEntry(m, TIMELINE_FOLDER, stale) : m),
+        });
+        setManifest(next);
+        if (stale && stale !== name) {
+          await supabase.storage.from('media').remove([`${TIMELINE_FOLDER}/${stale}`]);
+        }
+        const path = `${TIMELINE_FOLDER}/${name}`;
+        updateEvent(eventId, 'image_path', path);
+        const { error } = await supabase
+          .from('timeline_events')
+          .update({ image_path: path, updated_at: new Date().toISOString() })
+          .eq('id', eventId);
+        toast(error ? 'Ảnh đã lên kho nhưng chưa nối được vào mốc giờ · bấm Lưu' : 'Đã tải lên — ' + ev.label_vi);
+      },
     });
+  };
 
-    toast(hint ? 'Đã tải ảnh lên kho nhưng chưa ghi được bản kê · ' + hint : 'Đã upload ảnh!');
+  const editFrame = (ev) => {
+    const name = fileNameIn(ev.image_path);
+    const entry = findEntry(manifest, ev.image_path);
+    framer.openExisting({
+      slot: ev.image_path,
+      label: `${ev.time} · ${ev.label_vi || 'Sự kiện'}`,
+      src: entry ? entrySrc(TIMELINE_FOLDER, entry) : getPublicUrl(ev.image_path),
+      fit: fitFor(entry),
+      w: entry?.w || 0,
+      h: entry?.h || 0,
+      onSave: async (r) => {
+        setManifest(await saveFit({ folder: TIMELINE_FOLDER, fileName: name, fit: r.fit }));
+        toast('Đã lưu khung — ' + ev.label_vi);
+      },
+    });
   };
 
   const removeImage = async (eventId, imagePath) => {
@@ -163,6 +170,7 @@ export default function TimelineSettings() {
     // chẳng có mục nào để gỡ.
     const name = fileNameIn(imagePath);
     const hint = name ? await writeManifest((m) => withoutEntry(m, TIMELINE_FOLDER, name)) : null;
+    if (!hint) loadManifest().then(setManifest, () => {});
     toast(hint ? 'Đã xoá file nhưng chưa cập nhật được bản kê · ' + hint : 'Đã xoá ảnh');
   };
 
@@ -192,35 +200,41 @@ export default function TimelineSettings() {
         {events.map((ev) => (
           <div key={ev.id} style={{ padding: '18px 0', borderBottom: '1px solid #f0eded' }}>
             <div className="slot-card">
-              <div
-                className="slot-preview"
-                onClick={() => {
-                  if (!ev.image_path) document.getElementById(`tl-upload-${ev.id}`)?.click();
-                }}
+              {/* Ô xem trước đúng khung máy tính 4:3, áp khung đã lưu */}
+              <FitThumb
+                kind="43"
+                src={ev.image_path ? getPublicUrl(ev.image_path) + `?v=${findEntry(manifest, ev.image_path)?.v || ''}` : null}
+                fit={fitFor(findEntry(manifest, ev.image_path))}
+                alt={ev.label_vi}
+                onClick={() => document.getElementById(`tl-upload-${ev.id}`)?.click()}
               >
-                {ev.image_path ? (
-                  <img src={getPublicUrl(ev.image_path) + '?t=' + Date.now()} alt={ev.label_vi} />
-                ) : (
-                  <div className="slot-empty">
-                    {uploading[ev.id] ? 'Uploading…' : '+ Upload'}
-                  </div>
-                )}
-                <input
-                  id={`tl-upload-${ev.id}`}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadImage(ev.id, file);
-                    e.target.value = '';
-                  }}
-                  disabled={uploading[ev.id]}
-                />
-              </div>
+                <div className="slot-empty">+ Upload</div>
+              </FitThumb>
+              <input
+                id={`tl-upload-${ev.id}`}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadImage(ev, file);
+                  e.target.value = '';
+                }}
+              />
               <div className="slot-info">
                 <div className="slot-label">{ev.label_vi || 'Sự kiện mới'}</div>
                 <div className="slot-desc">{ev.image_path || 'Chưa có ảnh · No image yet'}</div>
+                {ev.image_path && (
+                  <div className={'slot-status' + (fitStatus(fitFor(findEntry(manifest, ev.image_path))).set ? ' filled' : '')}>
+                    {fitStatus(fitFor(findEntry(manifest, ev.image_path))).text}
+                  </div>
+                )}
+                {ev.image_path && (
+                  <div className="if-slot-act">
+                    <button type="button" className="rw-btn if-go" onClick={() => editFrame(ev)}>Chỉnh khung</button>
+                    <button type="button" className="rw-btn" onClick={() => document.getElementById(`tl-upload-${ev.id}`)?.click()}>Đổi ảnh</button>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   {ev.image_path && (
                     <button className="admin-btn admin-btn-danger" style={{ padding: '5px 12px', fontSize: 11 }} onClick={() => removeImage(ev.id, ev.image_path)}>
@@ -282,6 +296,7 @@ export default function TimelineSettings() {
           + Thêm sự kiện · Add event
         </button>
       </div>
+      {framer.element}
       {ToastEl}
     </div>
   );

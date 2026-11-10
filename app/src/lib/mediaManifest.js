@@ -34,9 +34,46 @@ function normalizeOpt(raw) {
   return w.length ? { v: raw.v, fmt: raw.fmt, w } : null;
 }
 
+/**
+ * `fit` = { v, d: {x, y, z}, m: {x, y, z} | null }: phần ảnh được giữ trong khung.
+ *
+ *   x, y — tiêu điểm, % theo bề rộng/cao ảnh (0–100). Điểm này đứng yên ở cùng vị
+ *          trí tương đối trong mọi khung, dù khung có tỉ lệ nào.
+ *   z    — độ phóng 1–3; 1 = ảnh vừa khít khung (object-fit: cover).
+ *   d    — bố cục máy tính · m — bố cục điện thoại (PHONE_QUERY); null = dùng d.
+ *   v    — phiên bản ẢNH lúc lưu khung. Khác `entry.v` (ảnh đã bị thay) thì bỏ qua —
+ *          xem fitFor. Khung của ảnh cũ áp lên ảnh mới là lệch mặt người ra ngoài.
+ *
+ * Không cắt file: khách bấm vào ảnh vẫn mở ảnh đầy đủ.
+ */
+const FIT_CENTER = Object.freeze({ x: 50, y: 50, z: 1 });
+
+function normalizePoint(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const { x, y, z } = raw;
+  if (![x, y, z].every(Number.isFinite)) return null;
+  const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+  return { x: clamp(x, 0, 100), y: clamp(y, 0, 100), z: clamp(z, 1, 3) };
+}
+
+function normalizeFit(raw) {
+  if (!raw || typeof raw !== 'object' || !Number.isFinite(raw.v)) return null;
+  const d = normalizePoint(raw.d) || { ...FIT_CENTER };
+  const m = normalizePoint(raw.m);
+  return { v: raw.v, d, m };
+}
+
+/** Khung hợp lệ của một mục, hoặc null (chưa chỉnh, hoặc đã thay ảnh từ lúc chỉnh). */
+export function fitFor(entry) {
+  const fit = entry?.fit;
+  if (!fit || fit.v !== entry.v) return null;
+  return fit;
+}
+
 function normalizeEntry(raw) {
   if (!raw || typeof raw.file !== 'string' || !raw.file) return null;
   const opt = normalizeOpt(raw.opt);
+  const fit = normalizeFit(raw.fit);
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : raw.file,
     file: raw.file,
@@ -47,6 +84,8 @@ function normalizeEntry(raw) {
     // Phải giữ lại ở đây: mọi đường ghi đều đi qua hàm này, bỏ sót là lượt ghi kế
     // tiếp của admin xoá sạch thông tin bản nén mà không ai hay.
     ...(opt ? { opt } : {}),
+    // Cùng lý do với `opt`: bỏ sót ở đây là lượt ghi kế tiếp xoá sạch khung đã chỉnh.
+    ...(fit ? { fit } : {}),
   };
 }
 
@@ -232,6 +271,9 @@ export function buildFromListing(listingByFolder, previous) {
         h: old?.h || 0,
         caption: old?.caption || '',
         opt: old?.opt,
+        // Khung chỉ còn hiệu lực nếu `fit.v` khớp `v` mới (fitFor), nên mang sang
+        // luôn cũng an toàn: file bị thay ngoài trang này thì khung tự vô hiệu.
+        fit: old?.fit,
       });
     }
     const keepOrder = listFolder(previous, folder).map((e) => e.id);

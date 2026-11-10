@@ -78,6 +78,21 @@ img {
   max-width: 100%;
 }
 
+/* Khung ảnh admin đã chỉnh — tiêu điểm (x, y) + độ phóng z, gắn bởi lib/fit.js.
+   Tiêu điểm đứng yên ở cùng vị trí tương đối trong mọi khung, nên một bộ số áp được
+   cho mọi tỉ lệ. Với z ≥ 1 và x, y trong 0–100 thì không bao giờ lộ khoảng trống.
+   Máy tính dùng --fd*; khối PHONE_QUERY trong sections.css đổi sang --fm*.
+   Trình chỉnh khung trong admin dùng CHÍNH quy tắc này cho mọi ô xem trước (đặt
+   thẳng --fx/--fy/--fz inline), nên xem trước không thể lệch với trang khách. */
+img.has-fit {
+  --fx: var(--fdx, 50%);
+  --fy: var(--fdy, 50%);
+  --fz: var(--fdz, 1);
+  object-position: var(--fx) var(--fy);
+  transform: scale(var(--fz));
+  transform-origin: var(--fx) var(--fy);
+}
+
 button,
 input,
 select {

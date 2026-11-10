@@ -3,7 +3,7 @@ import { compressImage, describeSaving } from '../../lib/compressImage';
 import { runQueue } from '../../lib/uploadQueue';
 import { uploadVariants, CACHE_SECONDS } from '../../lib/imageVariants';
 import {
-  withEntry, withoutEntry, withOrder, listFolder,
+  withEntry, withoutEntry, withOrder, listFolder, findEntry, fitFor,
   buildFromListing, entryId, nowVersion, MEDIA_FOLDERS,
 } from '../../lib/mediaManifest';
 import {
@@ -12,6 +12,9 @@ import {
 } from '../../lib/manifestStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
+import {
+  useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb, FitImg, canFrame, measure,
+} from '../framing';
 
 // Thư mục duy nhất có ô chú thích. Caption nằm ở hai chỗ nên chỗ nào cũng phải
 // gọi đúng tên thư mục này.
@@ -80,6 +83,7 @@ const SECTIONS = [
           'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung chú rể”.',
         shape: 'arch',
+        thumb: 'arch',
         accept: 'image/*',
       },
       {
@@ -90,6 +94,7 @@ const SECTIONS = [
           'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung cô dâu”.',
         shape: 'arch',
+        thumb: 'arch',
         accept: 'image/*',
       },
     ],
@@ -103,9 +108,10 @@ const SECTIONS = [
         label: 'Ảnh nền phía trên bên phải',
         where: 'Sau tấm thiệp, phía trên bên phải, tràn ra ngoài mép màn hình.',
         look:
-          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, trôi chậm ngược chiều cuộn. Chỉ thấy phần giữa ảnh, nên đừng để mặt người sát mép. Bấm vào vẫn mở được ảnh đầy đủ.',
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, trôi chậm ngược chiều cuộn. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
+        thumb: 'blob34',
         accept: 'image/*',
       },
       {
@@ -113,9 +119,10 @@ const SECTIONS = [
         label: 'Ảnh nền phía dưới bên trái',
         where: 'Sau tấm thiệp, phía dưới bên trái, tràn ra ngoài mép màn hình.',
         look:
-          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 4:5, trôi chậm ngược chiều cuộn. Chỉ thấy phần giữa ảnh, nên đừng để mặt người sát mép. Bấm vào vẫn mở được ảnh đầy đủ.',
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 4:5, trôi chậm ngược chiều cuộn. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
+        thumb: 'blob45',
         accept: 'image/*',
       },
     ],
@@ -138,9 +145,10 @@ const SECTIONS = [
         label: 'Ảnh phía trên đồng hồ đếm ngược',
         where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, rộng gần hết bề ngang mục.',
         look:
-          'Dải ngang 16:9, khung đếm ngược đè lên khoảng 50px mép dưới — chọn ảnh chụp ngang và đừng để gì quan trọng ở đáy ảnh.',
+          'Dải ngang 16:9 trên máy tính, khung đếm ngược đè lên khoảng 50px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
         empty: 'Chưa có ảnh thì chỗ đó là dải kẻ sọc đề chữ “Hiếu và Minh”.',
         shape: 'wide',
+        thumb: 'wide',
         accept: 'image/*',
       },
     ],
@@ -191,34 +199,6 @@ function isVideo(name) {
 function getPublicUrl(path) {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
-
-// Ảnh hỏng có thể không bắn cả onload lẫn onerror. Không có mốc dừng thì luồng
-// treo, khối finally không chạy, và bảng upload kẹt ở "Đang tải lên…" với ô chọn
-// file bị khoá cho tới khi tải lại trang — trang này chỉ có một người dùng và
-// không có lối vào thứ hai, nên treo là hỏng hẳn.
-const MEASURE_TIMEOUT_MS = 5000;
-
-// Đọc kích thước từ chính file đã nén, để bản kê biết ảnh dọc hay ngang.
-// File nhạc thì trả 0 — bản kê chấp nhận 0 và trang khách tự xoay xở.
-const measure = (file) =>
-  new Promise((resolve) => {
-    if (!file.type.startsWith('image/')) return resolve({ w: 0, h: 0 });
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    let timer;
-    let settled = false;
-    const done = (dims) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      URL.revokeObjectURL(url);
-      resolve(dims);
-    };
-    timer = setTimeout(() => done({ w: 0, h: 0 }), MEASURE_TIMEOUT_MS);
-    img.onload = () => done({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => done({ w: 0, h: 0 });
-    img.src = url;
-  });
 
 /**
  * Đọc hàng caption của carousel. Hỏng thì trả {} chứ không ném: caption trong
@@ -304,7 +284,7 @@ async function rebuildManifestFromStorage() {
 }
 
 /* ── SlotUploader: single-file slot with preview ── */
-function SlotUploader({ slot, onToast, reloadKey }) {
+function SlotUploader({ slot, onToast, reloadKey, manifest, onManifest, framer }) {
   const [url, setUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -312,6 +292,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
 
   const folder = slot.storagePath.split('/')[0];
   const fileName = slot.storagePath.split('/').slice(1).join('/');
+  // Ô có khung để chỉnh (chân dung, ảnh nền thiệp, ảnh đếm ngược): chọn ảnh là mở
+  // trình chỉnh trước, chưa tải gì. Con dấu và ô không còn chỗ hiện thì tải như cũ.
+  const framable = canFrame(slot.storagePath);
+  const entry = findEntry(manifest, slot.storagePath);
+  const fit = fitFor(entry);
 
   const checkExisting = async () => {
     setLoading(true);
@@ -330,9 +315,28 @@ function SlotUploader({ slot, onToast, reloadKey }) {
   // phải biến khỏi ô xem trước, nếu không người dùng tưởng quét hụt.
   useEffect(() => { checkExisting(); }, [slot.storagePath, reloadKey]);
 
+  const pick = () => inputRef.current?.click();
+
   const handleUpload = async (e) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
+    if (framable) {
+      if (inputRef.current) inputRef.current.value = '';
+      framer.openNew({
+        slot: slot.storagePath,
+        label: slot.label,
+        file: picked,
+        onPickAnother: pick,
+        onSave: async (result, report) => {
+          // Đúng đường dẫn của ô, không theo đuôi file — xem chú thích ở nhánh dưới
+          const { manifest: next } = await uploadFramed({ folder, fileName, picked, result, report });
+          onManifest(next);
+          setUrl(getPublicUrl(slot.storagePath) + '?t=' + Date.now());
+          onToast('Đã tải lên — ' + slot.label);
+        },
+      });
+      return;
+    }
     setUploading(true);
 
     // Nén trước khi tải lên để kho ảnh không bao giờ chứa file 24 megapixel
@@ -380,7 +384,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
     // thư mục này ở lại đường liệt kê cũ mãi mãi và số lượt gọi không giảm nổi.
     // Đi chung applyToManifest với các bảng thư mục để không giẫm chân nhau.
     try {
-      await applyToManifest(async (m) => {
+      onManifest(await applyToManifest(async (m) => {
         const next = await seedFolderFromStorage(m, folder);
         return withEntry(next, folder, {
           id: entryId(folder, fileName),
@@ -391,7 +395,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
           caption: '',
           ...(opt ? { opt: { ...opt, v } } : {}),
         });
-      });
+      }));
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
       onToast('Đã tải file lên kho nhưng chưa ghi được bản kê · ' + manifestErrorHint(err));
@@ -406,7 +410,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
     await supabase.storage.from(BUCKET).remove([slot.storagePath]);
     setUrl(null);
     try {
-      await applyToManifest((m) => withoutEntry(m, folder, fileName));
+      onManifest(await applyToManifest((m) => withoutEntry(m, folder, fileName)));
       onToast('Deleted ' + slot.label);
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
@@ -414,11 +418,31 @@ function SlotUploader({ slot, onToast, reloadKey }) {
     }
   };
 
+  const editFrame = () =>
+    framer.openExisting({
+      slot: slot.storagePath,
+      label: slot.label,
+      // Chưa có trong bản kê (tải lên từ trước khi có bản kê) thì mở thẳng ảnh gốc
+      src: entry ? entrySrc(folder, entry) : url,
+      fit,
+      w: entry?.w || 0,
+      h: entry?.h || 0,
+      onSave: async (result) => {
+        onManifest(await saveFit({ folder, fileName, fit: result.fit }));
+        onToast('Đã lưu khung — ' + slot.label);
+      },
+    });
+
+  const status = fitStatus(fit);
+
   return (
     <div className="slot-card">
-      {/* Ô xem trước mang luôn hình dáng của chỗ ảnh sẽ nằm trên trang khách:
+      {framable && url && !loading ? (
+        <FitThumb kind={slot.thumb} src={url} fit={fit} alt={slot.label} onClick={pick} />
+      ) : (
+      /* Ô xem trước mang luôn hình dáng của chỗ ảnh sẽ nằm trên trang khách:
           vòm, mảng bo mềm, dải ngang hay huy hiệu tròn. Chữ tả một đằng mà ô
-          vuông vức một nẻo thì người xem vẫn phải tự hình dung. */}
+          vuông vức một nẻo thì người xem vẫn phải tự hình dung. */
       <div
         className={`slot-preview${slot.shape ? ` shape-${slot.shape}` : ''}`}
         onClick={() => inputRef.current?.click()}
@@ -447,6 +471,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
           style={{ display: 'none' }}
         />
       </div>
+      )}
+      {/* Ô xem trước khung bên trên không chứa ô chọn file — đặt riêng ở đây */}
+      {framable && url && !loading && (
+        <input ref={inputRef} type="file" accept={slot.accept} onChange={handleUpload} style={{ display: 'none' }} />
+      )}
       <div className="slot-info">
         <div className="slot-label">{slot.label}</div>
         <div className="slot-where">{slot.where}</div>
@@ -456,6 +485,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
         <div className={`slot-status ${loading ? '' : url ? 'filled' : 'empty'}`}>
           {loading ? (
             'Đang xem trong kho có gì…'
+          ) : url && framable ? (
+            <>
+              {status.text}
+              <span className="slot-path">{slot.storagePath}</span>
+            </>
           ) : url ? (
             <>
               Đang có ảnh — chính tấm đang hiện trong ô xem trước. Tải tấm khác lên là thay hẳn tấm đó.
@@ -465,6 +499,12 @@ function SlotUploader({ slot, onToast, reloadKey }) {
             slot.empty
           )}
         </div>
+        {url && framable && (
+          <div className="if-slot-act">
+            <button type="button" className="rw-btn if-go" onClick={editFrame}>Chỉnh khung</button>
+            <button type="button" className="rw-btn" onClick={pick}>Đổi ảnh</button>
+          </div>
+        )}
         {url && (
           <button className="admin-btn admin-btn-danger" style={{ marginTop: 8, padding: '5px 12px', fontSize: 11 }} onClick={handleDelete}>
             Xoá ảnh này
@@ -475,8 +515,29 @@ function SlotUploader({ slot, onToast, reloadKey }) {
   );
 }
 
+/* ── Một ảnh trong lưới album: ảnh đúng tỉ lệ thẻ máy tính, áp khung đã lưu ── */
+function FramedAlbumItem({ f, entry, disabled, onEdit, children }) {
+  const fit = fitFor(entry);
+  const { set } = fitStatus(fit);
+  // Thẻ máy tính: ảnh ngang 3:2, ảnh dọc 3:4 (Hero.jsx). Chưa biết số đo thì coi là dọc.
+  const landscape = entry?.w > entry?.h;
+  return (
+    <>
+      <div className="if-album-pic" style={{ aspectRatio: landscape ? '3 / 2' : '3 / 4' }}>
+        <FitImg src={f.url} fit={fit?.d} alt={f.name} />
+      </div>
+      <div className="if-album-foot">
+        <div className="file-name">{f.name}</div>
+        <div className={'if-fit-state' + (set ? ' set' : '')}>{set ? 'Đã chỉnh khung' : 'Giữa ảnh'}</div>
+        {children}
+        <button type="button" className="rw-btn if-go" onClick={onEdit} disabled={disabled}>Chỉnh khung</button>
+      </div>
+    </>
+  );
+}
+
 /* ── MultiFileManager: folder with multiple files ── */
-function MultiFileManager({ config, onToast, reloadKey }) {
+function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, framer }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -490,6 +551,9 @@ function MultiFileManager({ config, onToast, reloadKey }) {
   const dragFrom = useRef(null);                      // { index, name } của thẻ đang nhấc
   const dragBlocked = useRef(false);
   const hasCaptions = config.folder === CAPTION_FOLDER;
+  // Thư mục ảnh có khung để chỉnh (album, lịch trình): lưới ảnh kiểu album, mỗi ảnh
+  // một nút "Chỉnh khung". Nhạc giữ lưới cũ.
+  const framable = canFrame(`${config.folder}/_`);
 
   // Đang ghi thứ tự thì khoá mọi thứ khác động vào `files`: lỡ ghi hỏng còn trả
   // lưới về đúng bản trước đó được.
@@ -533,12 +597,12 @@ function MultiFileManager({ config, onToast, reloadKey }) {
     // đọc bản kê sẽ mãi hiện caption của lúc tải lên, còn mọi lần sửa sau đều
     // vô hình — kể cả lần xoá trắng.
     try {
-      await applyToManifest(async (m) => {
+      onManifest(await applyToManifest(async (m) => {
         const seeded = await seedFolderFromStorage(m, config.folder, updated);
         const old = listFolder(seeded, config.folder).find((en) => en.file === fileName);
         if (!old) return seeded;
         return withEntry(seeded, config.folder, { ...old, caption: updated[fileName] || '' });
-      });
+      }));
     } catch (err) {
       console.error('Không ghi được caption vào bản kê media:', err);
       onToast('Đã lưu caption nhưng chưa ghi được vào bản kê · ' + manifestErrorHint(err));
@@ -602,7 +666,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
     setReordering(true);
 
     try {
-      await applyToManifest(async (m) => {
+      onManifest(await applyToManifest(async (m) => {
         // Thư mục chưa có bản kê thì chép cả kho vào trước: withOrder không tạo
         // được mục mới, nên không chép thì thứ tự này chẳng lưu vào đâu cả — mà
         // chép thiếu thì trang khách mất ảnh.
@@ -614,7 +678,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
           .map((f) => list.find((en) => en.file === f.name)?.id)
           .filter(Boolean);
         return withOrder(seeded, config.folder, ids);
-      });
+      }));
       onToast('Đã lưu thứ tự');
     } catch (err) {
       console.error('Không ghi được thứ tự vào bản kê media:', err);
@@ -638,6 +702,35 @@ function MultiFileManager({ config, onToast, reloadKey }) {
   const handleUpload = async (e) => {
     const selected = Array.from(e.target.files);
     if (!selected.length) return;
+
+    // MỘT ảnh thì mở trình chỉnh trước khi tải. Nhiều ảnh một lúc thì tải cả mẻ như
+    // cũ (khung mặc định = giữa ảnh), rồi chỉnh từng tấm sau — không bắt ngồi chỉnh
+    // 30 tấm mới được tải.
+    if (framable && selected.length === 1 && selected[0].type.startsWith('image/')) {
+      const picked = selected[0];
+      if (inputRef.current) inputRef.current.value = '';
+      framer.openNew({
+        slot: `${config.folder}/${picked.name}`,
+        label: `${config.label} · ảnh mới`,
+        file: picked,
+        onPickAnother: () => inputRef.current?.click(),
+        onSave: async (result, report) => {
+          const { manifest: next, name } = await uploadFramed({
+            folder: config.folder,
+            fileName: (file) => file.name,
+            picked,
+            result,
+            report,
+            captions: hasCaptions ? captions : undefined,
+          });
+          onManifest(next);
+          onToast('Đã tải lên — ' + name);
+          fetchFiles();
+        },
+      });
+      return;
+    }
+
     setUploading(true);
     setProgress({ done: 0, total: selected.length });
 
@@ -681,7 +774,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
         // Đọc bản kê ngay trước lúc ghi chứ không đọc từ đầu mẻ: mẻ 30 ảnh chạy
         // vài phút, giữ bản đọc cũ suốt ngần ấy thời gian là mời người khác đè lên.
         const stamp = nowVersion();
-        await applyToManifest(async (m) => {
+        onManifest(await applyToManifest(async (m) => {
           // Thư mục chưa có trong bản kê thì chép cả kho vào trước, rồi mới đặt
           // mấy file vừa tải lên đè lên trên. Thiếu bước này, lần tải đầu tiên
           // vào một thư mục sẽ làm mọi ảnh cũ biến mất khỏi trang khách.
@@ -702,7 +795,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
             });
           }
           return next;
-        });
+        }));
       }
     } catch (err) {
       // File đã nằm trong kho rồi, chỉ bản kê là chưa kịp ghi. Nói rõ để còn quét lại,
@@ -735,12 +828,33 @@ function MultiFileManager({ config, onToast, reloadKey }) {
       saveCaptions(updated);
     }
     try {
-      await applyToManifest((m) => withoutEntry(m, config.folder, fileName));
+      onManifest(await applyToManifest((m) => withoutEntry(m, config.folder, fileName)));
       onToast('Đã xoá');
     } catch (err) {
       console.error('Không ghi được bản kê media:', err);
       onToast('Đã xoá file nhưng chưa cập nhật được bản kê · ' + manifestErrorHint(err));
     }
+  };
+
+  const editFrame = (f) => {
+    const entry = findEntry(manifest, `${config.folder}/${f.name}`);
+    framer.openExisting({
+      slot: `${config.folder}/${f.name}`,
+      label: `${config.label} · ${f.name}`,
+      src: entry ? entrySrc(config.folder, entry) : f.url,
+      fit: fitFor(entry),
+      w: entry?.w || 0,
+      h: entry?.h || 0,
+      onSave: async (result) => {
+        onManifest(await saveFit({
+          folder: config.folder,
+          fileName: f.name,
+          fit: result.fit,
+          captions: hasCaptions ? captions : undefined,
+        }));
+        onToast('Đã lưu khung — ' + f.name);
+      },
+    });
   };
 
   return (
@@ -784,7 +898,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
           Chưa có file nào · No files yet
         </div>
       ) : (
-        <div className="media-grid">
+        <div className={framable ? 'if-album' : 'media-grid'}>
           {files.map((f, index) => (
             <div
               key={f.name}
@@ -824,6 +938,26 @@ function MultiFileManager({ config, onToast, reloadKey }) {
                 handleReorder(source, index);
               }}
             >
+              {framable && isImage(f.name) ? (
+                <FramedAlbumItem
+                  f={f}
+                  entry={findEntry(manifest, `${config.folder}/${f.name}`)}
+                  disabled={busy}
+                  onEdit={() => editFrame(f)}
+                >
+                  {hasCaptions && (
+                    <input
+                      type="text"
+                      className="caption-input"
+                      placeholder="Chú thích · Caption"
+                      value={captions[f.name] || ''}
+                      onChange={(e) => handleCaptionChange(f.name, e.target.value)}
+                      onBlur={() => handleCaptionBlur(f.name)}
+                    />
+                  )}
+                </FramedAlbumItem>
+              ) : (
+              <>
               {isImage(f.name) && <img src={f.url} alt={f.name} />}
               {isVideo(f.name) && <video src={f.url} />}
               {isAudio(f.name) && (
@@ -854,6 +988,8 @@ function MultiFileManager({ config, onToast, reloadKey }) {
                   </div>
                 </>
               )}
+              </>
+              )}
               {/* Khoá lúc đang ghi thứ tự: xoá giữa chừng thì không còn lưới cũ để trả về */}
               <button
                 className="delete-btn"
@@ -882,7 +1018,9 @@ function MultiFileManager({ config, onToast, reloadKey }) {
             thứ tự vừa kéo. */}
         {uploading ? 'Đang tải lên…' : reordering ? 'Đang lưu thứ tự…' : 'Click to upload · Bấm để tải lên'}
         <div style={{ fontSize: 12, marginTop: 4, color: '#c4b8b5' }}>
-          Tải nhiều file cùng lúc · Upload multiple files at once
+          {framable
+            ? 'Chọn một ảnh để chỉnh khung trước khi tải · chọn nhiều ảnh thì tải luôn, chỉnh sau'
+            : 'Tải nhiều file cùng lúc · Upload multiple files at once'}
         </div>
       </div>
     </div>
@@ -896,6 +1034,19 @@ export default function MediaManager() {
   const [rescanError, setRescanError] = useState(null);
   // Tăng sau mỗi lượt quét xong, để các bảng con đọc lại kho và bản kê
   const [reloadKey, setReloadKey] = useState(0);
+  // Bản sao bản kê để các ô biết khung đã lưu. Đọc một lần cho cả trang (không phải
+  // mỗi ô một lượt), cập nhật bằng chính bản vừa ghi sau mỗi lượt ghi.
+  // Đọc hỏng thì null: các ô hiện như chưa chỉnh khung, lưu khung vẫn đọc bản mới.
+  const [manifest, setManifest] = useState(null);
+  const framer = useFramer();
+
+  useEffect(() => {
+    let alive = true;
+    loadManifest()
+      .then((m) => { if (alive) setManifest(m); })
+      .catch((err) => console.error('Không đọc được bản kê media:', err));
+    return () => { alive = false; };
+  }, [reloadKey]);
 
   const handleRescan = async () => {
     // Bấm hai lần thì lượt sau xếp hàng sau lượt trước và quét lại y hệt — vô
@@ -966,20 +1117,37 @@ export default function MediaManager() {
           rời rạc không ăn nhập gì với đường đi của khách. */}
       {SECTIONS.map((section) =>
         section.folder ? (
-          <MultiFileManager key={section.folder} config={section} onToast={toast} reloadKey={reloadKey} />
+          <MultiFileManager
+            key={section.folder}
+            config={section}
+            onToast={toast}
+            reloadKey={reloadKey}
+            manifest={manifest}
+            onManifest={setManifest}
+            framer={framer}
+          />
         ) : (
           <div key={section.title} className="admin-card">
             <h3>{section.title}</h3>
             <p className="card-where">{section.hint}</p>
             <div className="slot-grid">
               {section.slots.map((slot) => (
-                <SlotUploader key={slot.storagePath} slot={slot} onToast={toast} reloadKey={reloadKey} />
+                <SlotUploader
+                  key={slot.storagePath}
+                  slot={slot}
+                  onToast={toast}
+                  reloadKey={reloadKey}
+                  manifest={manifest}
+                  onManifest={setManifest}
+                  framer={framer}
+                />
               ))}
             </div>
           </div>
         )
       )}
 
+      {framer.element}
       {ToastEl}
     </div>
   );

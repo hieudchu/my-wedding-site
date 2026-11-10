@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigured } from './supabase';
-import { findEntry, listFolder, emptyManifest, storageVersion, variantPaths } from './mediaManifest';
+import { findEntry, listFolder, emptyManifest, storageVersion, variantPaths, fitFor } from './mediaManifest';
 
 const BUCKET = 'media';
 
@@ -110,7 +110,8 @@ function sourcesFor(folder, entry) {
   const variants = variantPaths(folder, entry)
     .map(({ w, path }) => ({ w, url: buildPublicUrl(path, entry.opt.v) }))
     .filter((x) => x.url);
-  if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original };
+  const fit = fitFor(entry);
+  if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original, fit };
   const mid = [...variants].reverse().find((x) => x.w <= 960) || variants[0];
   return {
     url: mid.url,
@@ -118,6 +119,7 @@ function sourcesFor(folder, entry) {
     small: variants[0].url,
     full: variants[variants.length - 1].url,
     original,
+    fit,
   };
 }
 

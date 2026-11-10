@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { formatDateParts } from '../lib/config';
 import { useMediaList } from '../hooks/useMedia';
+import { fitProps } from '../lib/fit';
 import { useViewport, TABLET_MAX } from '../hooks/useViewport';
 import { useLightbox } from './Lightbox';
 import ScriptName from './ScriptName';
@@ -122,6 +123,7 @@ function PhoneHero({ config, siteText = {}, visible }) {
                     srcSet={p.srcSet}
                     sizes={p.srcSet ? '(orientation: landscape) 40vw, 92vw' : undefined}
                     alt="Ảnh cưới Hiếu và Minh"
+                    {...fitProps(p.fit)}
                     decoding="async"
                     fetchpriority={i === slide ? 'high' : 'low'}
                   />
@@ -374,6 +376,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
                     srcSet={p.srcSet}
                     sizes={p.srcSet ? '(max-width: 1080px) 42vw, 420px' : undefined}
                     alt="Ảnh cưới Hiếu và Minh"
+                    {...fitProps(p.fit)}
                     onLoad={onImgLoad(i)}
                     decoding="async"
                     fetchpriority={i === slide ? 'high' : 'low'}

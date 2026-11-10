@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Admin › Media — trình chỉnh khung ảnh (prototype)</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+
+    <!-- Font tự host, giống production -->
+    <link rel="stylesheet" href="./fonts/fonts.css" />
+    <!-- Bản sao nguyên văn app/src/admin/admin.css — KHÔNG sửa -->
+    <link rel="stylesheet" href="./styles/admin.css" />
+    <!-- Mới: trình chỉnh khung + lối vào trên trang Media -->
+    <link rel="stylesheet" href="./styles/image-framer.css" />
+    <style>body { margin: 0; }</style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+
+    <!-- Bảng khung từng ô (DATA-CONTRACT.md §3) -->
+    <script src="./frames.js"></script>
+    <!-- Component cần port + trang Media giả lập. Babel tải bằng XHR nên PHẢI mở qua http:// -->
+    <script type="text/babel" src="./ImageFramer.jsx" data-presets="react"></script>
+    <script type="text/babel" src="./app.jsx" data-presets="react"></script>
+
+    <script>
+      window.addEventListener('load', function () {
+        if (location.protocol !== 'file:') return;
+        document.getElementById('root').innerHTML =
+          '<div style="font-family:system-ui;max-width:640px;margin:15vh auto;padding:0 24px;line-height:1.7;color:#6B5E5B">' +
+          '<h1 style="font-weight:500">Cần chạy qua máy chủ cục bộ</h1>' +
+          '<p>Double-click <b>start.command</b> (macOS), hoặc chạy <code>python3 -m http.server 8000</code> trong thư mục này rồi mở <code>http://localhost:8000</code>.</p>' +
+          '</div>';
+      });
+    </script>
+  </body>
+</html>

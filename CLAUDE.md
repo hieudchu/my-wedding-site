@@ -167,7 +167,24 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   field (`{ v, fmt, w: [...] }`) says which variants exist. `variantPaths()` only uses
   them when `opt.v === v` — a replaced photo whose variants were not regenerated falls
   back to the original instead of showing the old image.
-- `normalizeEntry()` must keep `opt`; every manifest write goes through it.
+- `normalizeEntry()` must keep `opt` **and `fit`**; every manifest write goes through it.
+- **Image framing** (11/2026): an entry's `fit` (`{ v, d: {x,y,z}, m: {x,y,z} | null }`)
+  is the admin-chosen focal point (% of the image) + zoom (1–3) for desktop (`d`) and
+  phone layouts (`m`, null = same as `d`). Non-destructive: files are never cropped and
+  the lightbox still shows the whole photo. `fitFor()` ignores a `fit` whose `v` differs
+  from the entry's `v`, so a replaced photo falls back to centre.
+  - Guest side: `lib/fit.js` puts `has-fit` + `--fd*`/`--fm*` vars on the `<img>`
+    (`MediaImage`, both carousels in `Hero.jsx`). The rule is `img.has-fit` in
+    `globals.css`; the PHONE_QUERY block in `sections.css` switches it to `--fm*`, and
+    turns it off for `.countdown-photo` (phones show that photo uncropped).
+  - **Never hard-code a crop for one photo in CSS** (`object-position`/`scale` on a
+    section's img). It used to be done for the bride/groom/invitation photos; those
+    values now live in the manifest (migration `20261111000100`).
+  - Admin side: `admin/ImageFramer.jsx` (ported from the Claude Design bundle in
+    `handoff-media-editor/`), frame table `admin/framerFrames.js` — **update it when a
+    section's image ratio/shape changes in `sections.css`**. Upload/save glue is
+    `admin/framing.jsx` (`uploadFramed`, `saveFit`). Picking one image opens the framer
+    before anything is uploaded; picking several uploads them centred.
 - Variant URLs carry `?v=` and are cached for a year (`max-age=31536000`), so a new
   upload is a new URL. The Supabase CDN returns `HIT` for them.
 - All three admin upload paths call `uploadVariants()` (`lib/imageVariants.js`), which
@@ -207,6 +224,8 @@ Two traps found during the mobile port:
   `-webkit-font-smoothing: antialiased` thins the admin text on macOS, so
   `admin/admin-isolation.css` resets it. Put any future admin-vs-guest CSS
   conflict fixes there, not in `admin.css`.
+- The image framer's styles are `admin/image-framer.css` (`if-` classes), not
+  `admin.css`.
 - "Đã gọi" (BR-1, 11/2026) stores the call time in `rsvps.called_at` (null = not
   called; click again to clear). Guests cannot set it: the anon insert policy requires
   `called_at is null`. Its styles live in `sections/RSVPList.css`, not `admin.css`.

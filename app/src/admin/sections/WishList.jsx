@@ -3,18 +3,21 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 import { downloadExcel, excelDateVN, datedName } from '../exportExcel';
 
+/** Giờ Việt Nam, dạng dd/MM HH:mm — ngày trước giờ sau, cho dễ đọc */
 function timeVN(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('vi-VN', {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
     hour12: false, timeZone: 'Asia/Ho_Chi_Minh',
-  }).replace(',', '');
+  }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  return `${p.day}/${p.month} ${p.hour}:${p.minute}`;
 }
 
 export default function WishList() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showHidden, setShowHidden] = useState(false);
+  const [q, setQ] = useState('');
   const { toast, ToastEl } = useToast();
 
   const fetchAll = async () => {
@@ -43,7 +46,11 @@ export default function WishList() {
     toast('Đã xoá');
   };
 
-  const visible = rows.filter((w) => showHidden || !w.hidden);
+  // Tìm theo tên hoặc nội dung, không phân biệt hoa thường và dấu ("hung" tìm ra "Hùng")
+  const fold = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+  const needle = fold(q.trim());
+  const visible = rows.filter((w) => (showHidden || !w.hidden)
+    && (!needle || fold(w.name).includes(needle) || fold(w.message).includes(needle)));
   const preset = rows.filter((w) => w.is_preset).length;
 
   const exportExcel = async () => {
@@ -76,7 +83,14 @@ export default function WishList() {
         <div className="rsvp-stat"><div className="n">{preset}</div><div className="l">Soạn sẵn</div></div>
       </div>
 
-      <div className="admin-card" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div className="admin-card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="admin-field" style={{ width: 300 }}>
+          <input
+            placeholder="Tìm theo tên hoặc nội dung lời chúc"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#6B5E5B' }}>
           <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
           Hiện lời chúc đã ẩn
@@ -84,40 +98,51 @@ export default function WishList() {
         <span style={{ marginLeft: 'auto', fontSize: 13, color: '#A89996' }}>{visible.length} lời chúc</span>
       </div>
 
-      {visible.length === 0 ? (
-        <div className="admin-card" style={{ textAlign: 'center', padding: 40, color: '#A89996' }}>
-          Chưa có lời chúc nào
-        </div>
-      ) : (
-        visible.map((w) => (
-          <div className="admin-card" key={w.id} style={w.hidden ? { opacity: 0.45 } : undefined}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: '#A89996' }}>{timeVN(w.created_at)}</span>
-              {w.name && <strong style={{ fontSize: 13 }}>{w.name}</strong>}
-              {w.is_preset && <span className="rsvp-badge yes">Lời chúc soạn sẵn</span>}
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                <button
-                  className="admin-btn admin-btn-secondary"
-                  style={{ padding: '4px 10px', fontSize: 11 }}
-                  onClick={() => toggleHidden(w)}
-                >
-                  {w.hidden ? 'Hiện' : 'Ẩn'}
-                </button>
-                <button
-                  className="admin-btn admin-btn-danger"
-                  style={{ padding: '4px 10px', fontSize: 11 }}
-                  onClick={() => remove(w)}
-                >
-                  Xoá
-                </button>
-              </span>
-            </div>
-            <div style={{ fontSize: 14, lineHeight: 1.7, color: '#6B5E5B', whiteSpace: 'pre-wrap' }}>
-              {w.message}
-            </div>
+      <div className="admin-card" style={{ overflow: 'auto' }}>
+        {visible.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#A89996' }}>
+            {rows.length ? 'Không có lời chúc nào khớp' : 'Chưa có lời chúc nào'}
           </div>
-        ))
-      )}
+        ) : (
+          <table className="rsvp-table">
+            <thead>
+              <tr>
+                <th style={{ whiteSpace: 'nowrap' }}>Thời gian</th><th>Họ tên</th><th>Lời chúc</th><th>Loại</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((w) => (
+                <tr key={w.id} style={{ verticalAlign: 'top', ...(w.hidden ? { opacity: 0.45 } : {}) }}>
+                  <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{timeVN(w.created_at)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}><strong>{w.name || '—'}</strong></td>
+                  <td style={{ minWidth: 280, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{w.message}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {w.is_preset
+                      ? <span className="rsvp-badge yes">Soạn sẵn</span>
+                      : <span style={{ fontSize: 12, color: '#A89996' }}>Tự viết</span>}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button
+                      className="admin-btn admin-btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: 11, marginRight: 6 }}
+                      onClick={() => toggleHidden(w)}
+                    >
+                      {w.hidden ? 'Hiện' : 'Ẩn'}
+                    </button>
+                    <button
+                      className="admin-btn admin-btn-danger"
+                      style={{ padding: '4px 10px', fontSize: 11 }}
+                      onClick={() => remove(w)}
+                    >
+                      Xoá
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <div className="admin-actions">
         <button className="admin-btn admin-btn-secondary" onClick={fetchAll}>Tải lại</button>

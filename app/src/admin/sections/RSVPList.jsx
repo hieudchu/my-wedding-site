@@ -13,13 +13,14 @@ function guestText(r) {
   return `${r.guest_count} người`;
 }
 
-/** Giờ Việt Nam, dạng dd/MM HH:mm */
+/** Giờ Việt Nam, dạng dd/MM HH:mm — ngày trước giờ sau, cho dễ đọc */
 function timeVN(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('vi-VN', {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
     hour12: false, timeZone: 'Asia/Ho_Chi_Minh',
-  }).replace(',', '');
+  }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  return `${p.day}/${p.month} ${p.hour}:${p.minute}`;
 }
 
 export default function RSVPList() {
@@ -172,7 +173,7 @@ export default function RSVPList() {
           <table className="rsvp-table">
             <thead>
               <tr>
-                <th>Thời gian</th><th>Họ tên</th><th>Bên</th><th>Số người</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Thời gian</th><th>Họ tên</th><th>Bên</th><th>Số người</th>
                 <th>SĐT</th><th>Ghi chú</th><th></th>
               </tr>
             </thead>

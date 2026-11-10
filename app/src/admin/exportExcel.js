@@ -11,17 +11,27 @@
 export async function downloadExcel(fileName, sheet, columns, rows) {
   const { default: writeExcelFile } = await import('write-excel-file/browser');
 
-  const header = columns.map((c) => ({ value: c.header, fontWeight: 'bold' }));
+  const header = columns.map((c) => ({ value: c.header.normalize('NFC'), fontWeight: 'bold' }));
   const body = rows.map((row) => row.map((value, i) => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date) return { value, type: Date, format: 'dd/mm/yyyy hh:mm' };
-    return columns[i].wrap ? { value, wrap: true } : value;
+    // Chuẩn hoá về dạng dấu liền (NFC). Một số bộ gõ (Unikey ở vài chế độ, bàn phím
+    // macOS) gửi chữ có dấu thành chữ cái + dấu rời; Excel trên Windows hay vẽ dấu
+    // rời lệch khỏi chữ — trông như "lỗi font" dù dữ liệu đúng.
+    const v = typeof value === 'string' ? value.normalize('NFC') : value;
+    return columns[i].wrap ? { value: v, wrap: true } : v;
   }));
 
   await writeExcelFile([header, ...body], {
     sheet,
     columns: columns.map((c) => ({ width: c.width })),
     stickyRowsCount: 1,   // dòng tiêu đề đứng yên khi cuộn
+  }, {
+    // Mặc định thư viện KHÔNG ghi tên font nào, để mỗi phần mềm tự chọn (Aptos,
+    // Calibri, font của Numbers/Google Sheets…). Ghi rõ Arial: có sẵn trên mọi máy
+    // Windows, Mac, điện thoại và đủ dấu tiếng Việt.
+    fontFamily: 'Arial',
+    fontSize: 11,
   }).toFile(fileName);
 }
 

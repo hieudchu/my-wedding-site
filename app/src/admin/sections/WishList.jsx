@@ -50,7 +50,7 @@ export default function WishList() {
     try {
       await downloadExcel(datedName('loi-chuc'), 'Lời chúc', [
         { header: 'Thời gian', width: 17 },
-        { header: 'Tên', width: 20 },
+        { header: 'Họ tên', width: 26 },
         { header: 'Lời chúc', width: 70, wrap: true },
         { header: 'Soạn sẵn', width: 10 },
       ], visible.map((w) => [excelDateVN(w.created_at), w.name || '', w.message, w.is_preset ? 'Có' : '']));
@@ -67,7 +67,7 @@ export default function WishList() {
     <div>
       <h1>Lời chúc</h1>
       <p className="page-desc">
-        Lời chúc từ khách không thể tham dự. Form không có ô tên nên lời chúc là ẩn danh.
+        Lời chúc từ khách không thể tham dự.
       </p>
 
       <div className="rsvp-stats">

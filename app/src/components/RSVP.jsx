@@ -14,8 +14,9 @@ const NOTE_MAX = 300;
  * nút Gửi lời chúc → ô lời chúc → thẻ cảm ơn (no), để mỗi phần mở ra ngay dưới
  * nút của nó.
  *
- * "Đồng ý tham dự" ghi vào bảng `rsvps`; "Gửi lời chúc" ghi vào bảng `wishes`
- * (lời chúc ẩn danh — form cố ý không có ô tên).
+ * "Đồng ý tham dự" ghi vào bảng `rsvps`; "Gửi lời chúc" ghi vào bảng `wishes`.
+ * Cả hai form đều bắt buộc họ tên, và dùng CHUNG một ô tên: khách gõ tên ở form này
+ * rồi đổi sang form kia thì không phải gõ lại.
  *
  * Ô nhập cao 56px và chữ 17px: dưới 16px là iOS Safari tự phóng to trang mỗi lần
  * khách bấm vào ô.
@@ -73,10 +74,11 @@ export default function RSVP({ config, siteText = {} }) {
 
   const sendWish = async (text, isPreset = false) => {
     const msg = (text || '').trim().slice(0, WISH_MAX);
-    if (sending || !msg) return;
+    const who = name.trim().slice(0, 120);
+    if (sending || !msg || !who) return;
     setSending(true);
     try {
-      const { error } = await supabase.from('wishes').insert({ message: msg, is_preset: isPreset });
+      const { error } = await supabase.from('wishes').insert({ name: who, message: msg, is_preset: isPreset });
       if (error) throw error;
     } catch (err) {
       console.error('[wish] insert failed', err);
@@ -247,25 +249,38 @@ export default function RSVP({ config, siteText = {} }) {
 
           {mode === 'no' && !sent && (
             <div className="rsvp-form rsvp-wish">
-              <label className="rsvp-field full">
-                <span>Lời chúc của bạn</span>
-                <textarea
-                  value={wish}
-                  rows={5}
-                  maxLength={WISH_MAX}
-                  placeholder="Gửi đến Hiếu &amp; Minh đôi lời chúc mừng…"
-                  onChange={(e) => setWish(e.target.value.slice(0, WISH_MAX))}
-                />
-              </label>
+              <div className="rsvp-fields">
+                <label className="rsvp-field full">
+                  <span>Họ và tên</span>
+                  <input
+                    type="text"
+                    value={name}
+                    placeholder="Nguyễn Văn A"
+                    autoComplete="name"
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="rsvp-field full">
+                  <span>Lời chúc của bạn</span>
+                  <textarea
+                    value={wish}
+                    rows={5}
+                    maxLength={WISH_MAX}
+                    placeholder="Gửi đến Hiếu &amp; Minh đôi lời chúc mừng…"
+                    onChange={(e) => setWish(e.target.value.slice(0, WISH_MAX))}
+                  />
+                </label>
+              </div>
               <p className="rsvp-count" aria-live="polite">{wish.length}/{WISH_MAX}</p>
 
-              <button className="rsvp-submit" onClick={() => sendWish(wish)} disabled={sending || !wish.trim()}>
+              <button className="rsvp-submit" onClick={() => sendWish(wish)} disabled={sending || !name.trim() || !wish.trim()}>
                 {sending ? 'Đang gửi…' : 'Gửi'}
               </button>
               <button
                 className="rsvp-submit rsvp-submit--ghost"
                 onClick={() => sendWish(presetWish, true)}
-                disabled={sending}
+                disabled={sending || !name.trim()}
               >
                 Gửi form sẵn
               </button>

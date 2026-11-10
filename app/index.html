@@ -19,6 +19,23 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Hỏi nội dung + bản kê ảnh NGAY khi HTML tới, song song với lúc tải JS.
+      Trước đây phải đợi JS chạy xong mới hỏi, rồi trình duyệt còn gửi thêm một lượt
+      "hỏi đường" (CORS preflight) vì supabase-js gắn header riêng — ảnh đầu tiên
+      chỉ bắt đầu tải sau khoảng 2 giây trên 4G. Fetch trơn, apikey đặt trên URL,
+      không header riêng → không có preflight. Khoá publishable vốn đã nằm trong JS.
+      useSiteConfig dùng kết quả này; hỏng thì tự hỏi lại bằng supabase-js.
+    -->
+    <script>
+      (function () {
+        var url = '%VITE_SUPABASE_URL%', key = '%VITE_SUPABASE_PUBLISHABLE_KEY%';
+        if (!/^https:/.test(url) || key.charAt(0) === '%' || !window.fetch) return;
+        window.__siteConfig = fetch(url + '/rest/v1/site_config?select=key,value&apikey=' + encodeURIComponent(key))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; });
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

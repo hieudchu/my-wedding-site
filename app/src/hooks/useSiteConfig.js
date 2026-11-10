@@ -27,11 +27,16 @@ export function useSiteConfig() {
 
     async function fetchConfig() {
       try {
-        const { data, error } = await supabase
-          .from('site_config')
-          .select('key, value');
-
-        if (error) throw error;
+        // index.html đã hỏi sẵn từ lúc tải trang. Chỉ dùng một lần: lần mount sau
+        // (StrictMode, điều hướng) phải hỏi mới, không đọc lại bản cũ.
+        const early = window.__siteConfig;
+        window.__siteConfig = null;
+        let data = early ? await early : null;
+        if (!Array.isArray(data)) {
+          const res = await supabase.from('site_config').select('key, value');
+          if (res.error) throw res.error;
+          data = res.data;
+        }
         if (cancelled) return;
 
         const merged = { ...WEDDING_CONFIG };

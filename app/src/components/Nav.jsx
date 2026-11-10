@@ -46,6 +46,15 @@ export default function Nav({ config, siteText = {}, visible }) {
 
   const [playing, setPlaying] = useState(false);
   const [panel, setPanel] = useState(false);
+  // 2 giây sau khi trang tải xong thì cho trình duyệt nạp sẵn phần đầu bài nhạc,
+  // để lúc khách bấm phát không phải chờ mở kết nối + tải từ con số 0.
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    let timer;
+    const go = () => { timer = setTimeout(() => setWarm(true), 2000); };
+    if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
+    return () => { window.removeEventListener('load', go); clearTimeout(timer); };
+  }, []);
   const [menu, setMenu] = useState(false);
   const [trackIdx, setTrackIdx] = useState(0);
   const [volume, setVolume] = useState(0.6);
@@ -181,9 +190,10 @@ export default function Nav({ config, siteText = {}, visible }) {
       <audio
         ref={audioRef}
         src={musicUrl || undefined}
-        /* Bản nhạc nặng 5.5 MB. Chỉ nạp khi khách thật sự quan tâm tới nhạc —
-           mở bảng điều khiển hoặc bấm phát — chứ không nạp sẵn cho mọi lượt xem. */
-        preload={panel || playing ? 'metadata' : 'none'}
+        /* Không bao giờ 'auto': một bài vài MB nhân với mọi lượt xem là hết băng thông.
+           'metadata' chỉ lấy phần đầu file (độ dài bài + vài trăm KB), và chỉ khi
+           trang đã tải xong ảnh — xem `warm` ở trên. */
+        preload={warm || panel || playing ? 'metadata' : 'none'}
         loop={loop && tracks.length <= 1}
         onTimeUpdate={(e) => { if (dragMode.current !== 'seek') setCur(e.currentTarget.currentTime); }}
         onLoadedMetadata={onMeta}

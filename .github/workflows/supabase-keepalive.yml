@@ -1,0 +1,29 @@
+# Gói Free của Supabase tự TẠM DỪNG project sau 7 ngày không có truy cập.
+# Bị dừng thì thiệp chỉ còn nội dung mặc định + ô ảnh trống, và khách không gửi
+# được xác nhận. Hai ngày gọi một lượt đọc nhẹ để project luôn "có hoạt động".
+#
+# Không cần secret: địa chỉ Supabase và khoá publishable (vốn công khai) nằm sẵn
+# trong HTML của trang thiệp (index.html), nên đọc thẳng từ trang thật.
+#
+# GitHub tắt lịch chạy của repo không có commit nào trong 60 ngày — vào tab
+# Actions bấm "Enable workflow" nếu thấy nó dừng.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 2 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Đọc một dòng site_config
+        run: |
+          html=$(curl -sSf --retry 3 https://my-wedding-site-seven.vercel.app/)
+          url=$(printf '%s' "$html" | grep -oE "var url = '[^']+'" | cut -d"'" -f2)
+          key=$(printf '%s' "$html" | grep -oE "key = '[^']+'" | cut -d"'" -f2)
+          [ -n "$url" ] && [ -n "$key" ] || { echo "Không tìm thấy địa chỉ Supabase trong trang"; exit 1; }
+          curl -sSf --retry 3 --retry-delay 20 "$url/rest/v1/site_config?select=key&limit=1" \
+            -H "apikey: $key" -o /dev/null -w "HTTP %{http_code}\n"

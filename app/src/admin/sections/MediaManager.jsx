@@ -56,7 +56,7 @@ const SECTIONS = [
     where:
       'Phát khi khách bấm nút nhạc ở góc phải thanh menu. Nhạc không tự chạy — trình duyệt chặn, mà khách cũng không nên bị giật mình.',
     look:
-      'Cả thư mục là một danh sách phát: khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát.',
+      'Cả thư mục là một danh sách phát: khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát. File MP3 128 kbps (khoảng 1 MB mỗi phút) là đủ nghe trên điện thoại — file càng nặng càng tốn băng thông của gói Supabase miễn phí.',
     accept: 'audio/*',
   },
   {

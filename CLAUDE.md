@@ -177,6 +177,15 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
 - Measured: one phone visit loads ~1 MB of photos (was ~42 MB). Load test against
   production, 600 visitors in 60 s: 0 errors, p95 ≤ 121 ms for every request type.
 
+- `index.html` starts the `site_config` fetch itself (plain `fetch`, `apikey` in the
+  query string → no CORS preflight) in parallel with the JS download;
+  `useSiteConfig` consumes `window.__siteConfig` once and falls back to supabase-js.
+  This is what lets the photos start early — they wait on the manifest.
+- Music: `preload="metadata"` 2 s after `load` (~73 KB per visit), never `auto`.
+- Supabase **Free** plan: `.github/workflows/supabase-keepalive.yml` reads one row
+  every 2 days so the project is not paused after 7 idle days. It needs no secrets — it
+  reads the URL and publishable key from the live `index.html`.
+
 Two traps found during the mobile port:
 
 - `usePhoneReveal` must also watch `[data-rv]` nodes added after first render (timeline

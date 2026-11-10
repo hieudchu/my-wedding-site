@@ -1,51 +1,183 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { formatDateParts } from '../lib/config';
 import { useMediaList } from '../hooks/useMedia';
-import { useViewport, PHONE_MAX, TABLET_MAX } from '../hooks/useViewport';
+import { useViewport, TABLET_MAX } from '../hooks/useViewport';
 import { useLightbox } from './Lightbox';
+import ScriptName from './ScriptName';
+import Tagline from './Tagline';
+
+const pad2 = (n) => String(n).padStart(2, '0');
 
 /**
- * Hero — carousel 3D kiểu coverflow.
- *
- * Thẻ 0 là thiệp chữ, các thẻ sau là ảnh cưới lấy từ Supabase Storage.
- *
- * Khổ thẻ tính bằng JS chứ không phải CSS, vì phụ thuộc ba thứ cùng lúc: bề ngang
- * màn hình, chiều cao màn hình, và hướng của từng tấm ảnh. Thẻ luôn giữ đúng tỉ lệ
- * ảnh (dọc 3:4, ngang 3:2) và co lại nếu cao hơn sân khấu — nhờ vậy điện thoại
- * quay ngang vẫn thấy trọn thẻ, không bị cắt cụt.
- *
- * Trên điện thoại chuyển sang chế độ một-thẻ-một-lần: bỏ nghiêng 3D, thẻ kề chỉ
- * ló ra một chút, thẻ xa ẩn hẳn.
+ * Hai cách trình bày, chọn theo `PHONE_QUERY`:
+ *   PhoneHero — điện thoại và tablet: thiên trượt toàn khung, một thẻ một lần,
+ *               vuốt bằng cuộn ngang gốc của trình duyệt (scroll-snap).
+ *   StageHero — desktop: coverflow 3D như cũ, đã sửa các lỗi dùng chung.
  */
-export default function Hero({ config, siteText = {}, visible }) {
+export default function Hero(props) {
+  const { isPhone, vw, vh } = useViewport();
+  return isPhone ? <PhoneHero {...props} /> : <StageHero {...props} vw={vw} vh={vh} />;
+}
+
+/*
+ * PhoneHero — SỬA 1, 2, 3, 8, 12, 13.
+ * Không còn JS xử lý vuốt: dùng `scroll-snap` + `scroll-snap-stop: always` của
+ * trình duyệt, nên không thể nhảy hai ảnh một lần nữa. Khổ thẻ tính bằng CSS
+ * (`svh`), không đọc `innerHeight`, nên thanh địa chỉ iOS co giãn không làm thẻ
+ * đổi khổ. Chỉ gắn `<img>` cho thẻ đang xem và hai thẻ kề.
+ */
+function PhoneHero({ config, siteText = {}, visible }) {
   const parts = formatDateParts(config.weddingDate);
-  const { files } = useMediaList('carousel');
+  const { files: photos } = useMediaList('carousel');
+  const total = 1 + photos.length;
   const openLightbox = useLightbox();
-  const { vw, vh } = useViewport();
+
+  const trackRef = useRef(null);
+  const slideRef = useRef(0);
+  const [slide, setSlide] = useState(0);
+  slideRef.current = slide;
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return undefined;
+    let raf = 0;
+    let width = el.clientWidth;
+
+    const sync = () => {
+      raf = 0;
+      if (!el.clientWidth) return;
+      const i = Math.max(0, Math.min(total - 1, Math.round(el.scrollLeft / el.clientWidth)));
+      setSlide((s) => (s === i ? s : i));
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(sync); };
+
+    // Xoay máy: bề ngang đổi → đặt lại scrollLeft để vẫn đứng đúng thẻ đang xem
+    const onResize = () => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      el.scrollLeft = slideRef.current * width;
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
+    if (ro) ro.observe(el); else window.addEventListener('resize', onResize);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (ro) ro.disconnect(); else window.removeEventListener('resize', onResize);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [total]);
+
+  const go = (i) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const t = Math.max(0, Math.min(total - 1, i));
+    el.scrollTo({ left: t * el.clientWidth, behavior: 'smooth' });
+  };
+
+  return (
+    <section className="hero hero--phone" id="hero" aria-roledescription="carousel" aria-label="Ảnh cưới">
+      <div ref={trackRef} className={`hm-track ${visible ? 'ready' : ''}`}>
+        {/* Thẻ 0 — thiệp chữ */}
+        <div className="hm-slide">
+          <div className="hm-card hero-title-card hm-title">
+            <div className="frame" />
+            <div className="hero-title-body">
+              <div className="hero-kicker">
+                <span className="rule" />
+                <span className="txt">{siteText.hero_kicker || 'Thiệp cưới'}</span>
+                <span className="rule" />
+              </div>
+              <h1 className="hero-names hm-names">
+                <ScriptName full={siteText.couple_groom_full} short={config.groomShort} />
+                <em>&amp;</em>
+                <ScriptName full={siteText.couple_bride_full} short={config.brideShort} />
+              </h1>
+              <p className="hero-tagline">
+                <Tagline text={siteText.gate_tagline} />
+              </p>
+              <div className="hero-meta hm-meta">
+                <span>{parts.dd} · {parts.mm} · {parts.yyyy}</span>
+                <span>{config.weddingTime} — {siteText.hero_venue || config.venueName}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Thẻ ảnh — SỬA 12: chỉ gắn <img> cho thẻ đang xem và hai thẻ kề */}
+        {photos.map((p, k) => {
+          const i = k + 1;
+          const near = Math.abs(i - slide) <= 1;
+          return (
+            <div className="hm-slide" key={p.name || i}>
+              <button
+                type="button"
+                className="hm-card hm-photo"
+                onClick={() => openLightbox(p.full || p.url, p.caption || p.name)}
+                aria-label={`Phóng to ảnh ${i} trên ${photos.length}`}
+              >
+                {near && (
+                  <img
+                    src={p.url}
+                    srcSet={p.srcSet}
+                    sizes={p.srcSet ? '(orientation: landscape) 40vw, 92vw' : undefined}
+                    alt="Ảnh cưới Hiếu và Minh"
+                    decoding="async"
+                    fetchpriority={i === slide ? 'high' : 'low'}
+                  />
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {total > 1 && (
+        <div className="hm-bar">
+          <button className="hm-btn" onClick={() => go(slide - 1)} disabled={slide === 0} aria-label="Ảnh trước">‹</button>
+          <div className="hm-count" aria-live="polite">
+            <span><b>{pad2(slide + 1)}</b> / {pad2(total)}</span>
+            <span className="hm-progress" aria-hidden="true">
+              <i style={{ transform: `scaleX(${(slide + 1) / total})` }} />
+            </span>
+            <span className={`hm-hint ${slide === 0 ? '' : 'off'}`} aria-hidden="true">Vuốt để xem ảnh</span>
+          </div>
+          <button className="hm-btn" onClick={() => go(slide + 1)} disabled={slide === total - 1} aria-label="Ảnh sau">›</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/*
+ * StageHero — coverflow 3D cho desktop. Diện mạo giữ nguyên.
+ * Chỉ sửa mã dùng chung thuộc danh sách mức 2 trong DESIGN-BRIEF.md:
+ *   SỬA 1  Gỡ cặp touch handler trên <section> (B). Chỉ còn pointer events (A).
+ *          Sau đó mới đổi sang bước tương đối `step()` cộng dồn từ `prev`.
+ *          Cờ kéo nằm trong ref để pointerup + pointerleave cùng lượt không bước 2 lần.
+ *   SỬA 4  Chấm có vùng chạm 44×44px, hình 8px giữ nguyên (xem .hero-dot trong CSS).
+ *   SỬA 8  will-change chỉ bật khi đang kéo (CSS).
+ * Nhánh `phone` cũ đã xoá vì StageHero không còn chạy trên điện thoại.
+ */
+function StageHero({ config, siteText = {}, visible, vw, vh }) {
+  const parts = formatDateParts(config.weddingDate);
+  const { files: photos } = useMediaList('carousel');
+  const openLightbox = useLightbox();
 
   const [slide, setSlide] = useState(0);
   const [orient, setOrient] = useState({});
   const [dragging, setDragging] = useState(false);
   const stageRef = useRef(null);
-  // Chỉ nạp ảnh của những thẻ nằm trong tầm nhìn (|d| ≤ 2, đúng tập thẻ mà
-  // thiết kế cho hiện). Ảnh đã nạp thì giữ luôn, khỏi tải lại khi lật qua lại.
   const [mounted, setMounted] = useState(() => new Set());
 
   const dragStartX = useRef(0);
   const dragged = useRef(0);
-  const touchStartX = useRef(0);
+  const dragActive = useRef(false);
 
-  const photos = files;
   const total = 1 + photos.length;
-  const phone = vw < PHONE_MAX;
-  const tablet = !phone && vw < TABLET_MAX;
+  const tablet = vw < TABLET_MAX;
 
   // Bản kê đã biết kích thước từ lúc upload — dùng ngay, khỏi đợi ảnh tải xong.
-  // Thiếu số đo thì `w`/`h` là 0 (bản kê không đo được) hoặc undefined (đang đọc
-  // thẳng từ storage, chưa có bản kê); cả hai đều coi như chưa biết và nhường cho
-  // `onImgLoad`. Tuyệt đối không suy hướng từ số 0, kẻo thẻ nào cũng hoá ảnh ngang.
-  // Trộn kiểu `{ ...known, ...prev }` để giá trị `onImgLoad` đo được (nếu đã có)
-  // đè lên bản kê, nhờ vậy thẻ không đổi khổ hai lần.
   useEffect(() => {
     const known = {};
     photos.forEach((p, k) => {
@@ -54,74 +186,56 @@ export default function Hero({ config, siteText = {}, visible }) {
     if (Object.keys(known).length) setOrient((prev) => ({ ...known, ...prev }));
   }, [photos]);
 
-  const go = useCallback(
-    (i) => setSlide((prev) => {
-      const t = 1 + photos.length;
-      return t > 0 ? ((i % t) + t) % t : prev;
-    }),
-    [photos.length]
-  );
+  const wrap = useCallback((i) => ((i % total) + total) % total, [total]);
+  const go = useCallback((i) => setSlide(wrap(i)), [wrap]);
+  const step = useCallback((delta) => setSlide((prev) => wrap(prev + delta)), [wrap]);
 
   useEffect(() => {
     if (!visible) return undefined;
     const onKey = (e) => {
       if (document.querySelector('.lb-overlay')) return; // lightbox đang mở thì nhường phím
-      if (e.key === 'ArrowRight') go(slide + 1);
-      if (e.key === 'ArrowLeft') go(slide - 1);
+      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') step(-1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visible, slide, go]);
+  }, [visible, step]);
 
-  // Mở rộng dần tập ảnh cần nạp mỗi khi khách lật sang thẻ khác.
-  // Điện thoại chỉ giữ thẻ kề (|d| ≤ 1) vì ảnh gốc 24 megapixel ngốn khoảng
-  // 92 MB bộ nhớ mỗi tấm sau khi giải nén — giữ ít tấm là giữ máy không nghẹt.
   useEffect(() => {
-    const t = 1 + photos.length;
-    if (t <= 1) return;
-    const reach = phone ? 1 : 2;
+    if (total <= 1) return;
+    const reach = 2;
     setMounted((prev) => {
       const next = new Set(prev);
       let changed = false;
-      for (let i = 1; i < t; i += 1) {
+      for (let i = 1; i < total; i += 1) {
         let d = i - slide;
-        if (d > t / 2) d -= t;
-        if (d < -t / 2) d += t;
-        if (Math.abs(d) <= reach && !next.has(i)) {
-          next.add(i);
-          changed = true;
-        }
+        if (d > total / 2) d -= total;
+        if (d < -total / 2) d += total;
+        if (Math.abs(d) <= reach && !next.has(i)) { next.add(i); changed = true; }
       }
       return changed ? next : prev;
     });
-  }, [slide, photos.length, phone]);
+  }, [slide, total]);
 
-  /** Chiều cao sân khấu — chừa chỗ cho Nav phía trên và hàng chấm phía dưới */
   const stageH = Math.min(Math.max(vh * 0.62, 220), Math.max(vh - 150, 200), 760);
 
-  /** Khổ thẻ i, giữ đúng tỉ lệ ảnh và không bao giờ cao hơn sân khấu */
   const boxOf = (i) => {
     if (i === 0) {
-      const w = phone ? vw * 0.84 : Math.min(1180, vw - Math.max(150, vw * 0.16));
-      return { w, h: phone ? Math.min(stageH, w * 1.34) : stageH };
+      const w = Math.min(1180, vw - Math.max(150, vw * 0.16));
+      return { w, h: stageH };
     }
-
     if (orient[i] === 'l') {
-      // Ảnh ngang → thẻ 3:2
-      let w = phone ? vw * 0.86 : Math.min(1080, vw - Math.max(150, vw * 0.18));
+      let w = Math.min(1080, vw - Math.max(150, vw * 0.18));
       let h = w / 1.5;
       if (h > stageH) { h = stageH; w = stageH * 1.5; }
       return { w, h };
     }
-
-    // Ảnh dọc → thẻ 3:4
-    let w = phone ? vw * 0.72 : tablet ? Math.min(460, vw * 0.42) : Math.min(420, Math.max(250, vw * 0.32));
+    let w = tablet ? Math.min(460, vw * 0.42) : Math.min(420, Math.max(250, vw * 0.32));
     let h = w * 1.34;
     if (h > stageH) { h = stageH; w = stageH / 1.34; }
     return { w, h };
   };
 
-  /** Khoảng cách vòng tròn từ thẻ i tới thẻ đang ở giữa */
   const offset = (i) => {
     const half = total / 2;
     let d = i - slide;
@@ -136,19 +250,14 @@ export default function Hero({ config, siteText = {}, visible }) {
     const far = a > 2;
     const box = boxOf(i);
     const cw = boxOf(slide).w;
-    const step = phone
-      ? cw / 2 + box.w * 0.46 + (a - 1) * box.w * 0.62
-      : cw / 2 + box.w * 0.31 + (a - 1) * box.w * 0.5;
-    const x = d === 0 ? 0 : Math.sign(d) * step;
+    const stepX = cw / 2 + box.w * 0.31 + (a - 1) * box.w * 0.5;
+    const x = d === 0 ? 0 : Math.sign(d) * stepX;
 
     return {
       width: `${Math.round(box.w)}px`,
       height: `${Math.round(box.h)}px`,
-      // Độ lệch khi kéo nằm trong biến CSS --drag, do trình duyệt cộng vào lúc
-      // dựng hình. Nhờ vậy mỗi lần ngón tay nhúc nhích chỉ ghi một thuộc tính
-      // trên một phần tử, thay vì bắt React dựng lại cả 8 thẻ.
-      transform: `translate(-50%,-50%) translateX(${Math.round(x)}px) translateX(var(--drag, 0px)) translateZ(${-a * (phone ? 90 : 170)}px) rotateY(${phone ? 0 : -d * 20}deg) scale(${1 - a * (phone ? 0.07 : 0.04)})`,
-      opacity: far ? 0 : d === 0 ? 1 : a === 1 ? (phone ? 0.3 : 0.72) : phone ? 0 : 0.34,
+      transform: `translate(-50%,-50%) translateX(${Math.round(x)}px) translateX(var(--drag, 0px)) translateZ(${-a * 170}px) rotateY(${-d * 20}deg) scale(${1 - a * 0.04})`,
+      opacity: far ? 0 : d === 0 ? 1 : a === 1 ? 0.72 : 0.34,
       zIndex: 20 - a,
       filter: d === 0 ? 'none' : `brightness(${a === 1 ? 0.6 : 0.42}) saturate(.8)`,
       pointerEvents: far ? 'none' : 'auto',
@@ -167,38 +276,36 @@ export default function Hero({ config, siteText = {}, visible }) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     dragStartX.current = e.clientX;
     dragged.current = 0;
+    dragActive.current = true;
     setDragging(true);
   };
 
   const onDragMove = (e) => {
-    if (!dragging) return;
+    if (!dragActive.current) return;
     dragged.current = e.clientX - dragStartX.current;
     setDrag(Math.round(Math.max(-140, Math.min(140, dragged.current * 0.45))));
   };
 
   const onDragEnd = () => {
-    if (!dragging) return;
+    if (!dragActive.current) return;
+    dragActive.current = false;
     setDragging(false);
     setDrag(0);
     const d = dragged.current;
-    if (Math.abs(d) > 45) go(slide + (d < 0 ? 1 : -1));
-  };
-
-  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
-  const onTouchEnd = (e) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) go(slide + (diff > 0 ? 1 : -1));
+    if (Math.abs(d) > 45) step(d < 0 ? 1 : -1);
   };
 
   // Kéo quá 8px thì coi là vuốt, không tính là bấm
   const wasDrag = () => Math.abs(dragged.current) > 8;
 
   const bgSrc = photos.length
-    ? (slide === 0 ? photos[photos.length - 1].url : photos[slide - 1].url)
+    // Nền bị làm mờ 18–38px — bản nhỏ nhất là quá đủ, không ai phân biệt được
+    ? (slide === 0 ? photos[photos.length - 1] : photos[slide - 1]).small
+      || (slide === 0 ? photos[photos.length - 1] : photos[slide - 1]).url
     : null;
 
   return (
-    <section className="hero" id="hero" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <section className="hero" id="hero">
       {bgSrc && <img className="hero-bg" src={bgSrc} alt="" aria-hidden="true" />}
       <div className="hero-veil" />
 
@@ -226,14 +333,14 @@ export default function Hero({ config, siteText = {}, visible }) {
                 <span className="txt">{siteText.hero_kicker || 'Thiệp cưới'}</span>
                 <span className="rule" />
               </div>
-              <h1 className="hero-names">
-                <span className="initial">{config.groomShort?.[0]}</span>
-                {config.groomShort?.slice(1)} <em>&amp;</em>{' '}
-                <span className="initial">{config.brideShort?.[0]}</span>
-                {config.brideShort?.slice(1)}
+              {/* Tên viết TAN Whistling như thẻ thiệp điện thoại (ScriptName lo dấu "ế") */}
+              <h1 className="hero-names hero-names--script">
+                <ScriptName full={siteText.couple_groom_full} short={config.groomShort} />
+                <em>&amp;</em>
+                <ScriptName full={siteText.couple_bride_full} short={config.brideShort} />
               </h1>
               <p className="hero-tagline">
-                {siteText.gate_tagline || '“Cùng nhau đón những hoàng hôn rực rỡ nhất của cuộc đời.”'}
+                <Tagline text={siteText.gate_tagline} />
               </p>
               <div className="hero-meta">
                 <span>{parts.dd} · {parts.mm} · {parts.yyyy}</span>
@@ -256,10 +363,7 @@ export default function Hero({ config, siteText = {}, visible }) {
               style={cardStyle(i)}
               onClick={() => {
                 if (wasDrag()) return;
-                // Chú thích chưa hiện ra thành chữ ở đâu cả, nhưng nó là lời tả
-                // ảnh do chủ nhà viết — đưa vào đây thì ít ra trình đọc màn hình
-                // đọc được, thay cho cái tên file vô nghĩa.
-                if (i === slide) openLightbox(p.url, p.caption || p.name);
+                if (i === slide) openLightbox(p.full || p.url, p.caption || p.name);
                 else go(i);
               }}
             >
@@ -267,10 +371,12 @@ export default function Hero({ config, siteText = {}, visible }) {
                 {mounted.has(i) && (
                   <img
                     src={p.url}
+                    srcSet={p.srcSet}
+                    sizes={p.srcSet ? '(max-width: 1080px) 42vw, 420px' : undefined}
                     alt="Ảnh cưới Hiếu và Minh"
                     onLoad={onImgLoad(i)}
                     decoding="async"
-                    fetchPriority={i === slide ? 'high' : 'low'}
+                    fetchpriority={i === slide ? 'high' : 'low'}
                   />
                 )}
                 <div className="fade" />
@@ -282,12 +388,12 @@ export default function Hero({ config, siteText = {}, visible }) {
 
       {total > 1 && (
         <>
-          {/* Mũi tên tự ẩn trên thiết bị cảm ứng (media query trong sections.css) */}
-          <button className="hero-arrow hero-arrow--left" onClick={() => go(slide - 1)} aria-label="Ảnh trước">‹</button>
-          <button className="hero-arrow hero-arrow--right" onClick={() => go(slide + 1)} aria-label="Ảnh sau">›</button>
+          <button className="hero-arrow hero-arrow--left" onClick={() => step(-1)} aria-label="Ảnh trước">‹</button>
+          <button className="hero-arrow hero-arrow--right" onClick={() => step(1)} aria-label="Ảnh sau">›</button>
 
           <div className="hero-swipe-hint" aria-hidden="true">Vuốt để xem ảnh</div>
 
+          {/* SỬA 4 — .hero-dot là vùng chạm 44×44 trong suốt; <i> là chấm 8px nhìn thấy */}
           <div className="hero-dots">
             {Array.from({ length: total }, (_, i) => (
               <button
@@ -295,7 +401,9 @@ export default function Hero({ config, siteText = {}, visible }) {
                 className={`hero-dot ${i === slide ? 'active' : ''}`}
                 onClick={() => go(i)}
                 aria-label={`Chuyển tới ảnh ${i + 1}`}
-              />
+              >
+                <i />
+              </button>
             ))}
           </div>
         </>

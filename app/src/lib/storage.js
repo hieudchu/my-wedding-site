@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigured } from './supabase';
-import { findEntry, listFolder, emptyManifest, storageVersion } from './mediaManifest';
+import { findEntry, listFolder, emptyManifest, storageVersion, variantPaths } from './mediaManifest';
 
 const BUCKET = 'media';
 
@@ -91,6 +91,36 @@ function buildPublicUrl(path, version) {
   }
 }
 
+/**
+ * Mọi cỡ của một ảnh trong bản kê, sẵn để gắn vào <img>.
+ *
+ *   url    — cỡ giữa (≤ 960px): `src` mặc định cho trình duyệt bỏ qua srcset
+ *   srcSet — mọi bản nén, để trình duyệt tự chọn theo màn hình
+ *   small  — cỡ nhỏ nhất: ảnh nền bị làm mờ, logo bé
+ *   full   — cỡ lớn nhất: lightbox
+ *   original — ảnh gốc: nấc lùi khi bản nén không tải được
+ *
+ * URL bản nén gắn `?v=` của CHÍNH bản nén. Tên file bản nén không đổi khi chủ nhà
+ * thay ảnh, mà cache để một năm — thiếu `?v=` là khách thấy ảnh cũ suốt một năm.
+ *
+ * Chưa có bản nén thì cả bốn đều là ảnh gốc: chậm hơn nhưng vẫn đúng ảnh.
+ */
+function sourcesFor(folder, entry) {
+  const original = buildPublicUrl(`${folder}/${entry.file}`, entry.v);
+  const variants = variantPaths(folder, entry)
+    .map(({ w, path }) => ({ w, url: buildPublicUrl(path, entry.opt.v) }))
+    .filter((x) => x.url);
+  if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original };
+  const mid = [...variants].reverse().find((x) => x.w <= 960) || variants[0];
+  return {
+    url: mid.url,
+    srcSet: variants.map((x) => `${x.url} ${x.w}w`).join(', '),
+    small: variants[0].url,
+    full: variants[variants.length - 1].url,
+    original,
+  };
+}
+
 function splitPath(path) {
   const i = path.lastIndexOf('/');
   return {
@@ -102,6 +132,15 @@ function splitPath(path) {
 /**
  * URL công khai của file, chỉ trả về nếu file thật sự tồn tại trong bucket.
  */
+export async function getMediaSourcesAsync(path) {
+  if (!path || !supabaseConfigured) return null;
+  await manifestReady;
+  const known = findEntry(manifest, path);
+  if (known) return sourcesFor(splitPath(path).folder, known);
+  const url = await getMediaUrlAsync(path);
+  return url ? { url, srcSet: undefined, small: url, full: url, original: url } : null;
+}
+
 export async function getMediaUrlAsync(path) {
   if (!path || !supabaseConfigured) return null;
   await manifestReady;
@@ -127,7 +166,7 @@ export function getMediaUrl(path) {
 
 /**
  * Liệt kê file trong một thư mục, sắp theo tên.
- * Trả về mảng { name, url }, kèm { w, h, caption } khi bản kê có sẵn.
+ * Trả về mảng { name, url }, kèm { srcSet, small, full, w, h, caption } khi bản kê có sẵn.
  */
 export async function listMedia(folder) {
   await manifestReady;
@@ -135,7 +174,7 @@ export async function listMedia(folder) {
   if (fromManifest.length) {
     return fromManifest.map((e) => ({
       name: e.file,
-      url: buildPublicUrl(`${folder}/${e.file}`, e.v),
+      ...sourcesFor(folder, e),
       w: e.w,
       h: e.h,
       caption: e.caption,

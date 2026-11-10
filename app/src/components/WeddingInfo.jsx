@@ -1,5 +1,6 @@
 import { formatDateParts } from '../lib/config';
 import MediaImage from './MediaImage';
+import ScriptName from './ScriptName';
 
 /**
  * Tấm thiệp mời — trung tâm của cả trang.
@@ -17,10 +18,10 @@ export default function WeddingInfo({ config, siteText = {} }) {
   return (
     <section className="info" id="details">
       <div className="info-blob info-blob-1" data-rv>
-        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" />
+        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
       </div>
       <div className="info-blob info-blob-2" data-rv>
-        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" />
+        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
       </div>
 
       <div className="info-card" data-rv>
@@ -35,6 +36,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
           alt=""
           className="info-medallion"
           clickable={false}
+          sizes="96px"
         />
 
         <p className="info-announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
@@ -44,7 +46,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
 
         <h2 className="info-heading">{siteText.info_heading || 'Lễ thành hôn'}</h2>
         <p className="info-couple">
-          {config.groomShort} <em>&amp;</em> {config.brideShort}
+          <ScriptName short={config.groomShort} /> <em>&amp;</em> <ScriptName short={config.brideShort} />
         </p>
 
         <div className="orn-divider">

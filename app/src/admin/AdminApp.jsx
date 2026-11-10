@@ -9,6 +9,7 @@ import FamilySettings from './sections/FamilySettings';
 import TimelineSettings from './sections/TimelineSettings';
 import MediaManager from './sections/MediaManager';
 import RSVPList from './sections/RSVPList';
+import WishList from './sections/WishList';
 import './admin.css';
 
 const NAV_ITEMS = [
@@ -19,7 +20,8 @@ const NAV_ITEMS = [
   { divider: true },
   { path: '/admin/media', label: 'Media · Ảnh & nhạc', icon: '&#9733;' },
   { divider: true },
-  { path: '/admin/rsvp', label: 'RSVP · Khách mời', icon: '&#9993;' },
+  { path: '/admin/rsvp', label: 'Khách xác nhận · RSVP', icon: '&#9993;' },
+  { path: '/admin/wishes', label: 'Lời chúc · Wishes', icon: '&#9734;' },
 ];
 
 export default function AdminApp() {
@@ -67,6 +69,7 @@ export default function AdminApp() {
     if (path === '/admin/timeline') return <TimelineSettings />;
     if (path === '/admin/media') return <MediaManager />;
     if (path === '/admin/rsvp') return <RSVPList />;
+    if (path === '/admin/wishes') return <WishList />;
     return <GeneralSettings adminConfig={adminConfig} />;
   };
 

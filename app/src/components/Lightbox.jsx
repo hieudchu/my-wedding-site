@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+import { lockScroll, unlockScroll } from '../lib/scrollLock';
+import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
 
 const LightboxContext = createContext(null);
 
@@ -9,20 +11,18 @@ export function useLightbox() {
 /**
  * Lớp phủ xem ảnh toàn màn hình.
  * Mở: bấm bất kỳ ảnh nào. Đóng: nút ×, bấm nền, hoặc Esc.
- * Bấm vào chính tấm ảnh thì phóng to 1.7×.
+ *
+ * Khoá cuộn qua `lockScroll()` (SỬA 7) thay vì tự đặt `body.overflow`, vì trên
+ * iOS cách cũ không chặn được cuộn bằng ngón tay.
  */
 export function LightboxProvider({ children }) {
   const [item, setItem] = useState(null);
   const [closing, setClosing] = useState(false);
   const [zoom, setZoom] = useState(false);
   const closeTimer = useRef(null);
-  // Nhớ trạng thái cuộn trước khi mở, để trả lại đúng như cũ
-  // (trang vẫn đang khoá cuộn nếu khách chưa mở cổng).
-  const prevOverflow = useRef('');
 
   const open = useCallback((src, label) => {
-    prevOverflow.current = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    lockScroll();
     setItem({ src: src || null, label: label || '' });
     setClosing(false);
     setZoom(false);
@@ -33,7 +33,7 @@ export function LightboxProvider({ children }) {
       if (isClosing) return isClosing;
       clearTimeout(closeTimer.current);
       closeTimer.current = setTimeout(() => {
-        document.body.style.overflow = prevOverflow.current;
+        unlockScroll();
         setItem(null);
         setClosing(false);
         setZoom(false);
@@ -46,12 +46,19 @@ export function LightboxProvider({ children }) {
 
   useEffect(() => {
     if (!item) return undefined;
-    const onKey = (e) => {
-      if (e.key === 'Escape') close();
-    };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [item, close]);
+
+  // SỬA 9 — trên điện thoại bỏ phóng 1.7× (phóng mà không kéo được là tệ nhất
+  // trong ba lựa chọn). Khách dùng pinch-zoom gốc của trình duyệt.
+  // Desktop giữ nguyên hành vi cũ.
+  const toggleZoom = (e) => {
+    e.stopPropagation();
+    if (mqMatches(PHONE_QUERY)) return;
+    setZoom((z) => !z);
+  };
 
   return (
     <LightboxContext.Provider value={open}>
@@ -62,12 +69,7 @@ export function LightboxProvider({ children }) {
             <div className="lb-frame">
               <div className={`lb-zoom ${zoom ? 'zoomed' : ''}`}>
                 {item.src ? (
-                  <img
-                    src={item.src}
-                    alt={item.label || ''}
-                    className="lb-img"
-                    onClick={(e) => { e.stopPropagation(); setZoom((z) => !z); }}
-                  />
+                  <img src={item.src} alt={item.label || ''} className="lb-img" onClick={toggleZoom} />
                 ) : (
                   <div className="ph lb-placeholder" data-label={item.label} />
                 )}

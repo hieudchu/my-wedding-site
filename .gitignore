@@ -2,3 +2,5 @@
 .env*
 handoff/
 fonts-handoff/
+handoff-mobile/
+supabase/.temp/

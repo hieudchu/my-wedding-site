@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { compressImage } from '../../lib/compressImage';
+import { uploadVariants, CACHE_SECONDS } from '../../lib/imageVariants';
 import { withEntry, withoutEntry, entryId, nowVersion } from '../../lib/mediaManifest';
 import { applyToManifest, seedFolderFromStorage, manifestErrorHint } from '../../lib/manifestStore';
 import { supabase } from '../../lib/supabase';
@@ -102,12 +103,15 @@ export default function TimelineSettings() {
     const path = `${TIMELINE_FOLDER}/${fileName}`;
     const { error } = await supabase.storage
       .from('media')
-      .upload(path, file, { upsert: true });
-    setUploading((prev) => ({ ...prev, [eventId]: false }));
+      .upload(path, file, { upsert: true, cacheControl: CACHE_SECONDS });
     if (error) {
+      setUploading((prev) => ({ ...prev, [eventId]: false }));
       toast('Lỗi upload ảnh');
       return;
     }
+    const opt = await uploadVariants(TIMELINE_FOLDER, fileName, file);
+    const v = nowVersion();
+    setUploading((prev) => ({ ...prev, [eventId]: false }));
 
     // Ảnh cũ của sự kiện này có thể mang đuôi khác, tức là một file khác hẳn chứ
     // không phải file vừa bị đè lên. Không dọn thì nó nằm lại trong kho mãi và
@@ -132,7 +136,8 @@ export default function TimelineSettings() {
       return withEntry(next, TIMELINE_FOLDER, {
         id: entryId(TIMELINE_FOLDER, fileName),
         file: fileName,
-        v: nowVersion(),
+        v,
+        ...(opt ? { opt: { ...opt, v } } : {}),
         // Ảnh lịch trình đi qua MediaImage, chỉ cần URL chứ không cần số đo;
         // 0 nghĩa là chưa biết, y như những mục chép sẵn từ kho.
         w: 0,

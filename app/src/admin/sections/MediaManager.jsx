@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { compressImage, describeSaving } from '../../lib/compressImage';
 import { runQueue } from '../../lib/uploadQueue';
+import { uploadVariants, CACHE_SECONDS } from '../../lib/imageVariants';
 import {
   withEntry, withoutEntry, withOrder, listFolder,
   buildFromListing, entryId, nowVersion, MEDIA_FOLDERS,
@@ -358,7 +359,7 @@ function SlotUploader({ slot, onToast, reloadKey }) {
 
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(targetPath, file, { upsert: true });
+      .upload(targetPath, file, { upsert: true, cacheControl: CACHE_SECONDS });
 
     if (error) {
       onToast('Upload failed: ' + error.message);
@@ -366,6 +367,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
       if (inputRef.current) inputRef.current.value = '';
       return;
     }
+
+    // Bản nén nhiều cỡ cho trang khách. Hỏng thì trả null và trang dùng ảnh gốc.
+    const opt = await uploadVariants(folder, fileName, file);
+    // MỘT mốc cho cả ảnh lẫn bản nén: lệch nhau là variantPaths coi bản nén là cũ.
+    const v = nowVersion();
 
     onToast('Đã tải lên ' + slot.label + (saved ? ` · nén ${saved}` : ''));
     setUrl(getPublicUrl(targetPath) + '?t=' + Date.now());
@@ -379,10 +385,11 @@ function SlotUploader({ slot, onToast, reloadKey }) {
         return withEntry(next, folder, {
           id: entryId(folder, fileName),
           file: fileName,
-          v: nowVersion(),
+          v,
           w,
           h,
           caption: '',
+          ...(opt ? { opt: { ...opt, v } } : {}),
         });
       });
     } catch (err) {
@@ -652,9 +659,10 @@ function MultiFileManager({ config, onToast, reloadKey }) {
           savedBytes += Math.max(0, picked.size - file.size);
           const { w, h } = await measure(file);
           const path = `${config.folder}/${file.name}`;
-          const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
+          const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, cacheControl: CACHE_SECONDS });
           if (error) throw error;
-          return { file: file.name, w, h };
+          const opt = await uploadVariants(config.folder, file.name, file);
+          return { file: file.name, w, h, opt };
         },
         {
           concurrency: 3,
@@ -687,6 +695,7 @@ function MultiFileManager({ config, onToast, reloadKey }) {
               v: stamp,
               w: r.value.w,
               h: r.value.h,
+              ...(r.value.opt ? { opt: { ...r.value.opt, v: stamp } } : {}),
               // Thư mục có ô caption thì state `captions` là bản đúng: xoá trắng
               // là xoá hẳn khoá, nên không được lấy caption cũ ra đắp lại.
               caption: hasCaptions ? (captions[r.value.file] || '') : (old?.caption || ''),

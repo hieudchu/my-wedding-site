@@ -14,8 +14,29 @@ export function emptyManifest() {
   return { version: 1, folders: {} };
 }
 
+/**
+ * Bản nén của ảnh nằm NGOÀI sáu thư mục media, ở `_opt/<thư mục>/<tên>-<rộng>.<đuôi>`,
+ * để "Quét lại kho" — vốn liệt kê từng thư mục — không bao giờ nhặt nhầm chúng
+ * thành ảnh.
+ */
+export const OPT_DIR = '_opt';
+const OPT_FORMATS = ['webp', 'jpg'];
+
+/**
+ * `opt` = { v, fmt, w: [480, 960, 1600] }: ảnh này có những bản nén nào.
+ * `v` là phiên bản của ẢNH GỐC lúc sinh bản nén — xem variantPaths.
+ * Hỏng thì trả null: mất bản nén chỉ làm ảnh tải chậm, không làm mất ảnh.
+ */
+function normalizeOpt(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (!Number.isFinite(raw.v) || !OPT_FORMATS.includes(raw.fmt) || !Array.isArray(raw.w)) return null;
+  const w = [...new Set(raw.w.filter((x) => Number.isInteger(x) && x > 0))].sort((a, b) => a - b);
+  return w.length ? { v: raw.v, fmt: raw.fmt, w } : null;
+}
+
 function normalizeEntry(raw) {
   if (!raw || typeof raw.file !== 'string' || !raw.file) return null;
+  const opt = normalizeOpt(raw.opt);
   return {
     id: typeof raw.id === 'string' && raw.id ? raw.id : raw.file,
     file: raw.file,
@@ -23,7 +44,24 @@ function normalizeEntry(raw) {
     w: Number.isFinite(raw.w) ? raw.w : 0,
     h: Number.isFinite(raw.h) ? raw.h : 0,
     caption: typeof raw.caption === 'string' ? raw.caption : '',
+    // Phải giữ lại ở đây: mọi đường ghi đều đi qua hàm này, bỏ sót là lượt ghi kế
+    // tiếp của admin xoá sạch thông tin bản nén mà không ai hay.
+    ...(opt ? { opt } : {}),
   };
+}
+
+/**
+ * Đường dẫn các bản nén của một mục, tăng dần theo bề rộng.
+ *
+ * Chỉ trả khi bản nén được sinh từ ĐÚNG phiên bản ảnh hiện tại (`opt.v === v`).
+ * Chủ nhà thay ảnh mà bản nén chưa kịp sinh lại thì trả rỗng → trang dùng ảnh gốc:
+ * chậm hơn, nhưng không bao giờ hiện ảnh cũ.
+ */
+export function variantPaths(folder, entry) {
+  const opt = entry?.opt;
+  if (!opt || opt.v !== entry.v) return [];
+  const base = entry.file.replace(/\.[^.]+$/, '');
+  return opt.w.map((w) => ({ w, path: `${OPT_DIR}/${folder}/${base}-${w}.${opt.fmt}` }));
 }
 
 /** Bản kê đọc về nhưng nội dung hỏng — không phải lỗi mạng, nên phải phân biệt. */
@@ -193,6 +231,7 @@ export function buildFromListing(listingByFolder, previous) {
         w: old?.w || 0,
         h: old?.h || 0,
         caption: old?.caption || '',
+        opt: old?.opt,
       });
     }
     const keepOrder = listFolder(previous, folder).map((e) => e.id);

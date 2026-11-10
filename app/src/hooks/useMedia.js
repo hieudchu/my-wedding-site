@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMediaUrl, getMediaUrlAsync, listMedia } from '../lib/storage';
+import { getMediaUrlAsync, getMediaSourcesAsync, listMedia } from '../lib/storage';
 
 /**
  * Get a single media file URL by its storage path.
@@ -18,6 +18,28 @@ export function useMediaUrl(storagePath, localFallback = null) {
   }, [storagePath, localFallback]);
 
   return url;
+}
+
+/**
+ * Mọi cỡ của một ảnh: { url, srcSet, small, full } — xem sourcesFor trong storage.js.
+ * Không có trong kho thì dùng `localFallback` cho cả bốn.
+ */
+export function useMediaSources(storagePath, localFallback = null) {
+  const fallback = localFallback
+    ? { url: localFallback, srcSet: undefined, small: localFallback, full: localFallback }
+    : null;
+  const [sources, setSources] = useState(fallback);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMediaSourcesAsync(storagePath).then((found) => {
+      if (!cancelled) setSources(found || fallback);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storagePath, localFallback]);
+
+  return sources;
 }
 
 /**

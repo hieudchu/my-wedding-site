@@ -9,10 +9,12 @@ export const WEDDING_CONFIG = {
   brideShort: 'Minh',
   weddingDate: '2027-01-15',
   weddingTime: '18:00',
-  venueName: 'Long Vỹ Palace',
-  venueAddress: '3A P. Đào Duy Anh, Phương Mai, Kim Liên, Hà Nội',
+  venueName: 'Sheraton Hanoi',
+  venueAddress: 'K5, Vành Đai 1/11 Đ. Xuân Diệu, Tây Hồ, Hà Nội',
   phone: '+84 919229000',
-  mapUrl: 'https://maps.app.goo.gl/YixfJipe3sQNtBocA',
+  // TẠM: link tìm kiếm theo địa chỉ. Cần thay bằng link chia sẻ thật của
+  // Sheraton Hanoi (Google Maps → Chia sẻ → Sao chép liên kết).
+  mapUrl: 'https://www.google.com/maps/search/?api=1&query=Sheraton+Hanoi+K5+Xu%C3%A2n+Di%E1%BB%87u+T%C3%A2y+H%E1%BB%93+H%C3%A0+N%E1%BB%99i',
   musicTrack: 'Canon in D — Pachelbel',
 };
 

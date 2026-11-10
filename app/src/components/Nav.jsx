@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { useMediaUrl, useMediaList } from '../hooks/useMedia';
+import { useMediaSources, useMediaList } from '../hooks/useMedia';
+import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
+import Ico from './Icon';
 
-const NAV_OFFSET = 70; // chiều cao thanh nav, trừ đi khi cuộn tới section
+const NAV_OFFSET = 70; // desktop: chiều cao thanh nav khi cuộn tới section
 
 // Tên file đặt cho có, không phải tên bài — thì dùng tên bài ghi trong cấu hình
 const PLACEHOLDER_NAME = /^(bgm|music|audio|track|song|nhac)[\s\d-]*$/i;
@@ -22,19 +24,22 @@ function fmt(t) {
 /**
  * Thanh điều hướng + trình phát nhạc nền.
  *
- * Nav chỉ hiện sau khi khách mở cổng. Trên màn hình hẹp các liên kết tự xuống
- * dòng (flex-wrap) thay vì thu vào menu hamburger.
+ * Trên điện thoại/tablet trình phát có giao diện "đĩa than" (đĩa quay, cần đĩa hạ
+ * khi phát, vòng tiến trình quanh nút play). CSS khoá theo `html[data-player="dia"]`
+ * — thuộc tính đó đặt một lần trong `main.jsx`. Desktop giữ giao diện cũ: CSS ẩn các
+ * phần tử mới và hiện lại ký tự trong `.ico-txt`.
  *
- * Trình phát đọc cả thư mục `music` trong kho làm danh sách phát: play/pause,
- * chuyển bài trước/sau, thanh tua kéo được, âm lượng, tắt tiếng nhớ mức cũ, và
- * công tắc phát lặp lại (hết danh sách thì quay lại bài đầu).
  * Nhạc không tự phát — trình duyệt chặn, và khách cũng không nên bị giật mình.
  */
 export default function Nav({ config, siteText = {}, visible }) {
   // Cả thư mục music là một danh sách phát — chủ nhà thêm bớt bài tuỳ ý
   const { files: tracks } = useMediaList('music');
-  const navLogoUrl = useMediaUrl('icons/medallion-ink.png', '/assets/medallion-ink.png');
+  // Logo cao 30px, nhãn đĩa than vài chục px — bản nhỏ nhất là đủ. Bản gốc của
+  // medallion-ink trên kho nặng 1,7 MB, chỉ để vẽ một hình 30px.
+  const navLogoUrl = useMediaSources('icons/medallion-ink.png', '/assets/medallion-ink.png')?.small;
+  const discLabelUrl = useMediaSources('icons/medallion-gold.png', '/assets/medallion-gold.png')?.small;
 
+  const navRef = useRef(null);
   const audioRef = useRef(null);
   const dragMode = useRef(null);
   const pendingRatio = useRef(null);
@@ -52,7 +57,7 @@ export default function Nav({ config, siteText = {}, visible }) {
   const current = tracks[trackIdx] || null;
   const musicUrl = current?.url || null;
   const nowPlaying = trackName(current, config.musicTrack);
-
+  const [mpTitle, mpArtist] = (nowPlaying || '').split(/\s+[—–-]\s+/);
 
   useEffect(() => {
     const a = audioRef.current;
@@ -62,12 +67,8 @@ export default function Nav({ config, siteText = {}, visible }) {
   const toggleMusic = () => {
     const a = audioRef.current;
     if (!a || !musicUrl) return;
-    if (playing) {
-      a.pause();
-      setPlaying(false);
-    } else {
-      a.play().then(() => setPlaying(true)).catch(() => {});
-    }
+    if (playing) { a.pause(); setPlaying(false); }
+    else a.play().then(() => setPlaying(true)).catch(() => {});
   };
 
   const ratioFrom = (e) => {
@@ -103,25 +104,14 @@ export default function Nav({ config, siteText = {}, visible }) {
     dragMode.current = mode;
     apply(e);
   };
-
-  const moveDrag = (mode, apply) => (e) => {
-    if (dragMode.current === mode) apply(e);
-  };
-
+  const moveDrag = (mode, apply) => (e) => { if (dragMode.current === mode) apply(e); };
   const endDrag = () => { dragMode.current = null; };
 
-  /**
-   * Chuyển bài. Chỉ có một bài thì quay về đầu bài đó.
-   * (Trước đây hai nút này nhảy ±10 giây, không khớp với ký hiệu ⏮ ⏭.)
-   */
+  /** Chuyển bài. Chỉ có một bài thì quay về đầu bài đó. */
   const skip = (step) => () => {
     const a = audioRef.current;
     if (!a) return;
-    if (tracks.length <= 1) {
-      a.currentTime = 0;
-      setCur(0);
-      return;
-    }
+    if (tracks.length <= 1) { a.currentTime = 0; setCur(0); return; }
     setTrackIdx((i) => (i + step + tracks.length) % tracks.length);
     setCur(0);
     setDur(0);
@@ -151,10 +141,7 @@ export default function Nav({ config, siteText = {}, visible }) {
 
   const toggleMute = () => {
     if (volume === 0) setVolume(lastVol || 0.6);
-    else {
-      setLastVol(volume);
-      setVolume(0);
-    }
+    else { setLastVol(volume); setVolume(0); }
   };
 
   const onMeta = (e) => {
@@ -172,12 +159,10 @@ export default function Nav({ config, siteText = {}, visible }) {
     e.preventDefault();
     setMenu(false); // chọn xong thì đóng menu điện thoại luôn
     const el = document.getElementById(id);
-    if (el) {
-      window.scrollTo({
-        top: el.getBoundingClientRect().top + window.scrollY - NAV_OFFSET,
-        behavior: 'smooth',
-      });
-    }
+    if (!el) return;
+    // Điện thoại: nav cao 66px (dọc) / 58px (ngang) → đo thật thay vì dùng hằng số
+    const offset = mqMatches(PHONE_QUERY) ? (navRef.current?.offsetHeight || NAV_OFFSET) : NAV_OFFSET;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
   };
 
   const links = [
@@ -188,10 +173,11 @@ export default function Nav({ config, siteText = {}, visible }) {
   ];
 
   const progress = `${dur ? (cur / dur) * 100 : 0}%`;
+  const progressNum = dur ? (cur / dur) * 100 : 0;
   const volPct = `${Math.round(volume * 100)}%`;
 
   return (
-    <nav className={`nav ${visible ? 'visible' : ''}`}>
+    <nav ref={navRef} className={`nav ${visible ? 'visible' : ''}`}>
       <audio
         ref={audioRef}
         src={musicUrl || undefined}
@@ -215,10 +201,10 @@ export default function Nav({ config, siteText = {}, visible }) {
           <a key={id} href={`#${id}`} className="nav-link" onClick={scrollTo(id)}>{label}</a>
         ))}
 
-        {/* Hamburger chỉ hiện dưới 760px — media query lo phần ẩn/hiện */}
+        {/* Hamburger chỉ hiện ở bố cục điện thoại — media query lo phần ẩn/hiện */}
         <button
           className={`burger ${menu ? 'open' : ''}`}
-          onClick={() => setMenu((m) => !m)}
+          onClick={() => { setMenu((m) => !m); setPanel(false); }}
           aria-label="Menu"
           aria-expanded={menu}
         >
@@ -233,10 +219,12 @@ export default function Nav({ config, siteText = {}, visible }) {
             aria-label="Bật hoặc tắt nhạc nền"
           >
             <span className="music-bars"><span /><span /><span /></span>
+            <span className="mb-disc" aria-hidden="true" />
+            <Ico name="note" className="mb-note" />
           </button>
           <button
             className={`caret-btn ${panel ? 'open' : ''}`}
-            onClick={() => setPanel((p) => !p)}
+            onClick={() => { setPanel((p) => !p); setMenu(false); }}
             aria-label="Điều chỉnh nhạc"
             aria-expanded={panel}
           >
@@ -254,18 +242,41 @@ export default function Nav({ config, siteText = {}, visible }) {
       )}
 
       {panel && (
-        <div className="music-panel">
-          <div className="eyebrow-sm">
-            Nhạc nền{tracks.length > 1 ? ` · bài ${trackIdx + 1}/${tracks.length}` : ''}
+        <div className={`music-panel ${playing ? 'is-playing' : ''}`}>
+          <div className="mp-head">
+            <div className="mp-disc" aria-hidden="true"><img src={discLabelUrl || '/assets/medallion-gold.png'} alt="" /></div>
+            <div className="mp-text">
+              <div className="eyebrow-sm">
+                Nhạc nền{tracks.length > 1 ? ` · bài ${trackIdx + 1}/${tracks.length}` : ''}
+              </div>
+              <div className="track-name">{nowPlaying}</div>
+              <div className="mp-title">{mpTitle}</div>
+              {mpArtist && <div className="mp-artist">{mpArtist}</div>}
+            </div>
           </div>
-          <div className="track-name">{nowPlaying}</div>
 
           <div className="music-transport">
-            <button className="mt-btn" onClick={skip(-1)} aria-label="Bài trước">⏮</button>
-            <button className="mt-play" onClick={toggleMusic} aria-label="Phát hoặc tạm dừng">
-              {playing ? '❙❙' : '▶'}
+            <button className="mt-btn mt-prev" onClick={skip(-1)} aria-label="Bài trước">
+              <span className="ico-txt">⏮</span><Ico name="prev" />
             </button>
-            <button className="mt-btn" onClick={skip(1)} aria-label="Bài sau">⏭</button>
+            <button className="mt-play" onClick={toggleMusic} aria-label="Phát hoặc tạm dừng">
+              <svg className="mp-ring" viewBox="0 0 100 100" aria-hidden="true">
+                <circle className="mp-ring-bg" cx="50" cy="50" r="47" />
+                <circle
+                  className="mp-ring-fg"
+                  cx="50"
+                  cy="50"
+                  r="47"
+                  pathLength="100"
+                  style={{ strokeDasharray: `${progressNum} 100` }}
+                />
+              </svg>
+              <span className="ico-txt">{playing ? '❙❙' : '▶'}</span>
+              <Ico name={playing ? 'pause' : 'play'} />
+            </button>
+            <button className="mt-btn mt-next" onClick={skip(1)} aria-label="Bài sau">
+              <span className="ico-txt">⏭</span><Ico name="next" />
+            </button>
           </div>
 
           <div
@@ -287,7 +298,8 @@ export default function Nav({ config, siteText = {}, visible }) {
 
           <div className="vol-row">
             <button className="vol-btn" onClick={toggleMute} aria-label="Tắt tiếng">
-              {volume === 0 ? '✕' : '♪'}
+              <span className="ico-txt">{volume === 0 ? '✕' : '♪'}</span>
+              <Ico name={volume === 0 ? 'mute' : 'vol'} />
             </button>
             <div
               className="slider-hit"
@@ -305,7 +317,7 @@ export default function Nav({ config, siteText = {}, visible }) {
           </div>
 
           <div className="loop-row">
-            <span>Phát lặp lại</span>
+            <span><Ico name="repeat" className="mp-loop-ico" />Phát lặp lại</span>
             <button
               className={`loop-switch ${loop ? 'on' : ''}`}
               onClick={() => setLoop((l) => !l)}

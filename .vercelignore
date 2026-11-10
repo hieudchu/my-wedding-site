@@ -1,0 +1,15 @@
+# Chỉ cần app/ để build. Mấy thư mục dưới đây không bao giờ được phục vụ, nhưng
+# CLI vẫn đẩy chúng lên nếu không chặn — trong đó có ảnh cưới (handoff*) và email
+# admin (supabase/migrations).
+handoff/
+handoff-mobile/
+fonts-handoff/
+project/
+docs/
+supabase/
+.playwright-mcp/
+.superpowers/
+**/.env*
+app/node_modules/
+app/dist/
+.DS_Store

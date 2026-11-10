@@ -703,6 +703,7 @@ a:hover {
   overflow: hidden;
   max-width: 100%;
   max-height: 86vh;
+  max-height: 86svh; /* SỬA 10 — desktop: 86vh == 86svh */
   border-radius: 3px;
   box-shadow: 0 50px 110px -40px rgba(0, 0, 0, 0.9);
 }
@@ -720,6 +721,7 @@ a:hover {
   display: block;
   max-width: min(1100px, 90vw);
   max-height: 86vh;
+  max-height: 86svh; /* SỬA 10 */
   object-fit: contain;
   cursor: zoom-in;
   animation: lbPop 0.5s cubic-bezier(0.2, 0.75, 0.2, 1) both;

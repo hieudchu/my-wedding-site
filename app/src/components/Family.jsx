@@ -39,7 +39,7 @@ export default function Family({ side, config, siteText = {} }) {
   return (
     <section className={`family ${isGroom ? 'groom' : 'bride'}`} id={isGroom ? 'groom' : 'bride'}>
       <div className="family-inner">
-        <div className="family-text rv">
+        <div className="family-text rv" data-rv>
           <span className="eyebrow">
             {isGroom ? 'Nhà trai · Groom’s family' : 'Nhà gái · Bride’s family'}
           </span>
@@ -60,9 +60,14 @@ export default function Family({ side, config, siteText = {} }) {
           )}
         </div>
 
-        <div className="family-photo rv">
+        <div className="family-photo rv" data-rv>
           <div className="family-photo-frame">
-            <MediaImage storagePath={storagePath} label={photoLabel} alt={photoLabel} />
+            <MediaImage
+              storagePath={storagePath}
+              label={photoLabel}
+              alt={photoLabel}
+              sizes="(max-width: 759.98px) 86vw, 45vw"
+            />
           </div>
           <span className="family-sig">{isGroom ? 'H' : 'M'}</span>
         </div>

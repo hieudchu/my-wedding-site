@@ -8,11 +8,12 @@ const pad = (n, len) => String(n).padStart(len, '0');
  * Mốc đích chốt theo giờ Việt Nam (+07:00) chứ không theo múi giờ của máy khách —
  * khách ở nước ngoài mở thiệp vẫn thấy đúng số ngày còn lại tới giờ làm lễ.
  *
- * Trả về chuỗi đã đệm số 0 (ngày 3 chữ số, còn lại 2 chữ số) để số không nhảy
- * qua nhảy lại về bề ngang khi đếm.
+ * Giờ/phút/giây đệm 2 chữ số để bề ngang không nhảy. Số NGÀY không đệm —
+ * lưới đếm ngược giờ là 4 cột đều nhau nên "68" không làm xô bố cục,
+ * mà "068" thì khách đọc ra số ngày sai.
  */
 export function useCountdown(dateIso, time = '18:00') {
-  const [t, setT] = useState({ d: '000', h: '00', m: '00', s: '00' });
+  const [t, setT] = useState({ d: '0', h: '00', m: '00', s: '00' });
 
   useEffect(() => {
     if (!dateIso) return undefined;
@@ -23,7 +24,7 @@ export function useCountdown(dateIso, time = '18:00') {
     const tick = () => {
       const diff = Math.max(0, target - Date.now());
       setT({
-        d: pad(Math.floor(diff / 86400000), 3),
+        d: String(Math.floor(diff / 86400000)),
         h: pad(Math.floor((diff % 86400000) / 3600000), 2),
         m: pad(Math.floor((diff % 3600000) / 60000), 2),
         s: pad(Math.floor((diff % 60000) / 1000), 2),

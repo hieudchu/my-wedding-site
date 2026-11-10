@@ -1,112 +1,223 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import { toE164VN } from '../../lib/phone';
 import { useToast } from '../components/Toast';
 
+const SIDE_LABEL = { groom: 'Nhà trai', bride: 'Nhà gái' };
+
+/** "Trên 10 người" lưu guest_count = 10 kèm cờ guests_over_10 */
+function guestText(r) {
+  if (r.guests_over_10) return 'Trên 10 người';
+  if (r.guest_count == null) return '—';
+  return `${r.guest_count} người`;
+}
+
+/** Giờ Việt Nam, dạng dd/MM HH:mm */
+function timeVN(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('vi-VN', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+    hour12: false, timeZone: 'Asia/Ho_Chi_Minh',
+  }).replace(',', '');
+}
+
+/** CSV phải có BOM thì Excel mới đọc đúng tiếng Việt */
+function downloadCSV(filename, rows) {
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export default function RSVPList() {
-  const [rsvps, setRsvps] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [summary, setSummary] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sideFilter, setSideFilter] = useState('all');
+  const [q, setQ] = useState('');
+  const [showHidden, setShowHidden] = useState(false);
   const { toast, ToastEl } = useToast();
 
-  const fetchRsvps = async () => {
-    const { data } = await supabase
-      .from('rsvps')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setRsvps(data);
+  const fetchAll = async () => {
+    const [{ data }, { data: sum }] = await Promise.all([
+      supabase
+        .from('rsvps')
+        .select('id, created_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden')
+        .eq('attending', true)
+        .order('created_at', { ascending: false }),
+      supabase.from('rsvp_summary').select('*'),
+    ]);
+    if (data) setRows(data);
+    if (sum) setSummary(sum);
     setLoading(false);
   };
 
-  useEffect(() => { fetchRsvps(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const deleteRsvp = async (id) => {
-    const { error } = await supabase.from('rsvps').delete().eq('id', id);
-    if (!error) {
-      setRsvps((prev) => prev.filter((r) => r.id !== id));
-      toast('Deleted');
-    }
+  const toggleHidden = async (r) => {
+    const { error } = await supabase.from('rsvps').update({ hidden: !r.hidden }).eq('id', r.id);
+    if (error) { toast('Không lưu được'); return; }
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, hidden: !x.hidden } : x)));
+    fetchAll();
+    toast(r.hidden ? 'Đã hiện lại' : 'Đã ẩn');
   };
 
-  const attending = rsvps.filter((r) => r.attending);
-  const notAttending = rsvps.filter((r) => !r.attending);
-  const totalGuests = attending.reduce((sum, r) => sum + (r.guest_count || 1), 0);
+  // Trùng: cùng số điện thoại chuẩn hoá, hoặc cùng tên khi không có số.
+  const dupKeys = useMemo(() => {
+    const count = {};
+    rows.forEach((r) => {
+      const k = r.phone_e164 || `name:${(r.name || '').trim().toLowerCase()}`;
+      count[k] = (count[k] || 0) + 1;
+    });
+    return new Set(Object.keys(count).filter((k) => count[k] > 1));
+  }, [rows]);
+
+  const visible = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const asPhone = toE164VN(q);
+    return rows.filter((r) => {
+      if (!showHidden && r.hidden) return false;
+      if (sideFilter === 'unknown' ? r.side : sideFilter !== 'all' && r.side !== sideFilter) return false;
+      if (!needle) return true;
+      if ((r.name || '').toLowerCase().includes(needle)) return true;
+      if (asPhone && r.phone_e164 === asPhone) return true;
+      return (r.phone || '').replace(/\s/g, '').includes(q.replace(/\s/g, ''));
+    });
+  }, [rows, q, sideFilter, showHidden]);
+
+  const card = (key, label) => {
+    const s = summary.find((x) => x.side === key);
+    const n = s ? Number(s.guests) : 0;
+    return (
+      <div className="rsvp-stat" key={key}>
+        <div className="n">{s ? s.responses : 0}</div>
+        <div className="l">{label}</div>
+        <div className="l" style={{ marginTop: 4, color: '#B58285' }}>
+          {s && s.over_10 > 0 ? `≥ ${n}` : n} khách
+        </div>
+      </div>
+    );
+  };
+
+  const totalResponses = summary.reduce((a, s) => a + Number(s.responses), 0);
+  const totalGuests = summary.reduce((a, s) => a + Number(s.guests), 0);
+  const anyOver10 = summary.some((s) => Number(s.over_10) > 0);
+
+  const exportCSV = () => {
+    downloadCSV(`khach-xac-nhan-${new Date().toISOString().slice(0, 10)}.csv`, [
+      ['Thời gian', 'Họ tên', 'Bên', 'Số người', 'SĐT', 'Ghi chú'],
+      ...visible.map((r) => [
+        timeVN(r.created_at), r.name, SIDE_LABEL[r.side] || '—',
+        guestText(r), r.phone || '', r.message || '',
+      ]),
+    ]);
+    toast('Đã tải CSV');
+  };
 
   if (loading) return <div>Loading…</div>;
 
   return (
     <div>
-      <h1>RSVP · Danh sách khách</h1>
-      <p className="page-desc">Xem và quản lý danh sách xác nhận tham dự</p>
+      <h1>Khách xác nhận</h1>
+      <p className="page-desc">Danh sách khách đã bấm &ldquo;Đồng ý tham dự&rdquo;</p>
 
       <div className="rsvp-stats">
+        {card('groom', 'Nhà trai')}
+        {card('bride', 'Nhà gái')}
+        {card('unknown', 'Chưa chọn')}
         <div className="rsvp-stat">
-          <div className="n">{rsvps.length}</div>
-          <div className="l">Tổng phản hồi</div>
-        </div>
-        <div className="rsvp-stat">
-          <div className="n">{totalGuests}</div>
-          <div className="l">Khách tham dự</div>
-        </div>
-        <div className="rsvp-stat">
-          <div className="n">{notAttending.length}</div>
-          <div className="l">Gửi lời chúc</div>
+          <div className="n">{totalResponses}</div>
+          <div className="l">Tổng cộng</div>
+          <div className="l" style={{ marginTop: 4, color: '#B58285' }}>
+            {anyOver10 ? `≥ ${totalGuests}` : totalGuests} khách
+          </div>
         </div>
       </div>
 
+      <div className="admin-card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="admin-field" style={{ width: 150 }}>
+          <select value={sideFilter} onChange={(e) => setSideFilter(e.target.value)}>
+            <option value="all">Tất cả</option>
+            <option value="groom">Nhà trai</option>
+            <option value="bride">Nhà gái</option>
+            <option value="unknown">Chưa chọn</option>
+          </select>
+        </div>
+        <div className="admin-field" style={{ width: 260 }}>
+          <input
+            placeholder="Tìm theo tên hoặc số điện thoại"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#6B5E5B' }}>
+          <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
+          Hiện dòng đã ẩn
+        </label>
+        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#A89996' }}>{visible.length} dòng</span>
+      </div>
+
       <div className="admin-card" style={{ overflow: 'auto' }}>
-        {rsvps.length === 0 ? (
+        {visible.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#A89996' }}>
-            Chưa có phản hồi nào · No responses yet
+            Chưa có xác nhận nào
           </div>
         ) : (
           <table className="rsvp-table">
             <thead>
               <tr>
-                <th>Tên</th>
-                <th>Tham dự</th>
-                <th>Số khách</th>
-                <th>Bên</th>
-                <th>Phone</th>
-                <th>Lời nhắn</th>
-                <th></th>
+                <th>Thời gian</th><th>Họ tên</th><th>Bên</th><th>Số người</th>
+                <th>SĐT</th><th>Ghi chú</th><th></th>
               </tr>
             </thead>
             <tbody>
-              {rsvps.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <strong>{r.name}</strong>
-                    {r.email && <div style={{ fontSize: 11, color: '#A89996' }}>{r.email}</div>}
-                  </td>
-                  <td>
-                    <span className={`rsvp-badge ${r.attending ? 'yes' : 'no'}`}>
-                      {r.attending ? 'Tham dự' : 'Gửi lời chúc'}
-                    </span>
-                  </td>
-                  <td>{r.attending ? r.guest_count : '—'}</td>
-                  <td style={{ textTransform: 'capitalize' }}>{r.side}</td>
-                  <td>{r.phone || '—'}</td>
-                  <td style={{ maxWidth: 200, fontSize: 12 }}>
-                    {r.message || '—'}
-                  </td>
-                  <td>
-                    <button
-                      className="admin-btn admin-btn-danger"
-                      style={{ padding: '4px 10px', fontSize: 11 }}
-                      onClick={() => deleteRsvp(r.id)}
-                    >
-                      Xóa
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {visible.map((r) => {
+                const dup = dupKeys.has(r.phone_e164 || `name:${(r.name || '').trim().toLowerCase()}`);
+                return (
+                  <tr key={r.id} style={r.hidden ? { opacity: 0.45 } : undefined}>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{timeVN(r.created_at)}</td>
+                    <td>
+                      <strong>{r.name}</strong>
+                      {dup && <span className="rsvp-badge no" style={{ marginLeft: 6 }}>Trùng</span>}
+                    </td>
+                    <td>
+                      <span className={`rsvp-badge ${r.side === 'groom' ? 'yes' : r.side === 'bride' ? 'no' : ''}`}>
+                        {SIDE_LABEL[r.side] || '—'}
+                      </span>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{guestText(r)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {r.phone ? <a href={`tel:${r.phone_e164 || r.phone.replace(/\s/g, '')}`}>{r.phone}</a> : '—'}
+                    </td>
+                    <td style={{ maxWidth: 220, fontSize: 12 }}>{r.message || '—'}</td>
+                    <td>
+                      <button
+                        className="admin-btn admin-btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                        onClick={() => toggleHidden(r)}
+                      >
+                        {r.hidden ? 'Hiện' : 'Ẩn'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
       <div className="admin-actions">
-        <button className="admin-btn admin-btn-secondary" onClick={fetchRsvps}>
-          Refresh
+        <button className="admin-btn admin-btn-secondary" onClick={fetchAll}>Tải lại</button>
+        <button className="admin-btn admin-btn-primary" onClick={exportCSV} disabled={!visible.length}>
+          Xuất CSV
         </button>
       </div>
       {ToastEl}

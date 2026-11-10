@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSiteConfig } from './hooks/useSiteConfig';
+import { useViewport } from './hooks/useViewport';
+import { usePhoneReveal } from './hooks/usePhoneReveal';
 import Nav from './components/Nav';
-import GateHero from './components/GateHero';
 import Hero from './components/Hero';
 import Family from './components/Family';
 import WeddingInfo from './components/WeddingInfo';
@@ -11,18 +12,24 @@ import Footer from './components/Footer';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
 
-// Cửa trượt hết 1.8s; mở khoá cuộn ở 1.5s để khách kịp thấy Hero hiện ra
-// ngay khi cánh cửa vừa rời khỏi khung hình.
-const GATE_RELEASE_MS = 1500;
-
+/**
+ * Trang thiệp cho khách.
+ *
+ * Không còn cổng mở thiệp: vào là thấy hero ngay, không phải bấm, không khoá
+ * cuộn — áp dụng cả desktop. `entered` bật ngay sau lần vẽ đầu để hero và nav
+ * vẫn hiện dần như cũ.
+ */
 export default function App() {
   const { config, siteText, manifest, loading } = useSiteConfig();
-  // Chỉ nạp khi nội dung chữ đã về. Nạp ngay lượt render đầu tiên là mở cổng bằng
+  // Chỉ nạp khi nội dung chữ đã về. Nạp ngay lượt render đầu tiên là mở bằng
   // bản kê rỗng — đúng cái lỗi cần tránh. Vẫn gọi thẳng trong thân component
   // (không đặt trong useEffect) để tầng lưu trữ có bản kê trước lượt render của con.
   if (!loading) setManifest(manifest);
-  const [gateOpened, setGateOpened] = useState(false);
-  const [navVisible, setNavVisible] = useState(false);
+
+  const [entered, setEntered] = useState(false);
+  const { isPhone } = useViewport();
+
+  usePhoneReveal(isPhone);
 
   useEffect(() => {
     const parts = config.weddingDate?.split('-') || [];
@@ -32,28 +39,17 @@ export default function App() {
     }
   }, [config]);
 
-  // Khoá cuộn tới khi khách mở cổng. Đã mở rồi thì không khoá lại,
-  // kể cả khi component mount lại.
   useEffect(() => {
-    if (gateOpened) return undefined;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, [gateOpened]);
-
-  const handleGateOpen = () => {
-    if (gateOpened) return;
-    setGateOpened(true);
-    setTimeout(() => {
-      document.body.style.overflow = '';
-      setNavVisible(true);
-    }, GATE_RELEASE_MS);
-  };
+    // setTimeout thay requestAnimationFrame: rAF đứng yên khi tab nằm ở nền,
+    // trang sẽ kẹt ở trạng thái chưa hiện cho tới khi khách quay lại tab.
+    const id = setTimeout(() => setEntered(true), 30);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <LightboxProvider>
-      <Nav config={config} siteText={siteText} visible={navVisible} />
-      <GateHero siteText={siteText} opened={gateOpened} onOpen={handleGateOpen} />
-      <Hero config={config} siteText={siteText} visible={gateOpened} />
+      <Nav config={config} siteText={siteText} visible={entered} />
+      <Hero config={config} siteText={siteText} visible={entered} />
       <Family side="groom" config={config} siteText={siteText} />
       <Family side="bride" config={config} siteText={siteText} />
       <WeddingInfo config={config} siteText={siteText} />

@@ -12,9 +12,7 @@ export const WEDDING_CONFIG = {
   venueName: 'Sheraton Hanoi',
   venueAddress: 'K5, Vành Đai 1/11 Đ. Xuân Diệu, Tây Hồ, Hà Nội',
   phone: '+84 919229000',
-  // TẠM: link tìm kiếm theo địa chỉ. Cần thay bằng link chia sẻ thật của
-  // Sheraton Hanoi (Google Maps → Chia sẻ → Sao chép liên kết).
-  mapUrl: 'https://www.google.com/maps/search/?api=1&query=Sheraton+Hanoi+K5+Xu%C3%A2n+Di%E1%BB%87u+T%C3%A2y+H%E1%BB%93+H%C3%A0+N%E1%BB%99i',
+  mapUrl: 'https://maps.app.goo.gl/dp3LQbtQZo7iKYSc6',
   musicTrack: 'Canon in D — Pachelbel',
 };
 

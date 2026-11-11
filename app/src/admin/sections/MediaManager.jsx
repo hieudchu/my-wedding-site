@@ -37,22 +37,6 @@ const CAPTION_FOLDER = 'carousel';
  */
 const SECTIONS = [
   {
-    title: 'Thanh menu trên cùng',
-    hint: 'Bám theo khách suốt cả trang.',
-    slots: [
-      {
-        storagePath: 'icons/medallion-ink.png',
-        label: 'Con dấu nhỏ cạnh tên hai đứa',
-        where:
-          'Sát mép trái thanh menu, ngay trước chữ “Hiếu & Minh”. Trên điện thoại, đúng tấm này còn hiện ở đỉnh tấm thiệp mời.',
-        look:
-          'Rất nhỏ: cao 30px trên thanh menu, khoảng 120px trong thiệp điện thoại. Hợp với hình vẽ nét trên nền trắng — ảnh chụp thu nhỏ cỡ này sẽ thành một vệt tối.',
-        shape: 'round',
-        accept: 'image/*',
-      },
-    ],
-  },
-  {
     folder: 'music',
     label: 'Nhạc nền',
     where:
@@ -155,21 +139,6 @@ const SECTIONS = [
         look:
           'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
         thumb: '45',
-        accept: 'image/*',
-      },
-    ],
-  },
-  {
-    title: 'Cuối trang',
-    hint: 'Nền nâu đỏ rất sẫm dưới cùng, ngay sau ô xác nhận tham dự.',
-    slots: [
-      {
-        storagePath: 'icons/medallion-gold.png',
-        label: 'Con dấu vàng khép lại trang',
-        where: 'Dòng trên cùng của phần cuối trang, ngay phía trên tên “Hiếu & Minh”.',
-        look:
-          'Huy hiệu tròn rộng 74px đặt trên nền sẫm — nét vàng thì nổi, ảnh chụp thì chìm nghỉm.',
-        shape: 'round',
         accept: 'image/*',
       },
     ],

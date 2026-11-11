@@ -117,14 +117,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
         <span className="corner bl">{STEP_CORNER}</span>
         <span className="corner br">{STEP_CORNER}</span>
 
-        <MediaImage
-          storagePath="icons/medallion-ink.png"
-          localFallback="/assets/medallion-ink.png"
-          alt=""
-          className="info-medallion"
-          clickable={false}
-          sizes="96px"
-        />
+        <img className="info-medallion" src="/assets/medallion-ink.png" alt="" decoding="async" />
 
         <p className="info-announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
 

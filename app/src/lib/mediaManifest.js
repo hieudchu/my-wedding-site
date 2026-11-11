@@ -8,14 +8,16 @@
  * Mọi hàm ở đây đều thuần: nhận bản kê, trả bản kê mới, không sửa bản cũ.
  */
 
-export const MEDIA_FOLDERS = ['carousel', 'portraits', 'background', 'icons', 'music', 'timeline'];
+// 'icons' (con dấu) và 'timeline' (ảnh từng mốc giờ) đã bỏ 11/2026: trang khách dùng con dấu
+// có sẵn trong /assets, và lịch trình không còn ảnh từng mốc.
+export const MEDIA_FOLDERS = ['carousel', 'portraits', 'background', 'music'];
 
 export function emptyManifest() {
   return { version: 1, folders: {} };
 }
 
 /**
- * Bản nén của ảnh nằm NGOÀI sáu thư mục media, ở `_opt/<thư mục>/<tên>-<rộng>.<đuôi>`,
+ * Bản nén của ảnh nằm NGOÀI các thư mục media, ở `_opt/<thư mục>/<tên>-<rộng>.<đuôi>`,
  * để "Quét lại kho" — vốn liệt kê từng thư mục — không bao giờ nhặt nhầm chúng
  * thành ảnh.
  */

@@ -95,7 +95,9 @@ events, and media come from Supabase tables and storage. Fallback defaults live 
 ## Assets
 
 - `app/public/fonts/` — Four self-hosted families, subset to latin/latin-ext/vietnamese
-- `app/public/assets/` — Medallion images (gold, ink)
+- `app/public/assets/` — Medallion images (gold, ink). Since 11/2026 these are the **only**
+  medallions: nav logo, disc label, phone invitation card and footer read them directly; the
+  admin has no medallion slot and the `icons` Storage folder is gone
 - Media served from Supabase Storage with placeholder fallbacks
 - Photo placeholders render as `<div className="ph" data-label="...">`
 - `app/public/icons.svg`, `favicon.svg`, `assets/medallion.jpg` are **unreferenced** leftovers

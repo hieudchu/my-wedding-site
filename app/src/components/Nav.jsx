@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useMediaSources, useMediaList } from '../hooks/useMedia';
+import { useMediaList } from '../hooks/useMedia';
 import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
 import Ico from './Icon';
 
@@ -34,10 +34,8 @@ function fmt(t) {
 export default function Nav({ config, siteText = {}, visible }) {
   // Cả thư mục music là một danh sách phát — chủ nhà thêm bớt bài tuỳ ý
   const { files: tracks } = useMediaList('music');
-  // Logo cao 30px, nhãn đĩa than vài chục px — bản nhỏ nhất là đủ. Bản gốc của
-  // medallion-ink trên kho nặng 1,7 MB, chỉ để vẽ một hình 30px.
-  const navLogoUrl = useMediaSources('icons/medallion-ink.png', '/assets/medallion-ink.png')?.small;
-  const discLabelUrl = useMediaSources('icons/medallion-gold.png', '/assets/medallion-gold.png')?.small;
+  // Logo và nhãn đĩa than: con dấu có sẵn trong bộ cài (/assets, ~15 KB). Không còn ô
+  // tải lên ở admin (11/2026), nên không hỏi kho ảnh nữa.
 
   const navRef = useRef(null);
   const audioRef = useRef(null);
@@ -202,7 +200,7 @@ export default function Nav({ config, siteText = {}, visible }) {
       />
 
       <a href="#hero" className="nav-brand" onClick={scrollTo('hero')}>
-        <img src={navLogoUrl || '/assets/medallion-ink.png'} alt="" />
+        <img src="/assets/medallion-ink.png" alt="" />
         <span>{config.groomShort} &amp; {config.brideShort}</span>
       </a>
 
@@ -256,7 +254,7 @@ export default function Nav({ config, siteText = {}, visible }) {
       {panel && (
         <div className={`music-panel ${playing ? 'is-playing' : ''}`}>
           <div className="mp-head">
-            <div className="mp-disc" aria-hidden="true"><img src={discLabelUrl || '/assets/medallion-gold.png'} alt="" /></div>
+            <div className="mp-disc" aria-hidden="true"><img src="/assets/medallion-gold.png" alt="" /></div>
             <div className="mp-text">
               <div className="eyebrow-sm">
                 Nhạc nền{tracks.length > 1 ? ` · bài ${trackIdx + 1}/${tracks.length}` : ''}

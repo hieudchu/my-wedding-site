@@ -109,21 +109,15 @@ export default function FamilySettings() {
               </div>
               <div className="admin-row">
                 <div className="admin-field">
-                  <label>Tên tiếng Việt</label>
+                  <label>Họ tên · Name</label>
                   <input
                     type="text"
                     value={m.name_vi}
                     onChange={(e) => updateMember(m.id, 'name_vi', e.target.value)}
                   />
                 </div>
-                <div className="admin-field">
-                  <label>Tên tiếng Anh</label>
-                  <input
-                    type="text"
-                    value={m.name_en}
-                    onChange={(e) => updateMember(m.id, 'name_en', e.target.value)}
-                  />
-                </div>
+                {/* Bỏ ô "Tên tiếng Anh" (11/2026): trang khách chỉ hiện name_vi. Cột name_en vẫn
+                    còn trong DB và được lưu lại nguyên giá trị cũ. */}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="admin-btn admin-btn-secondary" onClick={() => saveMember(m)}>

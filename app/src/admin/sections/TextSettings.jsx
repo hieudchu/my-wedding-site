@@ -1,38 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../components/Toast';
 
+/* Chỉ những chữ trang khách THẬT SỰ hiện ra (đối chiếu 11/2026 bằng cách thay mọi giá trị
+   site_text bằng chuỗi đánh dấu rồi xem ở máy tính, điện thoại dọc/ngang, tablet). Đã bỏ:
+   gate_prompt(_sub) — không còn cổng mở thiệp; groom_bio — bị ẩn ở mọi màn hình;
+   info_announce_en, rsvp_success_*, rsvp_dress_code(_en) — không component nào đọc.
+   Hàng trong site_config vẫn còn, chỉ không hiện ở đây nữa. */
 const LABELS = {
   // Gate
   gate_tagline: 'Câu trích dẫn · Tagline',
-  gate_prompt: 'Lời mời mở thiệp · Open prompt',
-  gate_prompt_sub: 'Dòng phụ nút mở · Open prompt sub',
   // Family
-  groom_bio: 'Giới thiệu chú rể · Groom bio',
   groom_hometown: 'Quê quán chú rể · Groom hometown',
-  bride_bio: 'Giới thiệu cô dâu · Bride bio',
+  bride_bio: 'Giới thiệu cô dâu · Bride bio (chỉ hiện trên điện thoại)',
   bride_hometown: 'Quê quán cô dâu · Bride hometown',
   // Info
   info_announce: 'Lời thông báo (Tiếng Việt) · Announce VI',
-  info_announce_en: 'Lời thông báo (Tiếng Anh) · Announce EN',
   info_venue_prefix: 'Tiền tố địa điểm · Venue prefix',
-  info_time_label: 'Nhãn giờ · Time label',
+  info_time_label: 'Nhãn giờ · Time label (chỉ hiện trên máy tính)',
   info_map_button: 'Nút bản đồ · Map button',
   // Timeline
   timeline_eyebrow: 'Dòng nhỏ phía trên · Eyebrow',
   timeline_heading: 'Tiêu đề chính · Heading',
   timeline_countdown_label: 'Nhãn đếm ngược · Countdown label',
   // RSVP
-  rsvp_eyebrow: 'Dòng nhỏ phía trên · Eyebrow',
+  rsvp_eyebrow: 'Dòng nhỏ phía trên · Eyebrow (chỉ hiện trên máy tính)',
   rsvp_heading: 'Tiêu đề chính · Heading',
   rsvp_paragraph: 'Đoạn văn mô tả · Paragraph',
   rsvp_attend_yes: 'Nút tham dự · Attend button',
   rsvp_attend_yes_sub: 'Dòng phụ nút tham dự · Attend sub',
   rsvp_attend_no: 'Nút từ chối · Decline button',
   rsvp_attend_no_sub: 'Dòng phụ nút từ chối · Decline sub',
-  rsvp_success_title: 'Tiêu đề xác nhận thành công · Success title',
-  rsvp_success_message: 'Nội dung xác nhận thành công · Success message',
-  rsvp_dress_code: 'Trang phục (Tiếng Việt) · Dress code VI',
-  rsvp_dress_code_en: 'Trang phục (Tiếng Anh) · Dress code EN',
   // Nav
   nav_family: 'Mục Gia đình · Family link',
   nav_invitation: 'Mục Thiệp mời · Invitation link',
@@ -44,16 +41,16 @@ const LABELS = {
 
 const SECTIONS = [
   {
-    title: 'Gate · Trang mở',
-    keys: ['gate_tagline', 'gate_prompt', 'gate_prompt_sub'],
+    title: 'Mở đầu · Hero',
+    keys: ['gate_tagline'],
   },
   {
     title: 'Family · Gia đình',
-    keys: ['groom_bio', 'groom_hometown', 'bride_bio', 'bride_hometown'],
+    keys: ['groom_hometown', 'bride_hometown', 'bride_bio'],
   },
   {
     title: 'Info · Thiệp mời',
-    keys: ['info_announce', 'info_announce_en', 'info_venue_prefix', 'info_time_label', 'info_map_button'],
+    keys: ['info_announce', 'info_venue_prefix', 'info_time_label', 'info_map_button'],
   },
   {
     title: 'Timeline · Lịch trình',
@@ -61,7 +58,7 @@ const SECTIONS = [
   },
   {
     title: 'RSVP · Xác nhận',
-    keys: ['rsvp_eyebrow', 'rsvp_heading', 'rsvp_paragraph', 'rsvp_attend_yes', 'rsvp_attend_yes_sub', 'rsvp_attend_no', 'rsvp_attend_no_sub', 'rsvp_success_title', 'rsvp_success_message', 'rsvp_dress_code', 'rsvp_dress_code_en'],
+    keys: ['rsvp_eyebrow', 'rsvp_heading', 'rsvp_paragraph', 'rsvp_attend_yes', 'rsvp_attend_yes_sub', 'rsvp_attend_no', 'rsvp_attend_no_sub'],
   },
   {
     title: 'Navigation · Điều hướng',

@@ -243,6 +243,12 @@ Two traps found during the mobile port:
   `-webkit-font-smoothing: antialiased` thins the admin text on macOS, so
   `admin/admin-isolation.css` resets it. Put any future admin-vs-guest CSS
   conflict fixes there, not in `admin.css`.
+- Admin only offers what guests can see (checked 11/2026 by swapping every `site_text`
+  value for a marker and looking at desktop/phone/landscape/tablet). Text keys that no
+  component renders (`gate_prompt*`, `info_announce_en`, `rsvp_success_*`,
+  `rsvp_dress_code*`, `groom_bio`) and `family_members.name_en` are no longer editable; the
+  rows/columns stay in the DB. When a design change hides or drops a text or photo, remove it
+  from `TextSettings.jsx` / `MediaManager.jsx` SECTIONS too.
 - The image framer's styles are `admin/image-framer.css` (`if-` classes), not
   `admin.css`.
 - "Đã gọi" (BR-1, 11/2026) stores the call time in `rsvps.called_at` (null = not

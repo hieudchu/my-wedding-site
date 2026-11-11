@@ -28,7 +28,6 @@ const CAPTION_FOLDER = 'carousel';
  *
  *   where  — ảnh hiện ra ở đâu, gọi theo cách khách gọi chứ không phải tên component
  *   look   — ở đó ảnh bị cắt thành hình gì, to bằng chừng nào
- *   empty  — trang khách trông ra sao khi ô này còn trống
  *
  * Mục nào có `folder` là một thư mục chứa nhiều file; mục nào có `slots` là một
  * thẻ gom vài ô cố định, mỗi ô đúng một file.
@@ -39,16 +38,15 @@ const CAPTION_FOLDER = 'carousel';
 const SECTIONS = [
   {
     title: 'Thanh menu trên cùng',
-    hint: 'Hiện ra ngay khi hai cánh cửa mở, rồi bám theo khách suốt cả trang.',
+    hint: 'Bám theo khách suốt cả trang.',
     slots: [
       {
         storagePath: 'icons/medallion-ink.png',
         label: 'Con dấu nhỏ cạnh tên hai đứa',
         where:
-          'Sát mép trái thanh menu, ngay trước chữ “Hiếu & Minh”. Đúng tấm này còn hiện thêm một lần nữa ở đỉnh tấm thiệp mời.',
+          'Sát mép trái thanh menu, ngay trước chữ “Hiếu & Minh”. Trên điện thoại, đúng tấm này còn hiện ở đỉnh tấm thiệp mời.',
         look:
-          'Rất nhỏ: cao 30px trên thanh menu, 96px trong thiệp. Hợp với hình vẽ nét trên nền trắng — ảnh chụp thu nhỏ cỡ này sẽ thành một vệt tối.',
-        empty: 'Chưa tải lên thì trang khách dùng con dấu mực có sẵn trong bộ cài.',
+          'Rất nhỏ: cao 30px trên thanh menu, khoảng 120px trong thiệp điện thoại. Hợp với hình vẽ nét trên nền trắng — ảnh chụp thu nhỏ cỡ này sẽ thành một vệt tối.',
         shape: 'round',
         accept: 'image/*',
       },
@@ -67,7 +65,7 @@ const SECTIONS = [
     folder: 'carousel',
     label: 'Album ảnh mở đầu',
     where:
-      'Màn hình đầu tiên sau khi cửa mở: ảnh chiếm trọn màn hình, khách vuốt ngang để lật từng tấm.',
+      'Màn hình đầu tiên khách thấy: ảnh chiếm trọn màn hình, khách vuốt ngang (máy tính: bấm mũi tên) để lật từng tấm.',
     look:
       'Mỗi tấm là một thẻ lớn giữa màn hình, ảnh dọc hay ngang đều vừa. Tấm đang xem còn được phóng to làm nền mờ phía sau, và bấm vào là mở cỡ lớn. Thẻ đầu tiên là thiệp chữ trang tự dựng, ảnh tải lên xếp tiếp sau đó — kéo thả để đổi thứ tự.',
     accept: 'image/*',
@@ -82,7 +80,6 @@ const SECTIONS = [
         where: 'Trang “Nhà trai”, trong khung ảnh nằm cạnh tên chú rể và danh sách gia đình.',
         look:
           'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung chú rể”.',
         shape: 'arch',
         thumb: 'arch',
         accept: 'image/*',
@@ -93,7 +90,6 @@ const SECTIONS = [
         where: 'Trang “Nhà gái”, trong khung ảnh nằm cạnh tên cô dâu và danh sách gia đình.',
         look:
           'Cắt dọc 3:4, bo thành vòm tròn ở đỉnh như khung ảnh treo tường, nên hai góc trên bị cắt đi — chọn ảnh chụp đứng và chừa khoảng trống phía trên đầu. Khách bấm vào xem được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Chân dung cô dâu”.',
         shape: 'arch',
         thumb: 'arch',
         accept: 'image/*',
@@ -102,26 +98,24 @@ const SECTIONS = [
   },
   {
     title: 'Tấm thiệp mời',
-    hint: 'Mục “Thiệp mời” trên thanh menu — tấm thiệp giấy nằm giữa trang. Trên máy tính hai ảnh đứng hai bên tấm thiệp; trên điện thoại chúng nằm trên và dưới thiệp.',
+    hint: 'Mục “Thiệp mời” trên thanh menu — tấm thiệp giấy nằm giữa trang, hai ảnh giọt nước đi kèm.',
     slots: [
       {
         storagePath: 'background/right.jpg',
-        label: 'Ảnh nền phía trên bên phải',
-        where: 'Máy tính: bên phải tấm thiệp, đặt cao hơn ảnh bên trái.',
+        label: 'Ảnh giọt nước bên phải',
+        where: 'Máy tính: bên phải tấm thiệp, đặt cao hơn ảnh bên trái. Điện thoại: dưới tấm thiệp.',
         look:
           'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
         thumb: 'blobR',
         accept: 'image/*',
       },
       {
         storagePath: 'background/left.jpg',
-        label: 'Ảnh nền phía dưới bên trái',
-        where: 'Máy tính: bên trái tấm thiệp, đặt thấp hơn ảnh bên phải.',
+        label: 'Ảnh giọt nước bên trái',
+        where: 'Máy tính: bên trái tấm thiệp, đặt thấp hơn ảnh bên phải. Điện thoại: trên tấm thiệp.',
         look:
           'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4 trên máy tính (4:5 trên điện thoại), có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
         thumb: 'blobL',
         accept: 'image/*',
@@ -137,7 +131,6 @@ const SECTIONS = [
         label: 'Ảnh lịch trình bên trái',
         where: 'Bên trái trục lịch trình, ngang mốc giờ đầu tiên; bám theo khi khách cuộn. Màn nhỏ hơn 1100px và điện thoại không hiện.',
         look: 'Khung dọc 4:5, rộng tối đa 340px, viền đôi mảnh. Bấm vào mở được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Ảnh lịch trình · trái”.',
         thumb: '45',
         accept: 'image/*',
       },
@@ -146,7 +139,6 @@ const SECTIONS = [
         label: 'Ảnh lịch trình bên phải',
         where: 'Bên phải trục lịch trình, phía cuối; bám theo khi khách cuộn. Màn nhỏ hơn 1100px và điện thoại không hiện.',
         look: 'Khung dọc 4:5, rộng tối đa 340px, viền đôi mảnh. Bấm vào mở được ảnh đầy đủ.',
-        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Ảnh lịch trình · phải”.',
         thumb: '45',
         accept: 'image/*',
       },
@@ -162,7 +154,6 @@ const SECTIONS = [
         where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, giữa trang.',
         look:
           'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
-        empty: 'Chưa có ảnh thì chỗ đó là dải kẻ sọc đề chữ “Hiếu và Minh”.',
         thumb: '45',
         accept: 'image/*',
       },
@@ -178,31 +169,7 @@ const SECTIONS = [
         where: 'Dòng trên cùng của phần cuối trang, ngay phía trên tên “Hiếu & Minh”.',
         look:
           'Huy hiệu tròn rộng 74px đặt trên nền sẫm — nét vàng thì nổi, ảnh chụp thì chìm nghỉm.',
-        empty: 'Chưa tải lên thì trang khách dùng con dấu vàng có sẵn trong bộ cài.',
         shape: 'round',
-        accept: 'image/*',
-      },
-    ],
-  },
-  {
-    folder: 'timeline',
-    label: 'Ảnh cũ của từng mốc giờ (không còn hiện)',
-    where:
-      'Không nơi nào cả: từ bản máy tính 11/2026, lịch trình dùng hình vẽ nét như điện thoại, không còn ảnh cho từng mốc giờ.',
-    look: 'Thư mục này chỉ để xem lại và xoá ảnh cũ. Muốn có ảnh trong mục Lịch trình thì dùng hai ô “Ảnh lịch trình” ở trên.',
-    accept: 'image/*',
-  },
-  {
-    title: 'Không hiện ở đâu cả',
-    hint:
-      'Không mục nào của trang khách đọc tới file dưới đây nữa. Ô vẫn để đây để còn xoá được tấm cũ trong kho — tải ảnh mới lên thì khách sẽ không nhìn thấy ở đâu.',
-    slots: [
-      {
-        storagePath: 'background/moment-1.jpg',
-        label: 'Ảnh không còn chỗ hiển thị',
-        where: 'Không nơi nào cả — không một mục nào của trang khách đọc tới file này.',
-        look: 'Muốn đổi ảnh trên đồng hồ đếm ngược thì tải vào ô “Ảnh phía trên đồng hồ đếm ngược” ở mục ngay phía trên.',
-        empty: 'Đang trống — và trống cũng không ảnh hưởng gì tới trang khách.',
         accept: 'image/*',
       },
     ],
@@ -520,7 +487,7 @@ function SlotUploader({ slot, onToast, reloadKey, manifest, onManifest, framer }
               <span className="slot-path">{slot.storagePath}</span>
             </>
           ) : (
-            slot.empty
+            'Chưa có ảnh.'
           )}
         </div>
         {url && framable && (

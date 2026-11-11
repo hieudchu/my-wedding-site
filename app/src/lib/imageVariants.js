@@ -13,7 +13,8 @@ import { OPT_DIR } from './mediaManifest';
  * khách tự dùng ảnh gốc (xem variantPaths). Chậm hơn, nhưng không mất ảnh.
  */
 
-const WIDTHS = [480, 960, 1280, 1600];
+// 2000: cho khung admin đã phóng to (fit.z) trên màn Retina — xem sourcesFor (storage.js).
+const WIDTHS = [480, 960, 1280, 1600, 2000];
 const QUALITY = 0.78;
 // Một năm. An toàn vì URL bản nén mang `?v=` theo phiên bản ảnh — đổi ảnh là đổi URL.
 const CACHE_SECONDS = '31536000';

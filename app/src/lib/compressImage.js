@@ -4,14 +4,19 @@
  * Ảnh máy ảnh thường là 4000×6000 (24 megapixel, hơn 10 MB). Trang web hiển thị
  * chúng ở bề rộng vài trăm pixel, nhưng điện thoại vẫn phải tải về đủ 10 MB rồi
  * giải nén thành khoảng 92 MB bộ nhớ — đó là nguyên nhân khiến trang giật và
- * tốn băng thông. Thu về cạnh dài 1600px là quá đủ cho cả màn hình Retina, mà
- * dung lượng chỉ còn khoảng 300–450 KB.
+ * tốn băng thông. Thu về cạnh dài 3000px (~1–2 MB).
+ *
+ * Khách KHÔNG tải file này (họ nhận bản nén WebP qua srcset; lightbox lấy bản nén lớn
+ * nhất) — nó là nguồn để sinh bản nén. Từng thu về 1600px (11/2026): ảnh dọc chỉ còn
+ * 1067px ngang, và khi admin phóng khung 1,6–1,7× thì không còn đủ điểm ảnh → ảnh nhoè.
+ * 3000px: phóng ~1,7× vẫn nét trên màn Retina; 2000×3000 = 6 MP, dưới giới hạn canvas
+ * iPhone (~16,7 MP).
  *
  * Việc này làm ở phía trình duyệt lúc upload, nên kho ảnh **luôn** sạch, không
  * phụ thuộc vào việc người tải lên có nhớ nén trước hay không.
  */
 
-const MAX_EDGE = 1600;
+const MAX_EDGE = 3000;
 const QUALITY = 0.82;
 // Dưới ngưỡng này thì ảnh đã đủ nhẹ, không cần đụng vào
 const SKIP_UNDER = 600 * 1024;

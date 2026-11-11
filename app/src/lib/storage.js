@@ -113,9 +113,13 @@ function sourcesFor(folder, entry) {
   const fit = fitFor(entry);
   if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original, fit };
   const mid = [...variants].reverse().find((x) => x.w <= 960) || variants[0];
+  // Khung phóng z× (fit) thì ô cần z lần số điểm ảnh, nhưng `sizes` chỉ biết bề rộng ô.
+  // Khai bề rộng mỗi bản nén chia cho z → trình duyệt tự chọn bản lớn hơn đúng z lần.
+  // Lấy z lớn nhất của máy tính/điện thoại: một srcset dùng chung cho cả hai bố cục.
+  const zoom = Math.max(1, fit?.d?.z || 1, fit?.m?.z || 1);
   return {
     url: mid.url,
-    srcSet: variants.map((x) => `${x.url} ${x.w}w`).join(', '),
+    srcSet: variants.map((x) => `${x.url} ${Math.max(1, Math.round(x.w / zoom))}w`).join(', '),
     small: variants[0].url,
     full: variants[variants.length - 1].url,
     original,

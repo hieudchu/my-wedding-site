@@ -1,14 +1,14 @@
 /**
  * Xoay ảnh mới trước khi tải lên — nút "Xoay" của trình chỉnh khung.
  *
- * Thu luôn về cạnh dài 1600px trong cùng lượt vẽ: canvas trên iPhone tối đa
+ * Thu luôn về cạnh dài 3000px trong cùng lượt vẽ: canvas trên iPhone tối đa
  * khoảng 16,7 megapixel, ảnh máy ảnh 24 megapixel xoay nguyên cỡ là ra canvas
- * trắng. 1600px cũng đúng là cỡ compressImage sẽ thu về ngay sau đó.
+ * trắng. 3000px cũng đúng là cỡ compressImage sẽ thu về ngay sau đó.
  *
  * Không xoay (0°) thì trả nguyên file. Hỏng thì ném — tải lên ảnh nằm nghiêng
  * mà không ai hay còn tệ hơn báo lỗi.
  */
-const MAX_EDGE = 1600;
+const MAX_EDGE = 3000;
 const QUALITY = 0.9;
 
 export async function rotateFile(file, deg) {

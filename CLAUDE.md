@@ -163,7 +163,7 @@ back to `lib/config.js` defaults and images become `.ph` placeholders.
 ## Images & Performance
 
 Wedding photos live in Supabase Storage bucket `media`, but guests never download the
-originals (4–14 MB camera files). Each photo has WebP variants at 480/960/1280/1600px
+originals. Each photo has WebP variants at 480/960/1280/1600/2000px (never upscaled)
 under **`_opt/<folder>/<name>-<width>.webp`** — outside the six media folders, so the
 admin "Quét lại kho" (rescan) never picks them up as photos.
 
@@ -191,6 +191,11 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
     before anything is uploaded; picking several uploads them centred.
 - Variant URLs carry `?v=` and are cached for a year (`max-age=31536000`), so a new
   upload is a new URL. The Supabase CDN returns `HIT` for them.
+- Admin uploads shrink the stored original to **3000px** long edge (`compressImage`,
+  `rotateFile`). It was 1600px until 11/2026: a portrait became 1067px wide, and a frame
+  zoomed 1.6–1.7× in the framer then had too few pixels → guests saw blurry photos.
+  `sourcesFor()` divides each srcset `w` by the fit zoom so the browser fetches a variant
+  big enough for the zoomed frame.
 - All three admin upload paths call `uploadVariants()` (`lib/imageVariants.js`), which
   builds the variants in the browser (JPEG fallback on Safari, which cannot encode WebP).
 - `MediaImage` takes a `sizes` prop; set it to the slot's real width or the browser

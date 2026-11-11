@@ -70,6 +70,8 @@ export default function Family({ side, config, siteText = {} }) {
             />
           </div>
           <span className="family-sig">{isGroom ? 'H' : 'M'}</span>
+          {/* Desktop: chữ ký H/M nổi trên ảnh (desktop.css). Ẩn ở điện thoại. */}
+          <span className="d-sig" aria-hidden="true" data-dv=""><b>{isGroom ? 'H' : 'M'}</b></span>
         </div>
       </div>
     </section>

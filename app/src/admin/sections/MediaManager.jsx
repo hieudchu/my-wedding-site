@@ -102,14 +102,14 @@ const SECTIONS = [
   },
   {
     title: 'Tấm thiệp mời',
-    hint: 'Mục “Thiệp mời” trên thanh menu — tấm thiệp giấy nằm giữa trang. Hai ảnh dưới đây nằm phía sau nó.',
+    hint: 'Mục “Thiệp mời” trên thanh menu — tấm thiệp giấy nằm giữa trang. Trên máy tính hai ảnh đứng hai bên tấm thiệp; trên điện thoại chúng nằm trên và dưới thiệp.',
     slots: [
       {
         storagePath: 'background/right.jpg',
         label: 'Ảnh nền phía trên bên phải',
-        where: 'Sau tấm thiệp, phía trên bên phải, tràn ra ngoài mép màn hình.',
+        where: 'Máy tính: bên phải tấm thiệp, đặt cao hơn ảnh bên trái.',
         look:
-          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, trôi chậm ngược chiều cuộn. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
         thumb: 'blob34',
@@ -118,24 +118,39 @@ const SECTIONS = [
       {
         storagePath: 'background/left.jpg',
         label: 'Ảnh nền phía dưới bên trái',
-        where: 'Sau tấm thiệp, phía dưới bên trái, tràn ra ngoài mép màn hình.',
+        where: 'Máy tính: bên trái tấm thiệp, đặt thấp hơn ảnh bên phải.',
         look:
-          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 4:5, trôi chậm ngược chiều cuộn. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
+          'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4 trên máy tính (4:5 trên điện thoại), có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
-        thumb: 'blob45',
+        thumb: 'blob34',
         accept: 'image/*',
       },
     ],
   },
   {
-    folder: 'timeline',
-    label: 'Ảnh của từng mốc giờ trong ngày',
-    where:
-      'Mục “Lịch trình” trên máy tính: mỗi mốc giờ có một ảnh, xếp so le hai bên nét lụa đỏ chạy dọc giữa trang. Điện thoại hiện lịch trình dạng biểu tượng, không có ảnh.',
-    look:
-      'Ảnh ở đây chỉ hiện lên khi mốc giờ bên trang “Lịch trình” trỏ đúng vào tên file này. Cách chắc ăn là sang trang “Lịch trình” rồi tải ảnh ngay tại mốc giờ đó — trang ấy tự đặt tên file và tự nối vào mốc. Thư mục này để xem lại và xoá những ảnh đã tải.',
-    accept: 'image/*',
+    title: 'Lịch trình',
+    hint: 'Mục “Lịch trình” trên thanh menu. Chỉ máy tính có hai ảnh này, kẹp hai bên sợi chỉ lịch trình.',
+    slots: [
+      {
+        storagePath: 'background/timeline-left.jpg',
+        label: 'Ảnh lịch trình bên trái',
+        where: 'Bên trái trục lịch trình, ngang mốc giờ đầu tiên; bám theo khi khách cuộn. Màn nhỏ hơn 1100px và điện thoại không hiện.',
+        look: 'Khung dọc 4:5, rộng tối đa 340px, viền đôi mảnh. Bấm vào mở được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Ảnh lịch trình · trái”.',
+        thumb: '45',
+        accept: 'image/*',
+      },
+      {
+        storagePath: 'background/timeline-right.jpg',
+        label: 'Ảnh lịch trình bên phải',
+        where: 'Bên phải trục lịch trình, phía cuối; bám theo khi khách cuộn. Màn nhỏ hơn 1100px và điện thoại không hiện.',
+        look: 'Khung dọc 4:5, rộng tối đa 340px, viền đôi mảnh. Bấm vào mở được ảnh đầy đủ.',
+        empty: 'Chưa có ảnh thì chỗ đó là ô kẻ sọc đề chữ “Ảnh lịch trình · phải”.',
+        thumb: '45',
+        accept: 'image/*',
+      },
+    ],
   },
   {
     title: 'Đồng hồ đếm ngược',
@@ -144,12 +159,11 @@ const SECTIONS = [
       {
         storagePath: 'background/moment-2.jpg',
         label: 'Ảnh phía trên đồng hồ đếm ngược',
-        where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, rộng gần hết bề ngang mục.',
+        where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, giữa trang.',
         look:
-          'Dải ngang 16:9 trên máy tính, khung đếm ngược đè lên khoảng 50px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
+          'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
         empty: 'Chưa có ảnh thì chỗ đó là dải kẻ sọc đề chữ “Hiếu và Minh”.',
-        shape: 'wide',
-        thumb: 'wide',
+        thumb: '45',
         accept: 'image/*',
       },
     ],
@@ -169,6 +183,14 @@ const SECTIONS = [
         accept: 'image/*',
       },
     ],
+  },
+  {
+    folder: 'timeline',
+    label: 'Ảnh cũ của từng mốc giờ (không còn hiện)',
+    where:
+      'Không nơi nào cả: từ bản máy tính 11/2026, lịch trình dùng hình vẽ nét như điện thoại, không còn ảnh cho từng mốc giờ.',
+    look: 'Thư mục này chỉ để xem lại và xoá ảnh cũ. Muốn có ảnh trong mục Lịch trình thì dùng hai ô “Ảnh lịch trình” ở trên.',
+    accept: 'image/*',
   },
   {
     title: 'Không hiện ở đâu cả',

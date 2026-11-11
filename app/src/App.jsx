@@ -9,6 +9,7 @@ import WeddingInfo from './components/WeddingInfo';
 import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
+import DeskMotion from './components/DeskMotion';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
 
@@ -48,6 +49,7 @@ export default function App() {
 
   return (
     <LightboxProvider>
+      {!isPhone && <DeskMotion />}
       <Nav config={config} siteText={siteText} visible={entered} />
       <Hero config={config} siteText={siteText} visible={entered} />
       <Family side="groom" config={config} siteText={siteText} />

@@ -13,6 +13,8 @@ export default function Footer({ config, siteText = {} }) {
         alt=""
         clickable={false}
         sizes="74px"
+        // Tải ngay (ảnh rất nhẹ): lazy làm logo trống một lúc khi khách kéo nhanh xuống cuối trang
+        loading="eager"
       />
       {/* Tên viết TAN Whistling như thẻ thiệp đầu trang (ScriptName lo dấu "ế") */}
       <div className="names">

@@ -24,6 +24,7 @@ export default function MediaImage({
   className = '',
   clickable = true,
   sizes,
+  loading = 'lazy',
 }) {
   const sources = useMediaSources(storagePath, localFallback);
   // 0 = bản nén · 1 = lùi về ảnh gốc · 2 = hỏng hẳn, hiện ô kẻ sọc
@@ -50,7 +51,7 @@ export default function MediaImage({
       {...fitProps(sources?.fit, className)}
       // Bản nén lỗi thì thử ảnh gốc một lần, rồi mới chịu hiện ô kẻ sọc
       onError={() => setStage((n) => (n === 0 && sources?.srcSet ? 1 : 2))}
-      loading="lazy"
+      loading={loading}
       decoding="async"
       {...interactive}
     />

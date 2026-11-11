@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles/globals.css';
 import './styles/sections.css';
+import './styles/desktop.css';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import App from './App.jsx';
 // Trang admin chỉ một người dùng — tách thành bundle riêng để 600 khách không

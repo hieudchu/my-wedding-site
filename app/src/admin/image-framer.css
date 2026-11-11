@@ -448,6 +448,7 @@
 .slot-card .slot-preview.if-thumb-blob45 { width: 96px; min-width: 96px; height: 120px; border-radius: 48% 52% 56% 44% / 54% 46% 54% 46%; }
 .slot-card .slot-preview.if-thumb-wide { width: 142px; min-width: 142px; height: 80px; border-radius: 5px; }
 .slot-card .slot-preview.if-thumb-43 { width: 120px; min-width: 120px; height: 90px; border-radius: 4px; }
+.slot-card .slot-preview.if-thumb-45 { width: 96px; min-width: 96px; height: 120px; border-radius: 3px; }
 .if-thumb-pic { width: 100%; height: 100%; overflow: hidden; border-radius: inherit; }
 /* Ô chưa có ảnh (mốc giờ lịch trình): chữ "+ Upload" nằm giữa ô */
 .if-thumb-pic > .slot-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }

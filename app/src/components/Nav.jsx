@@ -208,7 +208,7 @@ export default function Nav({ config, siteText = {}, visible }) {
 
       <div className="nav-right">
         {links.map(([id, label]) => (
-          <a key={id} href={`#${id}`} className="nav-link" onClick={scrollTo(id)}>{label}</a>
+          <a key={id} href={`#${id}`} className={`nav-link ${id === 'rsvp' ? 'nav-link--cta' : ''}`} onClick={scrollTo(id)}>{label}</a>
         ))}
 
         {/* Hamburger chỉ hiện ở bố cục điện thoại — media query lo phần ẩn/hiện */}
@@ -238,7 +238,9 @@ export default function Nav({ config, siteText = {}, visible }) {
             aria-label="Điều chỉnh nhạc"
             aria-expanded={panel}
           >
-            ▾
+            {/* Nhãn chỉ hiện ở desktop (desktop.css) — chấm ▾ trơ trọi khó đoán là nút */}
+            <span className="d-caret-label">Nhạc nền</span>
+            <span className="d-caret-ico">▾</span>
           </button>
         </div>
       </div>

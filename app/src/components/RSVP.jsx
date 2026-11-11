@@ -87,28 +87,40 @@ export default function RSVP({ config, siteText = {} }) {
     setSent(true);
   };
 
-  const headingText = siteText.rsvp_heading || 'Trân trọng cảm ơn bạn và gia đình!';
-  const headingParts = headingText.split(/(bạn và gia đình!)/);
+  const headingText = siteText.rsvp_heading || 'Trân trọng cảm ơn Quý khách!';
+  const headingParts = headingText.split(/(Quý khách!)/);
 
   const showForm = mode === 'yes' && !sent;
   const showThanks = sent;
+
+  // Desktop: phong thư gập lại và bay đi ngay trước thẻ cảm ơn (desktop.css ẩn ở điện thoại)
+  const envelope = (
+    <div className="d-env" aria-hidden="true">
+      <div className="d-env-box">
+        <div className="d-env-back" />
+        <div className="d-env-letter"><span>Hiếu &amp; Minh</span></div>
+        <div className="d-env-front" />
+        <div className="d-env-flap" />
+      </div>
+    </div>
+  );
 
   // Thẻ cảm ơn: hiện ngay dưới nút mà khách đã chọn.
   const thanksCard = (
     <div className="rsvp-thanks">
       <div className="check">✓</div>
       <p className="title">
-        {mode === 'no' ? 'Chân thành cảm ơn bạn!' : 'Đã nhận xác nhận của bạn!'}
+        {mode === 'no' ? 'Chân thành cảm ơn Quý khách!' : 'Đã nhận xác nhận của Quý khách!'}
       </p>
       <p className="body">
         {mode === 'no'
-          ? 'Chúng em rất tiếc vì không thể đón tiếp bạn và gia đình trong ngày vui này. Cảm ơn bạn đã gửi những lời chúc tốt đẹp nhất đến tụi em.'
-          : `Chúng em đã ghi nhận lượt tham dự của bạn${guests ? ` (${guestLabel(guests).toLowerCase()})` : ''}. Hai gia đình xin trân trọng cảm ơn và rất mong được gặp bạn.`}
+          ? 'Chúng em rất tiếc vì không được đón tiếp Quý khách và gia đình trong ngày vui này. Xin chân thành cảm ơn những lời chúc tốt đẹp Quý khách đã gửi đến chúng em.'
+          : `Chúng em đã ghi nhận sự tham dự của Quý khách${guests ? ` (${guestLabel(guests).toLowerCase()})` : ''}. Hai gia đình xin trân trọng cảm ơn và rất mong được đón tiếp Quý khách.`}
       </p>
       <p className="see-you">
         {mode === 'no'
-          ? 'Xin chúc bạn và gia đình mọi điều tốt lành!'
-          : `Hẹn gặp bạn ngày ${parts.dd}.${parts.mm}.${parts.yyyy}`}
+          ? 'Kính chúc Quý khách và gia đình mọi điều tốt lành!'
+          : `Hẹn gặp Quý khách ngày ${parts.dd}.${parts.mm}.${parts.yyyy}`}
       </p>
     </div>
   );
@@ -120,7 +132,7 @@ export default function RSVP({ config, siteText = {} }) {
           <span className="eyebrow">{siteText.rsvp_eyebrow || 'Xác nhận tham dự'}</span>
           <h2>
             {headingParts.length > 1
-              ? headingParts.map((p, i) => (p === 'bạn và gia đình!' ? <em key={i} style={{ whiteSpace: 'nowrap' }}>{p}</em> : p))
+              ? headingParts.map((p, i) => (p === 'Quý khách!' ? <em key={i} style={{ whiteSpace: 'nowrap' }}>{p}</em> : p))
               : headingText}
           </h2>
           <p className="rsvp-lede">{siteText.rsvp_paragraph}</p>
@@ -166,8 +178,8 @@ export default function RSVP({ config, siteText = {} }) {
                   />
                 </label>
 
-                <div className="rsvp-field full" role="radiogroup" aria-label="Bạn là khách của">
-                  <span>Bạn là khách của</span>
+                <div className="rsvp-field full" role="radiogroup" aria-label="Khách mời của">
+                  <span>Khách mời của</span>
                   <div className="rsvp-side">
                     {[['groom', 'Nhà trai'], ['bride', 'Nhà gái']].map(([v, label]) => (
                       <button
@@ -230,12 +242,12 @@ export default function RSVP({ config, siteText = {} }) {
 
               <p className="rsvp-invite">Trân trọng kính mời</p>
               <p className="rsvp-quote">
-                “Sự hiện diện của bạn và gia đình là niềm hạnh phúc lớn nhất trong ngày trọng đại của chúng tôi.”
+                “Sự hiện diện của Quý khách và gia đình là niềm hạnh phúc lớn nhất trong ngày trọng đại của chúng em.”
               </p>
             </div>
           )}
 
-          {showThanks && mode === 'yes' && thanksCard}
+          {showThanks && mode === 'yes' && <>{envelope}{thanksCard}</>}
 
           <button
             className={`pick-card pick-no ${mode === 'no' ? 'active' : ''}`}
@@ -262,7 +274,7 @@ export default function RSVP({ config, siteText = {} }) {
                   />
                 </label>
                 <label className="rsvp-field full">
-                  <span>Lời chúc của bạn</span>
+                  <span>Lời chúc gửi cô dâu chú rể</span>
                   <textarea
                     value={wish}
                     rows={5}
@@ -287,7 +299,7 @@ export default function RSVP({ config, siteText = {} }) {
             </div>
           )}
 
-          {showThanks && mode === 'no' && thanksCard}
+          {showThanks && mode === 'no' && <>{envelope}{thanksCard}</>}
         </div>
       </div>
     </section>

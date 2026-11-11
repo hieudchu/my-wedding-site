@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCountdown } from '../hooks/useCountdown';
 import MediaImage from './MediaImage';
+import { useViewport } from '../hooks/useViewport';
 
 // Nét bút uốn lượn cho DESKTOP — chạy dọc hành lang giữa hai cột, tự vẽ khi cuộn.
 // Điện thoại ẩn nó đi và dùng <TimelineWave> (SỬA 18).
@@ -75,7 +76,7 @@ function TimelineWave({ items }) {
   if (!n) return null;
   return (
     <div className="tlw" style={{ '--n': n }}>
-      <svg className="tlw-line" viewBox={`0 0 100 ${n * 100}`} preserveAspectRatio="none" aria-hidden="true">
+      <svg className="tlw-line" data-dv="" viewBox={`0 0 100 ${n * 100}`} preserveAspectRatio="none" aria-hidden="true">
         <path d={wavePath(n)} fill="none" stroke="currentColor" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
       </svg>
       {items.map((it, i) => (
@@ -96,7 +97,69 @@ function TimelineWave({ items }) {
  * Hai cách trình bày cùng tồn tại, CSS chọn một: `.tlw` cho điện thoại,
  * `.tl-track` cho desktop.
  */
+/*
+ * DeskTimeline — Lịch trình + đếm ngược cho DESKTOP (2026-11).
+ * Trục lịch trình = TimelineWave của điện thoại (dọc, sợi chỉ uốn lượn, mốc so le
+ * trái/phải); desktop.css phóng cỡ cho màn rộng. Tiêu đề có khoảng đệm trên riêng, không
+ * dính thanh nav khi cuộn tới #timeline. Đếm ngược: ảnh trái, thẻ chồng mép phải ảnh.
+ */
+function DeskTimeline({ items, cd, siteText = {} }) {
+  const heading = siteText.timeline_heading || 'Một ngày trọn vẹn';
+  const headingParts = heading.split(/(trọn vẹn)/);
+  const units = [[cd.d, 'Ngày'], [cd.h, 'Giờ'], [cd.m, 'Phút'], [cd.s, 'Giây']];
+
+  return (
+    <section className="d-timeline" id="timeline">
+      <div className="d-tl-head rv" data-rv>
+        <span className="d-eyebrow">{siteText.timeline_eyebrow || 'Lịch trình'}</span>
+        <h2 className="d-h2">
+          {headingParts.length > 1
+            ? headingParts.map((p, i) => (p === 'trọn vẹn' ? <em key={i}>{p}</em> : p))
+            : heading}
+        </h2>
+      </div>
+
+      {/* Trục dọc sợi chỉ (TimelineWave của điện thoại) kẹp giữa hai ảnh — CHỈ DESKTOP.
+          Hai ảnh mới: background/timeline-left.jpg, background/timeline-right.jpg (chưa có thì
+          MediaImage hiện ô chờ ảnh). Điện thoại không có hai ảnh này. */}
+      <div className="d-tl-wrap">
+        <figure className="d-tl-side d-tl-side--l rv" data-rv>
+          <MediaImage storagePath="background/timeline-left.jpg" label="Ảnh lịch trình · trái" alt="Hiếu và Minh" sizes="(min-width: 1400px) 340px, 22vw" />
+        </figure>
+        <TimelineWave items={items} />
+        <figure className="d-tl-side d-tl-side--r rv" data-rv>
+          <MediaImage storagePath="background/timeline-right.jpg" label="Ảnh lịch trình · phải" alt="Hiếu và Minh" sizes="(min-width: 1400px) 340px, 22vw" />
+        </figure>
+      </div>
+
+      <div className="d-cd">
+        <figure className="d-cd-photo rv" data-rv>
+          <MediaImage
+            storagePath="background/moment-2.jpg"
+            label="Hiếu và Minh"
+            alt="Hiếu và Minh"
+            sizes="(min-width: 1400px) 420px, 30vw"
+          />
+        </figure>
+        <div className="d-cd-card rv" data-rv>
+          <div className="d-cd-label">{siteText.timeline_countdown_label || 'Cùng đếm ngược đến ngày vui'}</div>
+          <div className="d-cd-grid">
+            {units.map(([v, u]) => (
+              <div key={u} className="d-cd-unit">
+                {/* key = giá trị → mỗi lần số đổi, ô lật lại (bảng lật, desktop.css) */}
+                <span className="n"><span key={v} className="d-flip">{v}</span></span>
+                <span className="u">{u}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Timeline({ config, siteText = {} }) {
+  const { isPhone } = useViewport();
   const cd = useCountdown(config.weddingDate, config.weddingTime);
   const [items, setItems] = useState(FALLBACK_ITEMS);
 
@@ -110,6 +173,9 @@ export default function Timeline({ config, siteText = {} }) {
       })
       .catch(() => {});
   }, []);
+
+  // Desktop: lịch trình ngang + đếm ngược (DeskTimeline). Điện thoại giữ nguyên markup dưới đây.
+  if (!isPhone) return <DeskTimeline items={items} cd={cd} siteText={siteText} />;
 
   const heading = siteText.timeline_heading || 'Một ngày trọn vẹn';
   const headingParts = heading.split(/(trọn vẹn)/);

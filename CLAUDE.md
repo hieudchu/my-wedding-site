@@ -45,6 +45,9 @@ from the admin area.
 - `app/src/admin/` — Admin area (single user; low design value)
 - `app/src/styles/globals.css` — Tokens, reset, keyframes, Nav, music player, lightbox
 - `app/src/styles/sections.css` — Per-section styling, animations, responsive
+- `app/src/styles/desktop.css` — Desktop redesign (11/2026, Claude Design bundle
+  `~/Downloads/design_handoff_thiep_cuoi_desktop`). Loaded after `sections.css`; every rule
+  sits inside the desktop complement of `PHONE_QUERY`, so it cannot touch phones. `d-` classes.
 
 ### Component Map
 
@@ -55,11 +58,12 @@ from the admin area.
 | `Tagline` | `Tagline.jsx` | Strips quotes/period from the tagline, breaks before "của cuộc đời" |
 | `Ico` | `Icon.jsx` | Line icons for the vinyl-record music player |
 | `Family` | `Family.jsx` | Reused for both groom and bride sides (prop `side`) |
-| `WeddingInfo` | `WeddingInfo.jsx` | Formal invitation card with map/phone CTAs |
-| `Timeline` | `Timeline.jsx` | Event schedule + live countdown timer |
+| `WeddingInfo` | `WeddingInfo.jsx` | Formal invitation card with map/phone CTAs. Desktop renders `DeskInfo` instead |
+| `Timeline` | `Timeline.jsx` | Event schedule + live countdown timer. Desktop renders `DeskTimeline` (phone's `TimelineWave` + side photos `background/timeline-left|right.jpg`). Per-event photos (`image_path`) show nowhere any more |
 | `RSVP` | `RSVP.jsx` | Name, side (Nhà trai/Nhà gái), guest count, phone, note → `rsvps`; or a wish → `wishes` |
 | `Nav` | `Nav.jsx` | Sticky nav after gate opens; **full music player** (playlist, seek, volume, loop) |
 | `Footer` | `Footer.jsx` | Simple closing |
+| `DeskMotion` | `DeskMotion.jsx` | Desktop only: `[data-dv]` → `[data-in]` draw-in ornaments, gold cursor sparkle. Sets `html[data-dm]` unless reduced motion |
 | `MediaImage` | `MediaImage.jsx` | Image with Supabase fallback chain + lightbox |
 | `Lightbox` | `Lightbox.jsx` | Full-screen photo overlay (context provider) |
 | `ErrorBoundary` | `ErrorBoundary.jsx` | Catches render errors |

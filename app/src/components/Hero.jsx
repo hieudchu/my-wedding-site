@@ -159,6 +159,19 @@ function PhoneHero({ config, siteText = {}, visible }) {
  *          Cờ kéo nằm trong ref để pointerup + pointerleave cùng lượt không bước 2 lần.
  *   SỬA 4  Chấm có vùng chạm 44×44px, hình 8px giữ nguyên (xem .hero-dot trong CSS).
  *   SỬA 8  will-change chỉ bật khi đang kéo (CSS).
+ *   2026-11 — chuyển ảnh mượt hơn, nhất là khi bấm nhanh liên tục (diện mạo không đổi):
+ *     · Đường cong chuyển động đổi sang "ra nhanh, dừng êm" (desktop.css). Đường cũ
+ *       khởi đầu chậm, nên mỗi lần bấm chen ngang lại khựng về vận tốc 0.
+ *     · Làm tối thẻ bên bằng một lớp phủ đen (opacity) thay cho filter: brightness —
+ *       filter buộc vẽ lại ảnh lớn ở từng khung hình.
+ *     · Thẻ vòng từ mép này sang mép kia (khi số ảnh lặp vòng) nhảy thẳng, không bay
+ *       ngang qua giữa sân khấu.
+ *     · Nền mờ chỉ đổi khi ngừng bấm 350ms, và hoà dần — vẽ lại nền blur 38px toàn màn
+ *       giữa lúc thẻ đang trượt là chỗ rớt khung nhiều nhất.
+ *     · Chỉ coi là kéo khi chuột đã đi quá 6px; bấm thường không còn tắt/bật transition.
+ *     · Giữ phím ← → thì bước tối đa ~7 ảnh/giây.
+ *     · Gắn sẵn ảnh cách ảnh đang xem 3 thẻ (thẻ nhìn thấy xa nhất là 2), để ảnh đã tải
+ *       và giải mã xong trước khi trượt vào.
  * Nhánh `phone` cũ đã xoá vì StageHero không còn chạy trên điện thoại.
  */
 function StageHero({ config, siteText = {}, visible, vw, vh }) {
@@ -175,6 +188,8 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
   const dragStartX = useRef(0);
   const dragged = useRef(0);
   const dragActive = useRef(false);
+  const lastKey = useRef(0);
+  const prevOffsets = useRef({});
 
   const total = 1 + photos.length;
   const tablet = vw < TABLET_MAX;
@@ -196,8 +211,11 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
     if (!visible) return undefined;
     const onKey = (e) => {
       if (document.querySelector('.lb-overlay')) return; // lightbox đang mở thì nhường phím
-      if (e.key === 'ArrowRight') step(1);
-      if (e.key === 'ArrowLeft') step(-1);
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const now = performance.now();
+      if (now - lastKey.current < 140) return; // giữ phím: không dồn bước nhanh hơn mắt theo kịp
+      lastKey.current = now;
+      step(e.key === 'ArrowRight' ? 1 : -1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -205,7 +223,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
 
   useEffect(() => {
     if (total <= 1) return;
-    const reach = 2;
+    const reach = 3;
     setMounted((prev) => {
       const next = new Set(prev);
       let changed = false;
@@ -246,6 +264,24 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
     return d;
   };
 
+  // Thẻ vòng từ mép này sang mép kia: nhảy thẳng (không transition) thay vì bay ngang qua giữa
+  const jumps = {};
+  for (let i = 0; i < total; i += 1) {
+    const d = offset(i);
+    const p = prevOffsets.current[i];
+    jumps[i] = p !== undefined && Math.abs(d - p) > 2;
+  }
+  useEffect(() => {
+    const m = {};
+    for (let i = 0; i < total; i += 1) m[i] = offset(i);
+    prevOffsets.current = m;
+  });
+
+  const dimOf = (i) => {
+    const a = Math.abs(offset(i));
+    return a === 0 ? 0 : a === 1 ? 0.4 : 0.58; // = brightness 0.6 / 0.42 cũ
+  };
+
   const cardStyle = (i) => {
     const d = offset(i);
     const a = Math.abs(d);
@@ -261,7 +297,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
       transform: `translate(-50%,-50%) translateX(${Math.round(x)}px) translateX(var(--drag, 0px)) translateZ(${-a * 170}px) rotateY(${-d * 20}deg) scale(${1 - a * 0.04})`,
       opacity: far ? 0 : d === 0 ? 1 : a === 1 ? 0.72 : 0.34,
       zIndex: 20 - a,
-      filter: d === 0 ? 'none' : `brightness(${a === 1 ? 0.6 : 0.42}) saturate(.8)`,
+      ...(jumps[i] ? { transition: 'none' } : null),
       pointerEvents: far ? 'none' : 'auto',
       cursor: d === 0 ? 'zoom-in' : 'pointer',
     };
@@ -279,12 +315,12 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
     dragStartX.current = e.clientX;
     dragged.current = 0;
     dragActive.current = true;
-    setDragging(true);
   };
 
   const onDragMove = (e) => {
     if (!dragActive.current) return;
     dragged.current = e.clientX - dragStartX.current;
+    if (!dragging && Math.abs(dragged.current) > 6) setDragging(true);
     setDrag(Math.round(Math.max(-140, Math.min(140, dragged.current * 0.45))));
   };
 
@@ -306,9 +342,20 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
       || (slide === 0 ? photos[photos.length - 1] : photos[slide - 1]).url
     : null;
 
+  // Nền đổi sau khi ngừng bấm 350ms, ảnh mới hoà lên trên ảnh cũ
+  const [bg, setBg] = useState({ prev: null, cur: null });
+  useEffect(() => {
+    if (!bgSrc) return undefined;
+    if (!bg.cur) { setBg({ prev: null, cur: bgSrc }); return undefined; }
+    if (bgSrc === bg.cur) return undefined;
+    const t = setTimeout(() => setBg((b) => ({ prev: b.cur, cur: bgSrc })), 350);
+    return () => clearTimeout(t);
+  }, [bgSrc, bg.cur]);
+
   return (
     <section className="hero" id="hero">
-      {bgSrc && <img className="hero-bg" src={bgSrc} alt="" aria-hidden="true" />}
+      {bg.prev && <img key={bg.prev} className="hero-bg" src={bg.prev} alt="" aria-hidden="true" />}
+      {bg.cur && <img key={bg.cur} className={`hero-bg ${bg.prev ? 'is-in' : ''}`} src={bg.cur} alt="" aria-hidden="true" />}
       <div className="hero-veil" />
 
       <div
@@ -352,6 +399,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
                 <span>{config.venueName}</span>
               </div>
             </div>
+            <span className="hero-dim" style={{ opacity: dimOf(0) }} aria-hidden="true" />
           </div>
         </div>
 
@@ -383,6 +431,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
                   />
                 )}
                 <div className="fade" />
+                <span className="hero-dim" style={{ opacity: dimOf(i) }} aria-hidden="true" />
               </div>
             </div>
           );

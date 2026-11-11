@@ -21,7 +21,8 @@ function kindOf(slot) {
   if (/^portraits\//.test(slot)) return 'portrait';
   if (slot === 'background/right.jpg') return 'blob-right';
   if (slot === 'background/left.jpg') return 'blob-left';
-  if (/^timeline\//.test(slot)) return 'timeline';
+  // Ảnh từng mốc giờ (timeline/…) không còn hiện ở đâu từ bản desktop 11/2026 → không có khung.
+  if (slot === 'background/timeline-left.jpg' || slot === 'background/timeline-right.jpg') return 'timeline-side';
   if (slot === 'background/moment-2.jpg') return 'moment';
   return null;
 }
@@ -52,31 +53,33 @@ export function framesFor(slot, imgW, imgH) {
       ];
     case 'blob-right':
     case 'blob-left': {
-      var r = kindOf(slot) === 'blob-right' ? 3 / 4 : 4 / 5;
-      var edge = kindOf(slot) === 'blob-right' ? 'phải' : 'trái';
-      var rs = kindOf(slot) === 'blob-right' ? '3:4' : '4:5';
+      // Máy tính (DeskInfo, desktop.css .d-info-photo): cả hai ảnh 3:4, đứng trọn hai bên thẻ.
+      // Điện thoại (sections.css) giữ tỉ lệ cũ: phải 3:4, trái 4:5.
+      var right = kindOf(slot) === 'blob-right';
+      var r = right ? 3 / 4 : 4 / 5;
+      var rs = right ? '3:4' : '4:5';
       return [
-        { id: 'd', profile: 'd', ratio: r, shape: 'blob',
-          title: 'Máy tính', short: 'Giọt nước', sub: 'Mảng giọt nước ' + rs + ', tràn ra mép ' + edge + ' màn hình.' },
+        { id: 'd', profile: 'd', ratio: 3 / 4, shape: 'blob',
+          title: 'Máy tính', short: 'Giọt nước', sub: 'Mảng giọt nước 3:4, đứng trọn ' + (right ? 'bên phải, cao hơn' : 'bên trái, thấp hơn') + ' tấm thiệp.' },
         { id: 'm', profile: 'm', ratio: r, shape: 'blob',
-          title: 'Điện thoại', short: 'Giọt nước', sub: 'Cùng hình. Màn dọc rộng tối đa 300px giữa màn; màn ngang cao 82% màn.' },
+          title: 'Điện thoại', short: 'Giọt nước', sub: 'Giọt nước ' + rs + '. Màn dọc rộng tối đa 300px giữa màn; màn ngang cao 82% màn.' },
       ];
     }
-    case 'timeline':
+    case 'timeline-side':
+      // desktop.css .d-tl-side: 4:5 bo 3px, rộng ≤ 340px, ẩn dưới 1100px. Điện thoại không có.
       return [
-        { id: 'd', profile: 'd', ratio: 4 / 3, shape: 'rect', radius: 3,
-          title: 'Máy tính', short: '4:3', sub: 'Ảnh 4:3 cạnh mốc giờ.' },
-        // Điện thoại (cả tablet dọc, màn ngang ngắn) dùng lịch trình dạng sợi chỉ `.tlw`
-        // với biểu tượng — `.tl-track` có ảnh bị ẩn hẳn (sections.css, mục TimelineWave).
+        { id: 'd', profile: 'd', ratio: 4 / 5, shape: 'rect', radius: 3,
+          title: 'Máy tính', short: 'Dọc 4:5', sub: 'Khung dọc 4:5 cạnh trục lịch trình, bám theo khi cuộn. Màn hẹp dưới 1100px thì ẩn.' },
         { id: 'm-none', profile: 'm', natural: true, hidden: true,
-          title: 'Điện thoại', short: 'Không hiện', sub: 'Điện thoại hiện lịch trình dạng biểu tượng, không có ảnh này.' },
+          title: 'Điện thoại', short: 'Không hiện', sub: 'Điện thoại không có ảnh này.' },
       ];
     case 'moment':
       // Điện thoại — cả dọc lẫn ngang — hiện TRỌN ảnh (sections.css, khối màn ngang
       // cuối file đè lên tỉ lệ 560:428 cũ), nên không có khung điện thoại nào để chỉnh.
       return [
-        { id: 'd', profile: 'd', ratio: 16 / 9, shape: 'rect', radius: 4, decor: 'countdown', overlap: 0.09,
-          title: 'Máy tính', short: 'Dải 16:9', sub: 'Dải 16:9 bo 6px. Thẻ đếm ngược đè lên khoảng 50px mép dưới — đừng để mặt nằm ở đó.' },
+        // desktop.css .d-cd-photo: 4:5 bo 3px; thẻ đếm ngược đè 48px mép dưới (~8% ảnh cao ~600px)
+        { id: 'd', profile: 'd', ratio: 4 / 5, shape: 'rect', radius: 3, decor: 'countdown', overlap: 0.08,
+          title: 'Máy tính', short: 'Dọc 4:5', sub: 'Khung dọc 4:5. Thẻ đếm ngược đè lên khoảng 48px mép dưới — đừng để mặt nằm ở đó.' },
         { id: 'm-portrait', profile: 'm', natural: true,
           title: 'Điện thoại', short: 'Dọc & ngang', sub: 'Điện thoại dọc lẫn ngang đều hiện trọn ảnh, không cắt — khung không áp ở đây.' },
       ];

@@ -142,7 +142,7 @@ export async function saveFit({ folder, fileName, fit, captions }) {
 
 /**
  * Ô xem trước nhỏ trên trang Media: mang đúng tỉ lệ + hình của khung máy tính và
- * áp khung máy tính đã lưu. `kind`: arch | blob34 | blob45 | wide | 43.
+ * áp khung máy tính đã lưu. `kind`: arch | blobR | blobL | 45 (xem image-framer.css .if-thumb-*).
  */
 export function FitThumb({ kind, src, fit, alt, onClick, children }) {
   return (

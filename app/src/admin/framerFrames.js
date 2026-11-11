@@ -7,6 +7,7 @@
      profile  'd' = dùng fit.d (máy tính) · 'm' = dùng fit.m (điện thoại; null thì lấy fit.d)
      ratio    rộng / cao
      shape    'rect' | 'arch' | 'blob'
+     blob     (shape 'blob') border-radius đúng như CSS trang khách; thiếu thì dùng FRAMER_BLOB
      radius   bo góc (px trong ô xem trước) cho 'rect'
      decor    'blurbg' | 'maroon' | 'countdown' | 'gold' — chi tiết xung quanh giúp hình dung
      overlap  (countdown) phần chiều cao ảnh bị thẻ đếm ngược đè lên
@@ -14,7 +15,10 @@
     hidden   true (kèm natural) = bố cục này không hiện ảnh này chút nào
      title / short / sub   chữ hiện dưới ô xem trước (short: dải ô nhỏ trên điện thoại) */
 export const FRAMER_BLOB = '48% 52% 56% 44% / 54% 46% 54% 46%';
-const BLOB = FRAMER_BLOB;
+// Hình giọt nước thật của từng ảnh (sections.css .info-blob-1/2, desktop.css .d-info-photo--l/r)
+const BLOB_RIGHT = '52% 48% 44% 56% / 46% 42% 58% 54%'; // right.jpg — máy tính lẫn điện thoại
+const BLOB_LEFT_D = '48% 52% 56% 44% / 42% 46% 54% 58%'; // left.jpg — máy tính
+const BLOB_LEFT_M = FRAMER_BLOB; // left.jpg — điện thoại
 
 function kindOf(slot) {
   if (/^carousel\//.test(slot)) return 'carousel';
@@ -59,9 +63,9 @@ export function framesFor(slot, imgW, imgH) {
       var r = right ? 3 / 4 : 4 / 5;
       var rs = right ? '3:4' : '4:5';
       return [
-        { id: 'd', profile: 'd', ratio: 3 / 4, shape: 'blob',
+        { id: 'd', profile: 'd', ratio: 3 / 4, shape: 'blob', blob: right ? BLOB_RIGHT : BLOB_LEFT_D,
           title: 'Máy tính', short: 'Giọt nước', sub: 'Mảng giọt nước 3:4, đứng trọn ' + (right ? 'bên phải, cao hơn' : 'bên trái, thấp hơn') + ' tấm thiệp.' },
-        { id: 'm', profile: 'm', ratio: r, shape: 'blob',
+        { id: 'm', profile: 'm', ratio: r, shape: 'blob', blob: right ? BLOB_RIGHT : BLOB_LEFT_M,
           title: 'Điện thoại', short: 'Giọt nước', sub: 'Giọt nước ' + rs + '. Màn dọc rộng tối đa 300px giữa màn; màn ngang cao 82% màn.' },
       ];
     }

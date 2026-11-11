@@ -446,6 +446,9 @@
 .slot-card .slot-preview.if-thumb-arch { width: 90px; min-width: 90px; height: 120px; border-radius: 45px 45px 4px 4px; }
 .slot-card .slot-preview.if-thumb-blob34 { width: 90px; min-width: 90px; height: 120px; border-radius: 48% 52% 56% 44% / 54% 46% 54% 46%; }
 .slot-card .slot-preview.if-thumb-blob45 { width: 96px; min-width: 96px; height: 120px; border-radius: 48% 52% 56% 44% / 54% 46% 54% 46%; }
+/* Ô xem trước hiện khung MÁY TÍNH → hình giọt nước của desktop.css .d-info-photo--r / --l */
+.slot-card .slot-preview.if-thumb-blobR { width: 90px; min-width: 90px; height: 120px; border-radius: 52% 48% 44% 56% / 46% 42% 58% 54%; }
+.slot-card .slot-preview.if-thumb-blobL { width: 90px; min-width: 90px; height: 120px; border-radius: 48% 52% 56% 44% / 42% 46% 54% 58%; }
 .slot-card .slot-preview.if-thumb-wide { width: 142px; min-width: 142px; height: 80px; border-radius: 5px; }
 .slot-card .slot-preview.if-thumb-43 { width: 120px; min-width: 120px; height: 90px; border-radius: 4px; }
 .slot-card .slot-preview.if-thumb-45 { width: 96px; min-width: 96px; height: 120px; border-radius: 3px; }

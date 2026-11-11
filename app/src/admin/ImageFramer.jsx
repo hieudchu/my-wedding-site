@@ -46,7 +46,7 @@ function shapeStyle(frame, W) {
     const b = Math.max(2, Math.round((W * 8) / 340));
     return { borderRadius: `${W / 2}px ${W / 2}px ${b}px ${b}px` };
   }
-  if (frame.shape === 'blob') return { borderRadius: FRAMER_BLOB };
+  if (frame.shape === 'blob') return { borderRadius: frame.blob || FRAMER_BLOB };
   return { borderRadius: (frame.radius || 0) + 'px' };
 }
 

@@ -112,7 +112,7 @@ const SECTIONS = [
           'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4, có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
-        thumb: 'blob34',
+        thumb: 'blobR',
         accept: 'image/*',
       },
       {
@@ -123,7 +123,7 @@ const SECTIONS = [
           'Bị cắt thành một mảng bo tròn mềm như giọt nước, khổ dọc 3:4 trên máy tính (4:5 trên điện thoại), có bóng đổ. Bấm “Chỉnh khung” để chọn phần ảnh được giữ. Bấm vào vẫn mở được ảnh đầy đủ.',
         empty: 'Chưa có ảnh thì chỗ đó là một mảng kẻ sọc đề chữ “Ảnh cưới”.',
         shape: 'blob',
-        thumb: 'blob34',
+        thumb: 'blobL',
         accept: 'image/*',
       },
     ],

@@ -248,7 +248,7 @@ export default function Nav({ config, siteText = {}, visible }) {
       {menu && (
         <div className="nav-menu">
           {links.map(([id, label]) => (
-            <a key={id} href={`#${id}`} onClick={scrollTo(id)}>{label}</a>
+            <a key={id} href={`#${id}`} className={id === 'rsvp' ? 'nav-menu-cta' : undefined} onClick={scrollTo(id)}>{label}</a>
           ))}
         </div>
       )}

@@ -927,7 +927,7 @@
   #rsvp { overflow-anchor: none; }
   .rsvp-thanks-art { display: block; margin: 26px auto -10px; max-width: min(540px, 100%); }
   /* Kích thước tranh cố định trước khi ảnh tải xong (aspect-ratio) → thẻ không giãn ra giữa chừng */
-  .rsvp-thanks-art img {
+  .rsvp-thanks-art :is(img, video) {
     display: block;
     width: min(100%, calc(max(280px, 100vh - var(--d-nav) - 470px) * 1400 / 1045));
     height: auto;

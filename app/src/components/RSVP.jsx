@@ -85,12 +85,13 @@ export default function RSVP({ config, siteText = {} }) {
   const parts = formatDateParts(config.weddingDate);
 
   const picksRef = useRef(null);
-  // Tải sẵn tranh của thẻ cảm ơn (desktop) để thẻ hiện đúng kích thước ngay khi gửi
+  // Tải sẵn poster của tranh trong thẻ cảm ơn để thẻ hiện đúng ngay khi gửi
   useEffect(() => { const img = new Image(); img.src = '/assets/rsvp/couple.jpg'; }, []);
 
   // Giữ chiều cao khung khi form đổi sang thẻ cảm ơn → phần dưới không bị xô lên/xuống.
   // Bấm lại một nút thì nhả ra.
-  // Chỉ desktop: ở điện thoại thẻ cảm ơn thấp hơn form, giữ chiều cao sẽ để lại khoảng trống.
+  // Chỉ desktop: điện thoại kéo thẳng tới thẻ cảm ơn (effect dưới), giữ chiều cao form dài
+  // ở đó chỉ để lại một khoảng trống lớn dưới thẻ.
   const holdHeight = () => {
     const el = picksRef.current;
     if (el && !mqMatches(PHONE_QUERY)) el.style.minHeight = `${el.offsetHeight}px`;
@@ -159,10 +160,23 @@ export default function RSVP({ config, siteText = {} }) {
   const headingText = siteText.rsvp_heading || 'Trân trọng cảm ơn Quý khách!';
   const headingParts = headingText.split(/(Quý khách!)/);
 
+  // Điện thoại: form dài, khách bấm gửi ở đáy form → kéo nhẹ lên để thấy phong thư + thẻ cảm ơn
+  // (chỉ khi đầu thẻ đã trôi khỏi màn). Desktop form ngắn, giữ nguyên chỗ (handoff desktop).
+  useEffect(() => {
+    if (!sent || !mqMatches(PHONE_QUERY)) return;
+    const el = picksRef.current?.querySelector('.d-env, .rsvp-thanks');
+    if (!el) return;
+    const top = el.getBoundingClientRect().top;
+    if (top < 80) {
+      const smooth = !mqMatches('(prefers-reduced-motion: reduce)');
+      window.scrollTo({ top: window.scrollY + top - 84, behavior: smooth ? 'smooth' : 'auto' });
+    }
+  }, [sent]);
+
   const showForm = mode === 'yes' && !sent;
   const showThanks = sent;
 
-  // Desktop: phong thư gập lại rồi tan ngay tại chỗ thẻ cảm ơn sắp hiện (desktop.css ẩn ở điện thoại)
+  // Phong thư gập lại rồi tan ngay tại chỗ thẻ cảm ơn sắp hiện (desktop.css / mobile.css)
   const envelope = (
     <div className="d-env" aria-hidden="true">
       <div className="d-env-box">
@@ -197,14 +211,9 @@ export default function RSVP({ config, siteText = {} }) {
           ? 'Kính chúc Quý khách và gia đình mọi điều tốt lành!'
           : `Hẹn gặp Quý khách ngày ${parts.dd}.${parts.mm}.${parts.yyyy}`}
       </p>
-      {/* Desktop: tranh "sắp về chung một nhà" nằm trong thẻ cảm ơn (điện thoại ẩn) */}
+      {/* Tranh "sắp về chung một nhà" (video lặp, poster couple.jpg) nằm trong thẻ cảm ơn */}
       <figure className="rsvp-thanks-art">
-        <img
-          src="/assets/rsvp/couple.jpg"
-          alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`}
-          width="1400"
-          height="1045"
-        />
+        <CoupleLoop alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`} />
       </figure>
     </div>
   );
@@ -220,11 +229,6 @@ export default function RSVP({ config, siteText = {} }) {
               : headingText}
           </h2>
           <p className="rsvp-lede">{siteText.rsvp_paragraph}</p>
-        </div>
-
-        <div className="rsvp-scene" data-rv>
-          <CoupleLoop alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`} />
-          <p>{config.groomShort} &amp; {config.brideShort} · sắp về chung một nhà</p>
         </div>
 
         {/* data-rv đặt ở KHUNG, không đặt trên từng nút: nút đổi className khi bấm

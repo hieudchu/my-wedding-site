@@ -110,11 +110,12 @@ export default function WeddingInfo({ config, siteText = {} }) {
         <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
       </div>
 
-      <div className="info-card" data-rv>
-        <span className="corner tl" />
-        <span className="corner tr" />
-        <span className="corner bl" />
-        <span className="corner br" />
+      {/* data-dv: bốn góc tự vẽ nét, vạch ❖ mọc ra, tên viết tay (mobile.css + DeskMotion) */}
+      <div className="info-card" data-rv data-dv="">
+        <span className="corner tl">{STEP_CORNER}</span>
+        <span className="corner tr">{STEP_CORNER}</span>
+        <span className="corner bl">{STEP_CORNER}</span>
+        <span className="corner br">{STEP_CORNER}</span>
 
         <MediaImage
           storagePath="icons/medallion-ink.png"
@@ -126,16 +127,13 @@ export default function WeddingInfo({ config, siteText = {} }) {
         />
 
         <p className="info-announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
-        <p className="info-announce-en">
-          {siteText.info_announce_en || 'We joyfully announce our wedding'}
-        </p>
 
         <h2 className="info-heading">{siteText.info_heading || 'Lễ thành hôn'}</h2>
-        <p className="info-couple">
+        <p className="info-couple" data-dv="">
           <ScriptName short={config.groomShort} /> <em>&amp;</em> <ScriptName short={config.brideShort} />
         </p>
 
-        <div className="orn-divider">
+        <div className="orn-divider" data-dv="">
           <span className="rule" /><span className="mark">❖</span><span className="rule" />
         </div>
 
@@ -151,7 +149,7 @@ export default function WeddingInfo({ config, siteText = {} }) {
           {siteText.info_time_label || 'Hôn lễ bắt đầu lúc'} <strong>{config.weddingTime}</strong>
         </p>
 
-        <div className="orn-divider">
+        <div className="orn-divider" data-dv="">
           <span className="rule" /><span className="mark">❖</span><span className="rule" />
         </div>
 

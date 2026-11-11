@@ -49,7 +49,7 @@ export default function App() {
 
   return (
     <LightboxProvider>
-      {!isPhone && <DeskMotion />}
+      <DeskMotion />
       <Nav config={config} siteText={siteText} visible={entered} />
       <Hero config={config} siteText={siteText} visible={entered} />
       <Family side="groom" config={config} siteText={siteText} />

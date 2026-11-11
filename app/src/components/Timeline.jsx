@@ -264,13 +264,13 @@ export default function Timeline({ config, siteText = {} }) {
             {siteText.timeline_countdown_label || 'Cùng đếm ngược đến ngày vui'}
           </div>
           <div className="countdown-grid">
-            <div className="cd-unit"><span className="n">{cd.d}</span><span className="u">Ngày</span></div>
+            <div className="cd-unit"><span className="n"><span key={cd.d} className="d-flip">{cd.d}</span></span><span className="u">Ngày</span></div>
             <span className="cd-sep">:</span>
-            <div className="cd-unit"><span className="n">{cd.h}</span><span className="u">Giờ</span></div>
+            <div className="cd-unit"><span className="n"><span key={cd.h} className="d-flip">{cd.h}</span></span><span className="u">Giờ</span></div>
             <span className="cd-sep">:</span>
-            <div className="cd-unit"><span className="n">{cd.m}</span><span className="u">Phút</span></div>
+            <div className="cd-unit"><span className="n"><span key={cd.m} className="d-flip">{cd.m}</span></span><span className="u">Phút</span></div>
             <span className="cd-sep">:</span>
-            <div className="cd-unit sec"><span className="n">{cd.s}</span><span className="u">Giây</span></div>
+            <div className="cd-unit sec"><span className="n"><span key={cd.s} className="d-flip">{cd.s}</span></span><span className="u">Giây</span></div>
           </div>
         </div>
       </div>

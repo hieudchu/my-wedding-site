@@ -48,6 +48,10 @@ from the admin area.
 - `app/src/styles/desktop.css` — Desktop redesign (11/2026, Claude Design bundle
   `~/Downloads/design_handoff_thiep_cuoi_desktop`). Loaded after `sections.css`; every rule
   sits inside the desktop complement of `PHONE_QUERY`, so it cannot touch phones. `d-` classes.
+- `app/src/styles/mobile.css` — Phone features ported from the desktop redesign (2026-11-11):
+  red "Xác nhận" in the ☰ menu, step corners on the invitation card, RSVP picks on one row
+  with the illustration inside the thank-you card, and the DeskMotion effects. Loaded last;
+  every rule sits inside `PHONE_QUERY`, so it cannot touch desktop.
 
 ### Component Map
 
@@ -63,7 +67,7 @@ from the admin area.
 | `RSVP` | `RSVP.jsx` | Name, side (Nhà trai/Nhà gái), guest count, phone, note → `rsvps`; or a wish → `wishes` |
 | `Nav` | `Nav.jsx` | Sticky nav after gate opens; **full music player** (playlist, seek, volume, loop) |
 | `Footer` | `Footer.jsx` | Simple closing |
-| `DeskMotion` | `DeskMotion.jsx` | Desktop only: `[data-dv]` → `[data-in]` draw-in ornaments, gold cursor sparkle. Sets `html[data-dm]` unless reduced motion |
+| `DeskMotion` | `DeskMotion.jsx` | All screens (name is historical): `[data-dv]` → `[data-in]` draw-in ornaments, signatures, flip countdown, RSVP envelope; gold cursor sparkle on fine pointers only. Sets `html[data-dm]` unless reduced motion. Never put `clip-path` on a `[data-dv]` element itself — IntersectionObserver then never reports it; clip a child (`.d-sig b`, `.family-sig b`) |
 | `MediaImage` | `MediaImage.jsx` | Image with Supabase fallback chain + lightbox |
 | `Lightbox` | `Lightbox.jsx` | Full-screen photo overlay (context provider) |
 | `ErrorBoundary` | `ErrorBoundary.jsx` | Catches render errors |
@@ -208,8 +212,8 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   `useSiteConfig` consumes `window.__siteConfig` once and falls back to supabase-js.
   This is what lets the photos start early — they wait on the manifest.
 - Music: `preload="metadata"` 2 s after `load` (~73 KB per visit), never `auto`.
-- The RSVP "sắp về chung một nhà" scene (phones only — desktop hides `.rsvp-scene` and shows
-  `couple.jpg` inside the thank-you card, `.rsvp-thanks-art`) is a 4 s muted loop (`public/assets/rsvp/couple-loop.mp4`,
+- The RSVP "sắp về chung một nhà" scene lives inside the thank-you card (`.rsvp-thanks-art`,
+  all screens; there is no standalone `.rsvp-scene` any more) and is a 4 s muted loop (`public/assets/rsvp/couple-loop.mp4`,
   2.1 MB, `CoupleLoop` in `RSVP.jsx`) with `couple.jpg` as poster. `preload="none"`; an
   IntersectionObserver plays it near the viewport and pauses it off-screen. Reduced motion /
   iOS Low Power Mode just show the poster.

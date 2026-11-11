@@ -69,7 +69,8 @@ export default function Family({ side, config, siteText = {} }) {
               sizes="(max-width: 759.98px) 86vw, 45vw"
             />
           </div>
-          <span className="family-sig">{isGroom ? 'H' : 'M'}</span>
+          {/* <b> bên trong: chuyển động viết tay clip phần tử con (clip chính nó thì IntersectionObserver không thấy) */}
+          <span className="family-sig" data-dv=""><b>{isGroom ? 'H' : 'M'}</b></span>
           {/* Desktop: chữ ký H/M nổi trên ảnh (desktop.css). Ẩn ở điện thoại. */}
           <span className="d-sig" aria-hidden="true" data-dv=""><b>{isGroom ? 'H' : 'M'}</b></span>
         </div>

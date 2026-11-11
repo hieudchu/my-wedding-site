@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { mqMatches } from '../hooks/useViewport';
 
 /**
- * Chuyển động "vào tiệc cưới" cho DESKTOP. Nhẹ, chậm, mỗi chỗ chạy một lần.
+ * Chuyển động "vào tiệc cưới" — desktop và (từ 2026-11-11) cả điện thoại. Nhẹ, chậm,
+ * mỗi chỗ chạy một lần. desktop.css vẽ cho desktop, mobile.css cho điện thoại.
  *  · [data-dv] hiện trên màn → gắn [data-in] (một lần). desktop.css lo phần vẽ nét /
  *    viết chữ: vạch ❖, bốn góc thiệp, sợi chỉ lịch trình, chữ ký H/M, "Hiếu & Minh".
  *  · Lấp lánh vàng nhỏ theo chuột (canvas, chỉ vẽ khi còn hạt).

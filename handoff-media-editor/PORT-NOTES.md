@@ -11,3 +11,6 @@ khác prototype:
   `app/src/styles/globals.css` (biến `--fd*`/`--fm*`; trình chỉnh đặt `--fx/--fy/--fz` inline).
 - Album trên trang Media giữ ô tải lên cũ (nhiều file, kéo-thả sắp xếp) thay cho ô
   "Thêm ảnh vào album".
+- Ảnh lịch trình (`timeline/*`) **không có khung điện thoại**: điện thoại dùng lịch trình
+  dạng biểu tượng `.tlw`, `.tl-track` có ảnh bị ẩn. Ô điện thoại trong xem trước ghi
+  "Không hiện" (khung `natural` + `hidden`). Phát hiện khi thử trên production.

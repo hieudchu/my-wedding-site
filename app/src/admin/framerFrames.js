@@ -11,6 +11,7 @@
      decor    'blurbg' | 'maroon' | 'countdown' | 'gold' — chi tiết xung quanh giúp hình dung
      overlap  (countdown) phần chiều cao ảnh bị thẻ đếm ngược đè lên
      natural  true = trang khách hiện trọn ảnh, khung không có tác dụng
+    hidden   true (kèm natural) = bố cục này không hiện ảnh này chút nào
      title / short / sub   chữ hiện dưới ô xem trước (short: dải ô nhỏ trên điện thoại) */
 export const FRAMER_BLOB = '48% 52% 56% 44% / 54% 46% 54% 46%';
 const BLOB = FRAMER_BLOB;
@@ -65,8 +66,10 @@ export function framesFor(slot, imgW, imgH) {
       return [
         { id: 'd', profile: 'd', ratio: 4 / 3, shape: 'rect', radius: 3,
           title: 'Máy tính', short: '4:3', sub: 'Ảnh 4:3 cạnh mốc giờ.' },
-        { id: 'm', profile: 'm', ratio: 3 / 2, shape: 'rect', radius: 3,
-          title: 'Điện thoại', short: '3:2', sub: '3:2. Màn dọc trọn bề ngang; màn ngang rộng tối đa 300px.' },
+        // Điện thoại (cả tablet dọc, màn ngang ngắn) dùng lịch trình dạng sợi chỉ `.tlw`
+        // với biểu tượng — `.tl-track` có ảnh bị ẩn hẳn (sections.css, mục TimelineWave).
+        { id: 'm-none', profile: 'm', natural: true, hidden: true,
+          title: 'Điện thoại', short: 'Không hiện', sub: 'Điện thoại hiện lịch trình dạng biểu tượng, không có ảnh này.' },
       ];
     case 'moment':
       // Điện thoại — cả dọc lẫn ngang — hiện TRỌN ảnh (sections.css, khối màn ngang

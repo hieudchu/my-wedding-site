@@ -130,12 +130,12 @@ function FramePreview({ frame, h, img, fit, selected, onSelect }) {
       {bg === 'blur' && <img className="if-pv-blur" src={img.src} alt="" draggable={false} />}
       <span className="if-pv-frame" style={{ left: fl, top: ft, width: fw, height: fh, ...shape }}>
         {frame.natural
-          ? <img className="if-pv-natural" src={img.src} alt="" draggable={false} />
+          ? <img className="if-pv-natural" src={img.src} alt="" draggable={false} style={frame.hidden ? { opacity: 0.3 } : undefined} />
           : <FitImg src={img.src} fit={fit} />}
       </span>
       {frame.decor === 'gold' && <span className="if-gold" style={{ left: fl, top: ft, width: fw, height: fh, ...shape }} />}
       {frame.decor === 'countdown' && <span className="if-cd-wrap" style={{ left: fl, top: ft }}><CountdownChip W={fw} H={fh} overlap={frame.overlap} /></span>}
-      {frame.natural && <span className="if-pv-na">Không cắt</span>}
+      {frame.natural && <span className="if-pv-na">{frame.hidden ? 'Không hiện' : 'Không cắt'}</span>}
     </span>
   );
   const cap = <span className="if-pv-cap"><span className="if-pv-t">{frame.short}</span></span>;
@@ -449,7 +449,7 @@ export default function ImageFramer(props) {
             selected={active && f.id === active.id && profile === p} onSelect={() => selectFrame(f)} />
         ))}
       </div>
-      {!compact && p === 'm' && natural && <p className="if-group-note">Điện thoại hiện trọn ảnh, không cắt — khung chỉ áp trên máy tính.</p>}
+      {!compact && p === 'm' && natural && <p className="if-group-note">{natural.hidden ? 'Điện thoại không hiện ảnh này' : 'Điện thoại hiện trọn ảnh, không cắt'} — khung chỉ áp trên máy tính.</p>}
       {!compact && p === 'm' && frames.some((f) => f.id === 'm-narrow') && <p className="if-group-note">Màn ngang: vòm cao bằng khối chữ bên cạnh nên tỉ lệ đổi theo máy — xem cả lúc hẹp nhất và rộng nhất.</p>}
     </div>
   ));

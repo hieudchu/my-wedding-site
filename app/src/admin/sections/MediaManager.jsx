@@ -132,7 +132,7 @@ const SECTIONS = [
     folder: 'timeline',
     label: 'Ảnh của từng mốc giờ trong ngày',
     where:
-      'Mục “Lịch trình”: mỗi mốc giờ có một ảnh, xếp so le hai bên nét lụa đỏ chạy dọc giữa trang.',
+      'Mục “Lịch trình” trên máy tính: mỗi mốc giờ có một ảnh, xếp so le hai bên nét lụa đỏ chạy dọc giữa trang. Điện thoại hiện lịch trình dạng biểu tượng, không có ảnh.',
     look:
       'Ảnh ở đây chỉ hiện lên khi mốc giờ bên trang “Lịch trình” trỏ đúng vào tên file này. Cách chắc ăn là sang trang “Lịch trình” rồi tải ảnh ngay tại mốc giờ đó — trang ấy tự đặt tên file và tự nối vào mốc. Thư mục này để xem lại và xoá những ảnh đã tải.',
     accept: 'image/*',

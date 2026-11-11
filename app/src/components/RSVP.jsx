@@ -64,6 +64,9 @@ const NOTE_MAX = 300;
  * Ô nhập cao 56px và chữ 17px: dưới 16px là iOS Safari tự phóng to trang mỗi lần
  * khách bấm vào ô.
  */
+/** Lỗi do trigger chống spam trong database (raise 'rate_limited'). */
+const isRateLimited = (err) => err?.code === 'P0001' && err?.message === 'rate_limited';
+
 export default function RSVP({ config, siteText = {} }) {
   const [mode, setMode] = useState(null);
   const [name, setName] = useState('');
@@ -74,6 +77,9 @@ export default function RSVP({ config, siteText = {} }) {
   const [wish, setWish] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  // Database chặn vì gửi quá nhiều lần (trigger guard_guest_submit, migration
+  // 20261111000400) → không hiện lời cảm ơn, mà nhắc khách thử lại sau.
+  const [limited, setLimited] = useState(false);
 
   const parts = formatDateParts(config.weddingDate);
 
@@ -81,8 +87,8 @@ export default function RSVP({ config, siteText = {} }) {
   const presetWish = `Chúc ${config.groomShort} & ${config.brideShort} trăm năm hạnh phúc, mãi bên nhau yêu thương và đầm ấm!`;
 
   // Bấm lại nút đang chọn → đóng form / thẻ cảm ơn (nội dung đã điền vẫn giữ nếu mở lại)
-  const pickYes = () => { setSent(false); setMode((m) => (m === 'yes' ? null : 'yes')); };
-  const pickNo = () => { setSent(false); setMode((m) => (m === 'no' ? null : 'no')); };
+  const pickYes = () => { setSent(false); setLimited(false); setMode((m) => (m === 'yes' ? null : 'yes')); };
+  const pickNo = () => { setSent(false); setLimited(false); setMode((m) => (m === 'no' ? null : 'no')); };
 
   const submit = async () => {
     if (sending || !name.trim()) return;
@@ -107,11 +113,13 @@ export default function RSVP({ config, siteText = {} }) {
       const { error } = await supabase.from('rsvps').insert(row);
       if (error) throw error;
     } catch (err) {
+      if (isRateLimited(err)) { setSending(false); setLimited(true); return; }
       // Không chặn khách lại vì lỗi mạng — vẫn hiện lời cảm ơn, nhưng ghi log
       // để chủ nhà còn lần ra được khi đối soát danh sách.
       console.error('[rsvp] insert failed', err);
     }
     setSending(false);
+    setLimited(false);
     setSent(true);
   };
 
@@ -124,9 +132,11 @@ export default function RSVP({ config, siteText = {} }) {
       const { error } = await supabase.from('wishes').insert({ name: who, message: msg, is_preset: isPreset });
       if (error) throw error;
     } catch (err) {
+      if (isRateLimited(err)) { setSending(false); setLimited(true); return; }
       console.error('[wish] insert failed', err);
     }
     setSending(false);
+    setLimited(false);
     setSent(true);
   };
 
@@ -146,6 +156,12 @@ export default function RSVP({ config, siteText = {} }) {
         <div className="d-env-flap" />
       </div>
     </div>
+  );
+
+  const limitNote = limited && (
+    <p role="alert" style={{ margin: '14px 0 0', textAlign: 'center', color: 'var(--red)', fontSize: 16, lineHeight: 1.5 }}>
+      Quý khách đã gửi nhiều lần liên tiếp. Kính mong Quý khách vui lòng thử lại sau ít phút.
+    </p>
   );
 
   // Thẻ cảm ơn: hiện ngay dưới nút mà khách đã chọn.
@@ -275,6 +291,7 @@ export default function RSVP({ config, siteText = {} }) {
               <button className="rsvp-submit" onClick={submit} disabled={sending || !name.trim()}>
                 {sending ? 'Đang gửi…' : 'Xác nhận tham dự'}
               </button>
+              {limitNote}
 
               <p className="rsvp-invite">Trân trọng kính mời</p>
               <p className="rsvp-quote">
@@ -332,6 +349,7 @@ export default function RSVP({ config, siteText = {} }) {
               >
                 Gửi form sẵn
               </button>
+              {limitNote}
             </div>
           )}
 

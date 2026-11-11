@@ -253,6 +253,13 @@ Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,
 - `rsvps` keeps its original columns (`guest_count` is an **integer**). "Trên 10 người"
   is stored as `guest_count = 10` plus `guests_over_10 = true`. The form's "Ghi chú"
   field reuses the existing `message` column.
+- **Anti-spam** (migration `20261111000400`): a BEFORE INSERT trigger
+  `guard_guest_submit()` on `rsvps`/`wishes` limits each IP (`cf-connecting-ip`, stored as
+  md5 in `submit_log`, kept 1 day) to 6 per 10 min / 20 per day per table, and everyone to
+  30 per minute per table; it silently drops a duplicate sent within 10 min. Over the limit
+  it raises `rate_limited` (P0001) and `RSVP.jsx` shows a "try again later" notice instead
+  of the thank-you card. Admins are exempt. Bulk-testing inserts trips it — clear
+  `submit_log` afterwards.
 - Never call `.insert(...).select()` from the guest site — anon has no SELECT grant,
   so Supabase returns an RLS error even though the row was written.
 

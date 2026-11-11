@@ -17,6 +17,10 @@
 .d-sig { display: none; }
 /* Phần tử chuyển động mới (DeskMotion, phong thư RSVP): chỉ desktop hiện */
 .d-spark, .d-env { display: none; }
+/* Tranh trong thẻ cảm ơn: chỉ desktop hiện */
+.rsvp-thanks-art { display: none; }
+/* Ngắt dòng chủ động: chỉ desktop */
+.d-br { display: none; }
 
 @media (min-width: 760px) and (min-height: 521px) and (min-aspect-ratio: 5001/6000), (min-width: 1200px) and (min-height: 521px) {
   @media not all and (hover: none) and (pointer: coarse), (min-width: 1440px) {
@@ -526,10 +530,12 @@
      Tấm giấy luôn nằm gọn trong một màn: mọi kích thước của thẻ (chữ, khoảng cách, logo,
      nút, bề rộng) = số px thiết kế × --u. --u = 1px ở màn cao ~1040px, tối đa 1.15px, thu đều
      theo chiều cao màn → tỉ lệ khung và cách ngắt dòng không đổi, chỉ nhỏ lại.
-     940 = chiều cao thẻ ở cỡ thiết kế (px). Sàn 0.58px (màn ~620px). */
+     720 = chiều cao màn thiết kế cho thẻ (bỏ logo → thẻ thật ≈ 680px). Sàn 0.58px.
+     Thẻ rộng 600 (lề trong 44), không logo, không phụ đề EN, khoảng cách dọc rút gọn
+     → cả thẻ phóng to theo màn (bản chốt 2026-11-11). */
 
   .d-info {
-    --u: clamp(0.58px, calc((100vh - var(--d-nav) - 28px) / 940), 1.15px);
+    --u: clamp(0.58px, calc((100vh - var(--d-nav) - 28px) / 720), 1.15px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) calc(600 * var(--u)) minmax(0, 1fr);
     align-items: center;
@@ -570,7 +576,7 @@
   .d-info-card {
     position: relative;
     isolation: isolate;
-    padding: calc(68 * var(--u)) calc(64 * var(--u)) calc(60 * var(--u));
+    padding: calc(52 * var(--u)) calc(44 * var(--u)) calc(44 * var(--u));
     filter: drop-shadow(0 calc(26 * var(--u)) calc(26 * var(--u)) rgba(51, 35, 31, 0.26)) drop-shadow(0 2px 3px rgba(51, 35, 31, 0.12));
     text-align: center;
   }
@@ -595,11 +601,12 @@
   .d-info-card .corner.bl { bottom: 0; left: 0; transform: scaleY(-1); }
   .d-info-card .corner.br { bottom: 0; right: 0; transform: scale(-1, -1); }
 
-  .d-info-medallion { display: block; width: auto; height: calc(96 * var(--u)); margin: 0 auto calc(26 * var(--u)); }
-  .d-info-announce { margin: 0; font-family: var(--pf); font-size: calc(21 * var(--u)); color: var(--ink); }
-  .d-info-announce-en { margin: calc(6 * var(--u)) 0 0; font-family: var(--serif); font-style: italic; font-size: calc(17 * var(--u)); color: var(--muted); }
+  /* Bỏ logo và phụ đề EN trên desktop (bản chốt). Có thể xoá luôn hai phần tử khỏi DeskInfo. */
+  .d-info-medallion { display: none; }
+  .d-info-announce { margin: 0; font-family: var(--pf); font-size: calc(26 * var(--u)); color: var(--ink); }
+  .d-info-announce-en { display: none; }
   .d-info-heading {
-    margin: calc(20 * var(--u)) 0 0;
+    margin: calc(14 * var(--u)) 0 0;
     font-family: var(--pf);
     font-weight: 400;
     font-size: calc(62 * var(--u));
@@ -607,7 +614,7 @@
     letter-spacing: -0.01em;
     color: var(--ink);
   }
-  .d-info-couple { margin: calc(14 * var(--u)) 0 0; font-family: var(--script); font-size: calc(42 * var(--u)); line-height: 1.2; color: var(--red); }
+  .d-info-couple { margin: calc(14 * var(--u)) 0 0; font-family: var(--script); font-size: calc(46 * var(--u)); line-height: 1.2; color: var(--red); }
   .d-info-couple .nm { -webkit-text-stroke: 1px currentColor; }
   .d-info-couple em {
     font-style: normal;
@@ -615,7 +622,7 @@
     vertical-align: 0.18em;
     margin: 0 0.15em;
   }
-  .d-info-card .d-orn { width: calc(300 * var(--u)); margin: calc(32 * var(--u)) auto; gap: calc(14 * var(--u)); }
+  .d-info-card .d-orn { width: calc(300 * var(--u)); margin: calc(18 * var(--u)) auto; gap: calc(14 * var(--u)); }
   .d-info-card .d-orn .mark { font-size: calc(13 * var(--u)); }
   .d-info-date {
     display: flex;
@@ -625,7 +632,7 @@
     font-variant-numeric: lining-nums;
     color: var(--ink);
   }
-  .d-info-date .num { font-size: calc(58 * var(--u)); line-height: 1; padding: 0 calc(28 * var(--u)); }
+  .d-info-date .num { font-size: calc(64 * var(--u)); line-height: 1; padding: 0 calc(28 * var(--u)); }
   .d-info-date .mid {
     display: flex;
     flex-direction: column;
@@ -633,25 +640,25 @@
     padding: calc(6 * var(--u)) calc(28 * var(--u));
     border-left: 1px solid rgba(168, 128, 60, 0.5);
     border-right: 1px solid rgba(168, 128, 60, 0.5);
-    font-size: calc(21 * var(--u));
+    font-size: calc(25 * var(--u));
     line-height: 1.2;
   }
-  .d-info-date .mid span + span { font-style: italic; font-size: calc(17 * var(--u)); color: var(--ink-soft); }
-  .d-info-time { margin: calc(24 * var(--u)) 0 0; font-family: var(--pf); font-size: calc(18 * var(--u)); color: var(--ink-soft); font-variant-numeric: lining-nums; }
+  .d-info-date .mid span + span { font-style: italic; font-size: calc(21 * var(--u)); color: var(--ink-soft); }
+  .d-info-time { margin: calc(20 * var(--u)) 0 0; font-family: var(--pf); font-size: calc(23 * var(--u)); color: var(--ink-soft); font-variant-numeric: lining-nums; }
   .d-info-time strong { font-weight: 500; color: var(--red); }
-  .d-info-venue { margin: 0; font-family: var(--pf); font-size: calc(23 * var(--u)); line-height: 1.35; color: var(--ink); }
+  .d-info-venue { margin: 0; font-family: var(--pf); font-size: calc(28 * var(--u)); line-height: 1.35; color: var(--ink); }
   .d-info-address {
     margin: calc(8 * var(--u)) auto 0;
-    max-width: 34ch;
+    max-width: 44ch;
     font-family: var(--pf);
-    font-size: calc(17 * var(--u));
-    line-height: 1.6;
+    font-size: calc(22 * var(--u));
+    line-height: 1.5;
     color: var(--ink-soft);
     text-wrap: balance;
     font-variant-numeric: lining-nums;
   }
   .d-info-actions {
-    margin-top: calc(32 * var(--u));
+    margin-top: calc(24 * var(--u));
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -677,7 +684,7 @@
     min-height: max(44px, calc(56 * var(--u)));
     padding: 0 calc(26 * var(--u));
     border-radius: max(14px, calc(20 * var(--u)));
-    font-size: max(15px, calc(18 * var(--u)));
+    font-size: max(16px, calc(20 * var(--u)));
   }
   .d-btn--primary { background: var(--red); color: #FBF1DF; box-shadow: var(--d-shadow-red); }
   .d-btn--primary:hover { background: var(--red-deep); color: #FBF1DF; }
@@ -851,8 +858,8 @@
   }
 
   /* ════════ 7 · XÁC NHẬN THAM DỰ ════════
-     Markup + logic giữ nguyên (RSVP.jsx dùng chung). Desktop: tiêu đề giữa; dưới là
-     tranh cặp đôi (bám màn khi cuộn) bên trái, hai thẻ chọn dạng hàng + form bên phải. */
+     RSVP.jsx dùng chung. Desktop: một cột giữa (≤ 760px): tiêu đề → hai thẻ chọn cùng một
+     hàng → form / thẻ cảm ơn bên dưới. Tranh "sắp về chung một nhà" chỉ hiện trong thẻ cảm ơn. */
 
   /* Tiêu đề sát lên trên hơn; tiêu đề + tranh + hai thẻ chọn vừa một màn dưới nav */
   .rsvp {
@@ -881,11 +888,10 @@
   .rsvp::after { content: '❖'; font-size: 15px; line-height: 1; color: var(--gold); }
 
   .rsvp-inner {
-    max-width: 1120px;
+    max-width: 760px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "head head" "scene picks";
-    column-gap: clamp(36px, 5vw, 80px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "picks";
     row-gap: clamp(22px, 3.4vh, 40px);
     align-items: start;
     text-align: left;
@@ -914,54 +920,62 @@
   }
   .rsvp-lede { max-width: 620px; margin-top: 22px; font-size: 18px; line-height: 1.75; }
 
-  .rsvp-scene {
-    grid-area: scene;
-    position: sticky;
-    top: calc(var(--d-nav) + 32px);
-    margin: 0;
-    max-width: none;
-    padding: 14px 14px 18px;
-    border-radius: 20px;
-    box-shadow: var(--d-shadow-card);
-    text-align: center;
-  }
-  .rsvp-couple { border-radius: 12px; }
-  /* Tranh không cao quá phần màn còn lại dưới tiêu đề (≈ 300px tiêu đề + đệm) */
-  .rsvp-scene { width: min(100%, max(300px, calc((100vh - var(--d-nav) - 420px) * 1.25))); justify-self: center; }
+  /* Tranh "sắp về chung một nhà" không đứng riêng: nó nằm trong thẻ cảm ơn sau khi gửi */
+  .rsvp-scene { display: none; }
   .rsvp-lede { margin-top: 16px; }
-  .rsvp-scene p { margin-top: 14px; font-size: 16px; font-style: normal; color: var(--ink-soft); }
+  /* Không để trình duyệt tự kéo trang khi form ↔ thẻ cảm ơn đổi chỗ */
+  #rsvp { overflow-anchor: none; }
+  .rsvp-thanks-art { display: block; margin: 26px auto -10px; max-width: min(540px, 100%); }
+  /* Kích thước tranh cố định trước khi ảnh tải xong (aspect-ratio) → thẻ không giãn ra giữa chừng */
+  .rsvp-thanks-art img {
+    display: block;
+    width: min(100%, calc(max(280px, 100vh - var(--d-nav) - 470px) * 1400 / 1045));
+    height: auto;
+    aspect-ratio: 1400 / 1045;
+    margin-inline: auto;
+    border-radius: 12px;
+  }
+  .rsvp-thanks .check { display: none; }
+  .rsvp-thanks .d-br { display: inline; }
+  .rsvp-thanks .body { max-width: none; text-wrap: balance; }
 
+  /* Hai nút cùng một hàng; form mở xuống hàng riêng bên dưới cả hai (order) */
   .rsvp-picks {
     grid-area: picks;
+    align-self: start;
     margin: 0;
-    flex-direction: column;
-    flex-wrap: nowrap;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: stretch;
+    align-content: flex-start;
     gap: 14px;
   }
-  /* Form / thẻ cảm ơn mở ngay dưới thẻ của nó (thứ tự DOM), như điện thoại */
   .rsvp-picks > .rsvp-form,
-  .rsvp-picks > .rsvp-thanks { order: 0; flex: none; margin: 0; max-width: none; }
+  .rsvp-picks > .rsvp-thanks,
+  .rsvp-picks > .d-env { order: 2; flex: 1 1 100%; margin: 0; max-width: none; }
 
   .pick-card {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    column-gap: 18px;
-    row-gap: 2px;
-    flex: none;
+    justify-content: center;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
     max-width: none;
-    min-height: 104px;
-    padding: 20px 26px 20px 20px;
+    min-height: 150px;
+    padding: 22px 12px 20px;
     border-radius: 20px;
     border-color: rgba(168, 128, 60, 0.38);
-    text-align: left;
+    text-align: center;
     box-shadow: 0 14px 30px -24px rgba(51, 35, 31, 0.6);
   }
   .pick-card .pick-heart,
-  .pick-card .pick-letter { grid-row: 1 / span 2; justify-self: center; }
-  .pick-card .title { align-self: end; font-size: 25px; line-height: 1.15; }
-  .pick-card .sub { align-self: start; font-size: 15px; letter-spacing: 0.02em; font-style: italic; }
+  .pick-card .pick-letter { margin-bottom: 4px; }
+  .pick-card .pick-heart { margin-top: 8px; } /* bù cho phong thư 62px cao hơn trái tim 46px */
+  .pick-card .title { font-size: clamp(19px, 1.85vw, 25px); line-height: 1.15; white-space: nowrap; }
+  .pick-card .sub { font-size: 15px; letter-spacing: 0.02em; font-style: italic; }
+
   .pick-card:hover { transform: none; border-color: rgba(126, 20, 22, 0.45); background: #FFFDF8; }
   .pick-card.active,
   .pick-card.active:hover { transform: none; background: var(--red); border-color: var(--red); color: #FBF1DF; box-shadow: var(--d-shadow-red); }
@@ -1103,17 +1117,19 @@
     to { transform: none; opacity: 1; }
   }
 
-  /* Phong thư: thư trượt vào, nắp gập, dấu son, bay lên rồi tan; thẻ cảm ơn hiện sau */
+  /* Phong thư: thư trượt vào, nắp gập, dấu son, rồi tan tại chỗ (không bay, không che phần
+     khác của trang); thẻ cảm ơn hiện dần ở đúng chỗ đó */
   html[data-dm][data-fx-env="on"] .d-env { display: block; position: relative; height: 0; z-index: 6; pointer-events: none; }
   .d-env-box {
     position: absolute;
     left: 50%;
-    top: 36px;
+    top: 110px;
     width: 220px;
     height: 140px;
     margin-left: -110px;
     perspective: 700px;
-    animation: d-env-fly 2.4s cubic-bezier(0.5, 0, 0.3, 1) both;
+    will-change: transform, opacity;
+    animation: d-env-fly 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
   .d-env-back,
   .d-env-front,
@@ -1134,7 +1150,8 @@
     font-family: var(--script);
     font-size: 22px;
     color: var(--red);
-    animation: d-env-letter 2.4s cubic-bezier(0.5, 0, 0.3, 1) both;
+    will-change: transform;
+    animation: d-env-letter 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
   .d-env-front {
     top: 0;
@@ -1150,7 +1167,9 @@
     background: #DCC9B0;
     clip-path: polygon(0 0, 100% 0, 50% 100%);
     transform-origin: top;
-    animation: d-env-flap 2.4s cubic-bezier(0.5, 0, 0.3, 1) both;
+    backface-visibility: hidden;
+    will-change: transform;
+    animation: d-env-flap 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
   .d-env-flap::after {
     content: '';
@@ -1166,28 +1185,28 @@
     animation: d-env-seal 2.4s ease both;
   }
   @keyframes d-env-letter {
-    0%, 8% { transform: translateY(0); }
-    32%, 100% { transform: translateY(66px); }
+    0%, 10% { transform: translateY(0); }
+    34%, 100% { transform: translateY(66px); }
   }
   @keyframes d-env-flap {
-    0%, 30% { transform: rotateX(180deg); z-index: 1; }
-    31% { z-index: 4; }
-    48%, 100% { transform: rotateX(0deg); z-index: 4; }
+    0%, 34% { transform: rotateX(180deg); z-index: 1; }
+    34.01%, 100% { z-index: 4; }
+    52%, 100% { transform: rotateX(0deg); }
   }
   @keyframes d-env-seal {
-    0%, 50% { opacity: 0; transform: scale(1.6); }
-    60%, 100% { opacity: 1; transform: scale(1); }
+    0%, 54% { opacity: 0; transform: scale(1.4); }
+    64%, 100% { opacity: 1; transform: scale(1); }
   }
   @keyframes d-env-fly {
-    0% { opacity: 0; transform: translateY(14px); }
-    8% { opacity: 1; transform: none; }
-    62% { opacity: 1; transform: none; }
-    100% { opacity: 0; transform: translate(150px, -260px) rotate(-10deg) scale(0.45); }
+    0% { opacity: 0; transform: translateY(8px) scale(0.97); }
+    10% { opacity: 1; transform: none; }
+    74% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: scale(0.94); }
   }
-  html[data-dm][data-fx-env="on"] .d-env + .rsvp-thanks { animation: d-thanks-in 0.9s var(--ease-soft) 2s both; }
+  html[data-dm][data-fx-env="on"] .d-env + .rsvp-thanks { animation: d-thanks-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 2.1s both; }
   @keyframes d-thanks-in {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: none; }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* Lấp lánh theo chuột */

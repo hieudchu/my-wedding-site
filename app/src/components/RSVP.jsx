@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatDateParts } from '../lib/config';
 import { formatVNPhone, toE164VN, GUEST_OPTIONS, guestLabel } from '../lib/phone';
+import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
 
 const WISH_MAX = 500;
 
@@ -83,12 +84,25 @@ export default function RSVP({ config, siteText = {} }) {
 
   const parts = formatDateParts(config.weddingDate);
 
+  const picksRef = useRef(null);
+  // Tải sẵn tranh của thẻ cảm ơn (desktop) để thẻ hiện đúng kích thước ngay khi gửi
+  useEffect(() => { const img = new Image(); img.src = '/assets/rsvp/couple.jpg'; }, []);
+
+  // Giữ chiều cao khung khi form đổi sang thẻ cảm ơn → phần dưới không bị xô lên/xuống.
+  // Bấm lại một nút thì nhả ra.
+  // Chỉ desktop: ở điện thoại thẻ cảm ơn thấp hơn form, giữ chiều cao sẽ để lại khoảng trống.
+  const holdHeight = () => {
+    const el = picksRef.current;
+    if (el && !mqMatches(PHONE_QUERY)) el.style.minHeight = `${el.offsetHeight}px`;
+  };
+  const releaseHeight = () => { const el = picksRef.current; if (el) el.style.minHeight = ''; };
+
   // Lời chúc có sẵn cho khách muốn gửi nhanh, không phải gõ.
   const presetWish = `Chúc ${config.groomShort} & ${config.brideShort} trăm năm hạnh phúc, mãi bên nhau yêu thương và đầm ấm!`;
 
   // Bấm lại nút đang chọn → đóng form / thẻ cảm ơn (nội dung đã điền vẫn giữ nếu mở lại)
-  const pickYes = () => { setSent(false); setLimited(false); setMode((m) => (m === 'yes' ? null : 'yes')); };
-  const pickNo = () => { setSent(false); setLimited(false); setMode((m) => (m === 'no' ? null : 'no')); };
+  const pickYes = () => { releaseHeight(); setSent(false); setLimited(false); setMode((m) => (m === 'yes' ? null : 'yes')); };
+  const pickNo = () => { releaseHeight(); setSent(false); setLimited(false); setMode((m) => (m === 'no' ? null : 'no')); };
 
   const submit = async () => {
     if (sending || !name.trim()) return;
@@ -120,6 +134,7 @@ export default function RSVP({ config, siteText = {} }) {
     }
     setSending(false);
     setLimited(false);
+    holdHeight();
     setSent(true);
   };
 
@@ -137,6 +152,7 @@ export default function RSVP({ config, siteText = {} }) {
     }
     setSending(false);
     setLimited(false);
+    holdHeight();
     setSent(true);
   };
 
@@ -146,7 +162,7 @@ export default function RSVP({ config, siteText = {} }) {
   const showForm = mode === 'yes' && !sent;
   const showThanks = sent;
 
-  // Desktop: phong thư gập lại và bay đi ngay trước thẻ cảm ơn (desktop.css ẩn ở điện thoại)
+  // Desktop: phong thư gập lại rồi tan ngay tại chỗ thẻ cảm ơn sắp hiện (desktop.css ẩn ở điện thoại)
   const envelope = (
     <div className="d-env" aria-hidden="true">
       <div className="d-env-box">
@@ -173,7 +189,7 @@ export default function RSVP({ config, siteText = {} }) {
       </p>
       <p className="body">
         {mode === 'no'
-          ? 'Chúng em rất tiếc vì không được đón tiếp Quý khách và gia đình trong ngày vui này. Xin chân thành cảm ơn những lời chúc tốt đẹp Quý khách đã gửi đến chúng em.'
+          ? <>Chúng em rất tiếc vì không được đón tiếp Quý khách và gia đình trong ngày vui này.{' '}<br className="d-br" />Xin chân thành cảm ơn những lời chúc tốt đẹp Quý khách đã gửi đến chúng em.</>
           : `Chúng em đã ghi nhận sự tham dự của Quý khách${guests ? ` (${guestLabel(guests).toLowerCase()})` : ''}. Hai gia đình xin trân trọng cảm ơn và rất mong được đón tiếp Quý khách.`}
       </p>
       <p className="see-you">
@@ -181,6 +197,15 @@ export default function RSVP({ config, siteText = {} }) {
           ? 'Kính chúc Quý khách và gia đình mọi điều tốt lành!'
           : `Hẹn gặp Quý khách ngày ${parts.dd}.${parts.mm}.${parts.yyyy}`}
       </p>
+      {/* Desktop: tranh "sắp về chung một nhà" nằm trong thẻ cảm ơn (điện thoại ẩn) */}
+      <figure className="rsvp-thanks-art">
+        <img
+          src="/assets/rsvp/couple.jpg"
+          alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`}
+          width="1400"
+          height="1045"
+        />
+      </figure>
     </div>
   );
 
@@ -204,7 +229,7 @@ export default function RSVP({ config, siteText = {} }) {
 
         {/* data-rv đặt ở KHUNG, không đặt trên từng nút: nút đổi className khi bấm
             → React ghi đè mất class .rv-in → nút biến mất. */}
-        <div className="rsvp-picks" data-rv>
+        <div className="rsvp-picks" data-rv ref={picksRef}>
           <button
             className={`pick-card pick-yes ${mode === 'yes' ? 'active' : ''}`}
             onClick={pickYes}

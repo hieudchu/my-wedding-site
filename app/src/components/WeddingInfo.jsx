@@ -14,7 +14,7 @@ import { useViewport } from '../hooks/useViewport';
  */
 /*
  * DeskInfo — thẻ Lễ thành hôn cho DESKTOP (2026-11). Cùng chất liệu với thẻ điện thoại:
- * nền #F4EAE1, logo đỏ medallion-wine, Playfair, "Hiếu & Minh" TAN Whistling đỏ.
+ * nền #F4EAE1 (không logo, không phụ đề EN), Playfair, "Hiếu & Minh" TAN Whistling đỏ.
  * Hai ảnh blob (giữ đúng khung 3:4 blob như cũ) đứng TRỌN hai bên thẻ, có bóng đổ,
  * không còn tràn ra ngoài mép màn. Hai nút cao 56px, chữ 18px.
  */
@@ -44,10 +44,7 @@ function DeskInfo({ config, siteText = {} }) {
         <span className="corner bl">{STEP_CORNER}</span>
         <span className="corner br">{STEP_CORNER}</span>
 
-        <img className="d-info-medallion" src="/assets/icons/medallion-wine.png?v=33231f" alt="" />
-
         <p className="d-info-announce">{siteText.info_announce || 'Trân trọng báo tin'}</p>
-        <p className="d-info-announce-en">{siteText.info_announce_en || 'We joyfully announce our wedding'}</p>
 
         <h2 className="d-info-heading">{siteText.info_heading || 'Lễ thành hôn'}</h2>
         <p className="d-info-couple" data-dv="">

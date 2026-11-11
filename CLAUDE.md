@@ -208,7 +208,8 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   `useSiteConfig` consumes `window.__siteConfig` once and falls back to supabase-js.
   This is what lets the photos start early — they wait on the manifest.
 - Music: `preload="metadata"` 2 s after `load` (~73 KB per visit), never `auto`.
-- The RSVP "sắp về chung một nhà" scene is a 4 s muted loop (`public/assets/rsvp/couple-loop.mp4`,
+- The RSVP "sắp về chung một nhà" scene (phones only — desktop hides `.rsvp-scene` and shows
+  `couple.jpg` inside the thank-you card, `.rsvp-thanks-art`) is a 4 s muted loop (`public/assets/rsvp/couple-loop.mp4`,
   2.1 MB, `CoupleLoop` in `RSVP.jsx`) with `couple.jpg` as poster. `preload="none"`; an
   IntersectionObserver plays it near the viewport and pauses it off-screen. Reduced motion /
   iOS Low Power Mode just show the poster.

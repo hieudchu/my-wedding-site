@@ -1063,14 +1063,14 @@
   html[data-dm][data-fx-draw="on"] .d-info-card[data-in] .corner .tick { opacity: 1; }
 
   /* Sợi chỉ lịch trình lộ dần từ trên xuống */
-  html[data-dm][data-fx-draw="on"] .tlw-line[data-dv] { clip-path: inset(0 -10% 100% -10%); transition: clip-path 3.2s cubic-bezier(0.45, 0.05, 0.35, 1) 0.2s; }
+  html[data-dm][data-fx-draw="on"] .tlw-line[data-dv] { clip-path: inset(0 -10% 100% -10%); transition: clip-path 1.6s cubic-bezier(0.45, 0.05, 0.35, 1) 0.1s; }
   html[data-dm][data-fx-draw="on"] .tlw-line[data-in] { clip-path: inset(0 -10% 0 -10%); }
 
   /* Chữ ký viết tay: chữ lộ dần từ trái sang theo nhịp bút */
   html[data-dm][data-fx-sign="on"] .d-sig[data-dv] b {
     display: block;
     clip-path: inset(-30% 105% -30% -10%);
-    transition: clip-path 1.5s cubic-bezier(0.6, 0.1, 0.3, 1) 0.5s;
+    transition: clip-path 0.75s cubic-bezier(0.6, 0.1, 0.3, 1) 0.25s;
   }
   html[data-dm][data-fx-sign="on"] .d-sig[data-in] b { clip-path: inset(-30% -10% -30% -10%); }
   html[data-dm][data-fx-sign="on"] .d-info-couple[data-dv] > .nm,

@@ -80,6 +80,7 @@ from the admin area.
 | `useMedia` | `useMedia.js` | `useMediaUrl()` / `useMediaList()` over Storage |
 | `useViewport` | `useViewport.js` | `vw`/`vh` plus `isPhone` from `PHONE_QUERY` (see below) |
 | `useCountdown` | `useCountdown.js` | Counts down to the ceremony in **+07:00**, not local time. Days are **not** zero-padded |
+| `useHashLanding` | `useHashLanding.js` | Opening `…/#rsvp` (the RSVP QR code) or another section id scrolls there and holds it under the nav for 6 s while photos above load; stops on any touch/wheel/key |
 | `usePhoneReveal` | `usePhoneReveal.js` | IntersectionObserver reveal for phones (`[data-rv]` → `.rv-in`) |
 
 Shared helpers: `lib/phone.js` (`formatVNPhone`, `toE164VN`, `GUEST_OPTIONS`, `guestLabel`)

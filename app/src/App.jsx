@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSiteConfig } from './hooks/useSiteConfig';
 import { useViewport } from './hooks/useViewport';
 import { usePhoneReveal } from './hooks/usePhoneReveal';
+import { useHashLanding } from './hooks/useHashLanding';
 import Nav from './components/Nav';
 import Hero from './components/Hero';
 import Family from './components/Family';
@@ -31,6 +32,7 @@ export default function App() {
   const { isPhone } = useViewport();
 
   usePhoneReveal(isPhone);
+  useHashLanding(); // …/#rsvp (mã QR) → mở thẳng phần Xác nhận
 
   useEffect(() => {
     const parts = config.weddingDate?.split('-') || [];

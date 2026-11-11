@@ -1,9 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatDateParts } from '../lib/config';
 import { formatVNPhone, toE164VN, GUEST_OPTIONS, guestLabel } from '../lib/phone';
 
 const WISH_MAX = 500;
+
+/**
+ * Video lặp "sắp về chung một nhà" (4 giây, không tiếng, 2,1 MB). Tranh couple.jpg làm poster:
+ * hiện ngay, và là thứ khách thấy khi video không chạy được (iPhone chế độ tiết kiệm pin,
+ * người bật giảm chuyển động). preload="none" + chỉ tải/phát khi sắp cuộn tới, dừng khi
+ * ra khỏi màn — khách không cuộn tới RSVP không tốn 2 MB.
+ */
+function CoupleLoop({ alt }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || typeof IntersectionObserver === 'undefined') return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    v.muted = true; // React không ghi thuộc tính muted vào HTML; iOS cần nó để tự phát
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) v.play().catch(() => {});
+        else v.pause();
+      },
+      { rootMargin: '300px 0px' }
+    );
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <video
+      ref={ref}
+      className="rsvp-couple"
+      src="/assets/rsvp/couple-loop.mp4"
+      poster="/assets/rsvp/couple.jpg"
+      width="1400"
+      height="1044"
+      muted
+      loop
+      playsInline
+      preload="none"
+      disablePictureInPicture
+      aria-label={alt}
+    />
+  );
+}
+
+
 const NOTE_MAX = 300;
 
 /**
@@ -139,14 +182,7 @@ export default function RSVP({ config, siteText = {} }) {
         </div>
 
         <div className="rsvp-scene" data-rv>
-          <img
-            className="rsvp-couple"
-            src="/assets/rsvp/couple.jpg"
-            alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`}
-            width="1400"
-            height="1045"
-            loading="lazy"
-          />
+          <CoupleLoop alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`} />
           <p>{config.groomShort} &amp; {config.brideShort} · sắp về chung một nhà</p>
         </div>
 

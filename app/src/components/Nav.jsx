@@ -8,9 +8,11 @@ const NAV_OFFSET = 70; // desktop: chiều cao thanh nav khi cuộn tới sectio
 // Tên file đặt cho có, không phải tên bài — thì dùng tên bài ghi trong cấu hình
 const PLACEHOLDER_NAME = /^(bgm|music|audio|track|song|nhac)[\s\d-]*$/i;
 
-/** Tên bài lấy từ tên file: "canon-in-d.mp3" → "canon in d" */
+/** Tên bài: caption nếu có, không thì lấy từ tên file: "canon-in-d.mp3" → "canon in d" */
 function trackName(file, fallback) {
   if (!file) return fallback;
+  // Tên gốc có dấu admin ghi vào caption lúc tải lên (tên file trong kho đã bỏ dấu)
+  if (file.caption?.trim()) return file.caption.trim();
   const base = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
   if (!base || PLACEHOLDER_NAME.test(base)) return fallback;
   return base;

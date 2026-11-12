@@ -11,6 +11,7 @@ import {
   manifestErrorHint,
 } from '../../lib/manifestStore';
 import { supabase } from '../../lib/supabase';
+import { storageSafeName, renamed, displayName } from '../../lib/safeName';
 import { useToast } from '../components/Toast';
 import {
   useFramer, uploadFramed, saveFit, entrySrc, fitStatus, FitThumb, FitImg, canFrame, measure,
@@ -660,7 +661,17 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
   useEffect(() => { fetchFiles(); fetchCaptions(); }, [config.folder, reloadKey]);
 
   const handleUpload = async (e) => {
-    const selected = Array.from(e.target.files);
+    // Kho từ chối tên có dấu / [ ] … ("Invalid key") → đổi sang tên an toàn ngay từ đầu.
+    // Hai file trùng tên sau khi bỏ dấu thì thêm -2, -3 cho khỏi đè nhau.
+    const originals = {};
+    const taken = new Set();
+    const selected = Array.from(e.target.files).map((f) => {
+      let name = storageSafeName(f.name);
+      for (let i = 2; taken.has(name); i++) name = storageSafeName(f.name).replace(/(\.[^.]+)?$/, `-${i}$1`);
+      taken.add(name);
+      originals[name] = f.name;
+      return renamed(f, name);
+    });
     if (!selected.length) return;
 
     // MỘT ảnh thì mở trình chỉnh trước khi tải. Nhiều ảnh một lúc thì tải cả mẻ như
@@ -677,7 +688,7 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
         onSave: async (result, report) => {
           const { manifest: next, name } = await uploadFramed({
             folder: config.folder,
-            fileName: (file) => file.name,
+            fileName: (file) => storageSafeName(file.name),
             picked,
             result,
             report,
@@ -728,7 +739,12 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
 
       const ok = results.filter((r) => r.ok).length;
       const savedMb = (savedBytes / 1048576).toFixed(1);
-      onToast(`Đã tải lên ${ok}/${selected.length} file` + (savedBytes > 0 ? ` · tiết kiệm ${savedMb} MB` : ''));
+      // File lỗi thì nói lý do, chứ "0/1 file" trơn thì không ai biết sửa gì
+      const failed = results.find((r) => !r.ok);
+      if (failed) console.error('Tải lên lỗi:', failed.item?.name, failed.error);
+      onToast(`Đã tải lên ${ok}/${selected.length} file`
+        + (savedBytes > 0 ? ` · tiết kiệm ${savedMb} MB` : '')
+        + (failed ? ` · lỗi: ${failed.error?.message || failed.error}` : ''));
 
       if (ok > 0) {
         // Đọc bản kê ngay trước lúc ghi chứ không đọc từ đầu mẻ: mẻ 30 ảnh chạy
@@ -751,7 +767,13 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
               ...(r.value.opt ? { opt: { ...r.value.opt, v: stamp } } : {}),
               // Thư mục có ô caption thì state `captions` là bản đúng: xoá trắng
               // là xoá hẳn khoá, nên không được lấy caption cũ ra đắp lại.
-              caption: hasCaptions ? (captions[r.value.file] || '') : (old?.caption || ''),
+              // Thư mục nhạc: tên gốc có dấu ("Nơi này có anh") là tên bài khách thấy,
+              // vì tên file trong kho đã bị bỏ dấu.
+              caption: hasCaptions
+                ? (captions[r.value.file] || '')
+                : config.folder === 'music' && originals[r.value.file] && originals[r.value.file] !== r.value.file
+                  ? displayName(originals[r.value.file])
+                  : (old?.caption || ''),
             });
           }
           return next;

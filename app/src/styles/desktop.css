@@ -320,17 +320,22 @@
     font-size: 10.5px;
     letter-spacing: 0.26em;
     color: var(--gold);
+    /* Trạng thái (đang phát / tạm dừng) nằm dòng riêng dưới "Nhạc nền · bài 4/9": chung một
+       dòng thì dài hơn ô ở mọi cỡ màn và bị cắt thành "…" (11/2026). */
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.5em;
+    row-gap: 3px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   html[data-player="dia"] .music-panel .eyebrow-sm::after {
-    content: ' · tạm dừng';
+    content: 'tạm dừng';
+    flex-basis: 100%;
     color: var(--muted);
     letter-spacing: 0.18em;
   }
   html[data-player="dia"] .music-panel.is-playing .eyebrow-sm::after {
-    content: ' · đang phát';
+    content: 'đang phát';
     color: var(--red);
     animation: mpLive 2.4s ease-in-out infinite;
   }

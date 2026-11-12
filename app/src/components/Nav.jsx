@@ -259,7 +259,8 @@ export default function Nav({ config, siteText = {}, visible }) {
             <div className="mp-disc" aria-hidden="true"><img src="/assets/medallion-gold.png" alt="" /></div>
             <div className="mp-text">
               <div className="eyebrow-sm">
-                Nhạc nền{tracks.length > 1 ? ` · bài ${trackIdx + 1}/${tracks.length}` : ''}
+                {/* Ba cụm (tên · bài x/y · trạng thái) xuống dòng nguyên cụm khi thiếu chỗ */}
+                Nhạc nền{tracks.length > 1 && <> · <span>bài {trackIdx + 1}/{tracks.length}</span></>}
               </div>
               <div className="track-name">{nowPlaying}</div>
               <div className="mp-title">{mpTitle}</div>

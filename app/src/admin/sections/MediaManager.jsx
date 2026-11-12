@@ -138,7 +138,7 @@ const SECTIONS = [
         label: 'Ảnh phía trên đồng hồ đếm ngược',
         where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, giữa trang.',
         look:
-          'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại hiện trọn ảnh, không cắt.',
+          'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại: khung dọc 2:3, chỉnh riêng được.',
         thumb: '45',
         accept: 'image/*',
       },

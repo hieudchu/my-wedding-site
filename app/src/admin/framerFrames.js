@@ -78,14 +78,13 @@ export function framesFor(slot, imgW, imgH) {
           title: 'Điện thoại', short: 'Không hiện', sub: 'Điện thoại không có ảnh này.' },
       ];
     case 'moment':
-      // Điện thoại — cả dọc lẫn ngang — hiện TRỌN ảnh (sections.css, khối màn ngang
-      // cuối file đè lên tỉ lệ 560:428 cũ), nên không có khung điện thoại nào để chỉnh.
       return [
         // desktop.css .d-cd-photo: 4:5 bo 3px; thẻ đếm ngược đè 48px mép dưới (~8% ảnh cao ~600px)
         { id: 'd', profile: 'd', ratio: 4 / 5, shape: 'rect', radius: 3, decor: 'countdown', overlap: 0.08,
           title: 'Máy tính', short: 'Dọc 4:5', sub: 'Khung dọc 4:5. Thẻ đếm ngược đè lên khoảng 48px mép dưới — đừng để mặt nằm ở đó.' },
-        { id: 'm-portrait', profile: 'm', natural: true,
-          title: 'Điện thoại', short: 'Dọc & ngang', sub: 'Điện thoại dọc lẫn ngang đều hiện trọn ảnh, không cắt — khung không áp ở đây.' },
+        // sections.css .countdown-photo (khối PHONE_QUERY + màn ngang): 2:3 bo 6px, thẻ đè 32px chân ảnh
+        { id: 'm', profile: 'm', ratio: 2 / 3, shape: 'rect', radius: 6, decor: 'countdown', overlap: 0.05,
+          title: 'Điện thoại', short: 'Dọc 2:3', sub: 'Khung dọc 2:3, cả màn dọc lẫn ngang (ngang rộng tối đa 560px). Thẻ đếm ngược đè lên khoảng 32px mép dưới.' },
       ];
     default:
       return [

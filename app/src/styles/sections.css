@@ -1968,9 +1968,6 @@
     --fy: var(--fmy, var(--fdy, 50%));
     --fz: var(--fmz, var(--fdz, 1));
   }
-  /* Ảnh đếm ngược trên điện thoại (dọc lẫn ngang) hiện trọn ảnh, không cắt —
-     khung không áp, nếu không độ phóng của máy tính sẽ cắt mất mép ảnh. */
-  .countdown-photo img.has-fit { object-position: 50% 50%; transform: none; }
 
   .info-card {
     grid-column: 1 / -1;
@@ -2058,8 +2055,9 @@
 
   /* ── Đếm ngược: SỬA 16 — lưới 4 cột đều, không phụ thuộc min-width ── */
   .countdown { margin-top: 56px; }
-  .countdown-photo img { aspect-ratio: auto; height: auto; } /* ảnh nguyên khung, không cắt */
-  .countdown-photo .ph { aspect-ratio: 4 / 3; }
+  /* Khung dọc 2:3 cố định; tiêu điểm + phóng chỉnh ở admin › Media (khung điện thoại) */
+  .countdown-photo img { aspect-ratio: 2 / 3; height: auto; }
+  .countdown-photo .ph { aspect-ratio: 2 / 3; }
   .countdown-card { margin: -32px 10px 0; padding: 22px 12px 20px; border-radius: 20px; } /* hình chữ nhật bo góc */
   .countdown-grid {
     display: grid;
@@ -2263,9 +2261,8 @@
     max-width: 100%;
     max-height: none;
     height: auto;
-    aspect-ratio: 560 / 428; /* cùng rộng × cao với khung tranh minh hoạ (.rsvp-scene) */
+    aspect-ratio: 2 / 3;
     object-fit: cover;
-    object-position: 50% 38%;
   }
   .countdown-card {
     margin: -28px auto 0;
@@ -3047,14 +3044,13 @@
 }
 
 /* Đếm ngược, MÀN NGANG (điện thoại ngang + tablet / máy gập ngang): giống hệt màn dọc —
-   ảnh dọc hiện TRỌN theo tỉ lệ gốc, rộng bằng khung tranh minh hoạ (560px), không cắt,
-   không lấp nền mờ; thẻ đếm ngược ngang chồng lên chân ảnh. */
+   khung dọc 2:3 rộng tối đa 560px, cắt theo khung điện thoại chỉnh ở admin;
+   thẻ đếm ngược ngang chồng lên chân ảnh. */
 @media (max-height: 520px) and (orientation: landscape), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) and (orientation: landscape) {
   .countdown-photo img {
     height: auto;
-    aspect-ratio: auto;
-    object-fit: fill;
-    object-position: 50% 50%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
   }
 }
 

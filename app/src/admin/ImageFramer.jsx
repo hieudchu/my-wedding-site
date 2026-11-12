@@ -222,8 +222,8 @@ export default function ImageFramer(props) {
   useEffect(() => { if (rootEl) rootEl.focus(); }, [rootEl]);
 
   const frames = useMemo(() => framesFor(slot, img.w, img.h), [slot, img.w, img.h]);
-  // Ảnh đếm ngược: điện thoại hiện trọn ảnh nên không có khung điện thoại để chỉnh —
-  // khoá ở hồ sơ máy tính, ẩn nút chuyển và công tắc dùng chung.
+  // Ô không có khung điện thoại (vd. ảnh hai bên lịch trình): khoá ở hồ sơ máy tính,
+  // ẩn nút chuyển và công tắc dùng chung.
   const hasM = frames.some((f) => f.profile === 'm' && !f.natural);
   if (!hasM && profile === 'm') setProfile('d');
   const editable = frames.filter((f) => f.profile === (hasM ? profile : 'd') && !f.natural);

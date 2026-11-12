@@ -186,8 +186,9 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   from the entry's `v`, so a replaced photo falls back to centre.
   - Guest side: `lib/fit.js` puts `has-fit` + `--fd*`/`--fm*` vars on the `<img>`
     (`MediaImage`, both carousels in `Hero.jsx`). The rule is `img.has-fit` in
-    `globals.css`; the PHONE_QUERY block in `sections.css` switches it to `--fm*`, and
-    turns it off for `.countdown-photo` (phones show that photo uncropped).
+    `globals.css`; the PHONE_QUERY block in `sections.css` switches it to `--fm*`. The
+    countdown photo is a fixed 2:3 frame on phones (portrait and landscape) since 2026-11-12;
+    it used to show uncropped with no phone frame.
   - **Never hard-code a crop for one photo in CSS** (`object-position`/`scale` on a
     section's img). It used to be done for the bride/groom/invitation photos; those
     values now live in the manifest (migration `20261111000100`).
@@ -203,6 +204,9 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   zoomed 1.6–1.7× in the framer then had too few pixels → guests saw blurry photos.
   `sourcesFor()` divides each srcset `w` by the fit zoom so the browser fetches a variant
   big enough for the zoomed frame.
+- Folder uploads rename files with `storageSafeName()` (`lib/safeName.js`): Supabase Storage
+  rejects keys with Vietnamese letters or `[ ] # %` ("InvalidKey"). Music keeps the original
+  title in the entry's `caption`, which the player (`Nav.jsx` `trackName`) reads first.
 - All three admin upload paths call `uploadVariants()` (`lib/imageVariants.js`), which
   builds the variants in the browser (JPEG fallback on Safari, which cannot encode WebP).
 - `MediaImage` takes a `sizes` prop; set it to the slot's real width or the browser

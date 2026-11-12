@@ -255,6 +255,7 @@ Two traps found during the mobile port:
   `rsvp_dress_code*`, `groom_bio`) and `family_members.name_en` are no longer editable; the
   rows/columns stay in the DB. When a design change hides or drops a text or photo, remove it
   from `TextSettings.jsx` / `MediaManager.jsx` SECTIONS too.
+- RSVP rows can be hidden (reversible) or deleted for good ("Xoá", confirm dialog), like wishes.
 - The image framer's styles are `admin/image-framer.css` (`if-` classes), not
   `admin.css`.
 - "Đã gọi" (BR-1, 11/2026) stores the call time in `rsvps.called_at` (null = not

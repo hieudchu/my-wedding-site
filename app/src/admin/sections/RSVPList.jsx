@@ -105,6 +105,17 @@ export default function RSVPList() {
   };
 
   // BR-1: lưu thời điểm gọi; bấm lần nữa để bỏ đánh dấu
+  // Xoá hẳn (dòng thử, khách gửi nhầm). Hỏi lại vì không khôi phục được.
+  // .select() để biết có thật sự xoá được dòng nào: RLS chặn thì Supabase không báo lỗi.
+  const remove = async (r) => {
+    if (!window.confirm(`Xoá hẳn xác nhận của "${r.name}"? Không khôi phục được.`)) return;
+    const { data, error } = await supabase.from('rsvps').delete().eq('id', r.id).select('id');
+    if (error || !data?.length) { toast('Không xoá được'); return; }
+    setRows((prev) => prev.filter((x) => x.id !== r.id));
+    fetchAll();
+    toast('Đã xoá');
+  };
+
   const toggleCalled = async (r) => {
     const called_at = r.called_at ? null : new Date().toISOString();
     const { error } = await supabase.from('rsvps').update({ called_at }).eq('id', r.id);
@@ -386,6 +397,7 @@ export default function RSVPList() {
                     </button>
                   )}
                   <button type="button" className="rw-btn" onClick={() => toggleHidden(r)}>{r.hidden ? 'Hiện lại' : 'Ẩn'}</button>
+                  <button type="button" className="rw-btn danger" onClick={() => remove(r)}>Xoá</button>
                 </div>
               </article>
             );
@@ -393,7 +405,7 @@ export default function RSVPList() {
         </div>
       )}
       {visible.length > 0 && (
-        <p className="rw-pending-note">Khách không bao giờ bị xoá — chỉ ẩn.</p>
+        <p className="rw-pending-note">Ẩn thì còn hiện lại được · Xoá là mất hẳn.</p>
       )}
       {ToastEl}
     </div>

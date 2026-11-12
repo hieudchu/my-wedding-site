@@ -12,3 +12,9 @@
 /* Thêm "Đã gọi …" thì dòng phụ dài hơn: cho xuống dòng nguyên cụm, không gãy giữa ngày và giờ */
 .rw-g-meta { flex-wrap: wrap; row-gap: 2px; }
 .rw-g-meta > span { white-space: nowrap; }
+
+/* Nút "Xoá" (11/2026) — ô thao tác cần chỗ cho ba nút: Đã gọi · Ẩn · Xoá */
+@media (min-width: 1201px) {
+  .rw-list-head,
+  .rw-guest { grid-template-columns: minmax(180px, 1.2fr) 88px 140px minmax(200px, 2fr) 200px; }
+}

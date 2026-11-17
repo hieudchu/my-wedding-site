@@ -40,18 +40,18 @@ export default function Family({ side, config, siteText = {} }) {
     <section className={`family ${isGroom ? 'groom' : 'bride'}`} id={isGroom ? 'groom' : 'bride'}>
       <div className="family-inner">
         <div className="family-text rv" data-rv>
-          <span className="eyebrow">
+          <span className="eyebrow" data-sp="">
             {isGroom ? 'Nhà trai · Groom’s family' : 'Nhà gái · Bride’s family'}
           </span>
-          <h2 className="family-name">
+          <h2 className="family-name" data-sp="">
             <em>{isGroom ? 'Chú rể' : 'Cô dâu'}</em>
             {isGroom ? config.groomName : config.brideName}
           </h2>
-          {bio && <p className="family-bio">{bio}</p>}
+          {bio && <p className="family-bio" data-sp="">{bio}</p>}
           {rows.length > 0 && (
             <div className="family-list">
               {rows.map((r) => (
-                <div key={r.key} className="family-row">
+                <div key={r.key} className="family-row" data-sp="">
                   <span className="family-role">{r.role}</span>
                   <span className="family-person">{r.name}</span>
                 </div>
@@ -61,7 +61,7 @@ export default function Family({ side, config, siteText = {} }) {
         </div>
 
         <div className="family-photo rv" data-rv>
-          <div className="family-photo-frame">
+          <div className="family-photo-frame" data-sp="">
             <MediaImage
               storagePath={storagePath}
               label={photoLabel}
@@ -70,7 +70,7 @@ export default function Family({ side, config, siteText = {} }) {
             />
           </div>
           {/* <b> bên trong: chuyển động viết tay clip phần tử con (clip chính nó thì IntersectionObserver không thấy) */}
-          <span className="family-sig" data-dv=""><b>{isGroom ? 'H' : 'M'}</b></span>
+          <span className="family-sig" data-dv="" data-sp=""><b>{isGroom ? 'H' : 'M'}</b></span>
           {/* Desktop: chữ ký H/M nổi trên ảnh (desktop.css). Ẩn ở điện thoại. */}
           <span className="d-sig" aria-hidden="true" data-dv=""><b>{isGroom ? 'H' : 'M'}</b></span>
         </div>

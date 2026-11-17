@@ -17,13 +17,17 @@ to a production React + Vite + Supabase build in the `app/` directory.
 **The production app lives in `app/`** — a React + Vite + Supabase build.
 **All code changes MUST be made in `app/src/`.**
 
-Three directories are NOT used by `npm run dev` and must never be edited for production:
+These directories are NOT used by `npm run dev` and must never be edited for production:
 
 - `project/` — the original prototype (CDN React + Babel standalone).
 - `handoff/` — design handoff bundle, snapshot of **2026-09-18**, now stale.
 - `handoff-mobile/` — design handoff bundle, snapshot of **2026-10-31**, current.
   Built for the mobile (portrait + landscape) redesign. Intentionally preserves
   production's bugs; see its `BUG-DOSSIER.md`.
+- `handoff-mobile-v2/` — handoff bundle for Claude Design, snapshot of **2026-11-17**, current.
+  Phone portrait + landscape UI/UX pass. `app.jsx`/`styles/` are generated verbatim from
+  `app/src` by its `tools/build-from-production.mjs`; `INTERACTIONS.md` documents every
+  control. Its `tools/fetch-data.mjs` forces `opt.v`/`fit.v` = `v` in the copied manifest.
 
 ## Key Entry Point
 
@@ -65,7 +69,8 @@ from the admin area.
 | `WeddingInfo` | `WeddingInfo.jsx` | Formal invitation card with map/phone CTAs. Desktop renders `DeskInfo` instead |
 | `Timeline` | `Timeline.jsx` | Event schedule + live countdown timer. Desktop renders `DeskTimeline` (phone's `TimelineWave` + side photos `background/timeline-left|right.jpg`). Per-event photos (`image_path`) show nowhere any more |
 | `RSVP` | `RSVP.jsx` | Name, side (Nhà trai/Nhà gái), guest count, phone, note → `rsvps`; or a wish → `wishes` |
-| `Nav` | `Nav.jsx` | Sticky nav after gate opens; **full music player** (playlist, seek, volume, loop) |
+| `Nav` | `Nav.jsx` | Sticky nav; owns all music state (playlist, seek, volume, loop). **Music always on** (2026-11-17): tries to play at load, else on the first tap/key anywhere; a guest pause is respected; pauses while the tab is hidden. Phones get no music pill in the nav — the panel lives in `MusicBubble` |
+| `MusicBubble` | `MusicBubble.jsx` | Phones only: draggable floating music bubble (spring physics written straight to `style.transform`), portalled to `body` because the nav's `backdrop-filter` would anchor `fixed` children to the nav. Drag to the × to hide; ☰ › "Bật lại nhạc nền" restores it. Position in `localStorage['hm-music-bubble']` |
 | `Footer` | `Footer.jsx` | Simple closing |
 | `DeskMotion` | `DeskMotion.jsx` | All screens (name is historical): `[data-dv]` → `[data-in]` draw-in ornaments, signatures, flip countdown, RSVP envelope; gold cursor sparkle on fine pointers only. Sets `html[data-dm]` unless reduced motion. Never put `clip-path` on a `[data-dv]` element itself — IntersectionObserver then never reports it; clip a child (`.d-sig b`, `.family-sig b`) |
 | `MediaImage` | `MediaImage.jsx` | Image with Supabase fallback chain + lightbox |
@@ -82,6 +87,8 @@ from the admin area.
 | `useCountdown` | `useCountdown.js` | Counts down to the ceremony in **+07:00**, not local time. Days are **not** zero-padded |
 | `useHashLanding` | `useHashLanding.js` | Opening `…/#rsvp` (the RSVP QR code) or another section id scrolls there and holds it under the nav for 6 s while photos above load; stops on any touch/wheel/key |
 | `usePhoneReveal` | `usePhoneReveal.js` | IntersectionObserver reveal for phones (`[data-rv]` → `.rv-in`) |
+| `usePhoneScrollFx` | `usePhoneScrollFx.js` | Phones: one passive scroll listener + rAF writes `--sp/--sx/--sf/--sd` on nearby `[data-sp]` elements and `--page-p`, `[data-nav-hide]`, `[data-scrolled]` on `html`; sets `html[data-sfx]` unless reduced motion. The scroll effects in `mobile.css` key off it. `Nav` sets `html[data-nav-pin]` so the nav does not hide during its own scrolls |
+| `useLandscapeFullscreen` | `useLandscapeFullscreen.js` | Touch phone turned landscape → fullscreen on the first tap (`html[data-fs-ask]` hint), back to portrait → exits. No-op on iPhone (no Fullscreen API) |
 
 Shared helpers: `lib/phone.js` (`formatVNPhone`, `toE164VN`, `GUEST_OPTIONS`, `guestLabel`)
 and `lib/scrollLock.js` (pins `body` on touch devices; used only by the lightbox).

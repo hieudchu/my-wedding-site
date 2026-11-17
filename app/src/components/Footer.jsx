@@ -5,7 +5,7 @@ export default function Footer({ config, siteText = {} }) {
   const parts = formatDateParts(config.weddingDate);
 
   return (
-    <footer className="footer">
+    <footer className="footer" data-sp="">
       {/* Con dấu có sẵn trong bộ cài (16 KB), không còn ô tải lên ở admin (11/2026).
           Tải ngay: lazy làm logo trống một lúc khi khách kéo nhanh xuống cuối trang. */}
       <img src="/assets/medallion-gold.png" alt="" loading="eager" decoding="async" />

@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { formatDateParts } from '../lib/config';
 import { useMediaList } from '../hooks/useMedia';
 import { fitProps } from '../lib/fit';
-import { useViewport, TABLET_MAX } from '../hooks/useViewport';
+import { useViewport, TABLET_MAX, mqMatches } from '../hooks/useViewport';
 import { useLightbox } from './Lightbox';
 import ScriptName from './ScriptName';
 import Tagline from './Tagline';
@@ -44,22 +44,49 @@ function PhoneHero({ config, siteText = {}, visible }) {
     let raf = 0;
     let width = el.clientWidth;
 
+    // "Xấp ảnh" (2026-11-17): thẻ rời tâm nghiêng + lùi + nhạt, thẻ tới nổi lên, đi đúng theo
+    // ngón tay. Ghi THẲNG transform/opacity lên thẻ ngay trong sự kiện scroll (không chờ rAF,
+    // không qua biến CSS, không qua React) → khớp từng khung với vị trí cuộn của trình duyệt.
+    // Đường cong smoothstep: thẻ giữa giữ phẳng lâu hơn, chỉ nghiêng hẳn khi đã ra mép.
+    const deck = !mqMatches('(prefers-reduced-motion: reduce)');
+    const paint = () => {
+      const w = el.clientWidth;
+      if (!deck || !w) return;
+      const pos = el.scrollLeft / w;
+      const i = Math.round(pos);
+      const kids = el.children;
+      for (let k = Math.max(0, i - 2); k <= Math.min(kids.length - 1, i + 2); k += 1) {
+        const card = kids[k].firstElementChild;
+        if (!card) continue;
+        const d = Math.max(-1.5, Math.min(1.5, k - pos));
+        const a = Math.min(1, Math.abs(d));
+        const e = a * a * (3 - 2 * a);
+        card.style.transform = `translateZ(0) rotate(${(d * 5).toFixed(2)}deg) scale(${(1 - 0.1 * e).toFixed(4)})`;
+        card.style.opacity = (1 - 0.42 * e).toFixed(3);
+      }
+    };
     const sync = () => {
       raf = 0;
       if (!el.clientWidth) return;
       const i = Math.max(0, Math.min(total - 1, Math.round(el.scrollLeft / el.clientWidth)));
-      setSlide((s) => (s === i ? s : i));
+      // Ưu tiên thấp: dựng lại (bộ đếm, gắn ảnh kề) không được chen vào khung đang vuốt
+      startTransition(() => setSlide((s) => (s === i ? s : i)));
     };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(sync); };
+    const onScroll = () => {
+      paint();
+      if (!raf) raf = requestAnimationFrame(sync);
+    };
 
     // Xoay máy: bề ngang đổi → đặt lại scrollLeft để vẫn đứng đúng thẻ đang xem
     const onResize = () => {
       if (el.clientWidth === width) return;
       width = el.clientWidth;
       el.scrollLeft = slideRef.current * width;
+      paint();
     };
 
     el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
     if (ro) ro.observe(el); else window.addEventListener('resize', onResize);
     return () => {
@@ -77,7 +104,7 @@ function PhoneHero({ config, siteText = {}, visible }) {
   };
 
   return (
-    <section className="hero hero--phone" id="hero" aria-roledescription="carousel" aria-label="Ảnh cưới">
+    <section className="hero hero--phone" id="hero" data-sp="" aria-roledescription="carousel" aria-label="Ảnh cưới">
       <div ref={trackRef} className={`hm-track ${visible ? 'ready' : ''}`}>
         {/* Thẻ 0 — thiệp chữ */}
         <div className="hm-slide">
@@ -108,7 +135,7 @@ function PhoneHero({ config, siteText = {}, visible }) {
         {/* Thẻ ảnh — SỬA 12: chỉ gắn <img> cho thẻ đang xem và hai thẻ kề */}
         {photos.map((p, k) => {
           const i = k + 1;
-          const near = Math.abs(i - slide) <= 1;
+          const near = Math.abs(i - slide) <= 2; // ±2: ảnh kịp giải mã trước khi trượt vào (xấp ảnh)
           return (
             <div className="hm-slide" key={p.name || i}>
               <button

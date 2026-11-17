@@ -103,10 +103,10 @@ export default function WeddingInfo({ config, siteText = {} }) {
 
   return (
     <section className="info" id="details">
-      <div className="info-blob info-blob-1" data-rv>
+      <div className="info-blob info-blob-1" data-rv data-sp="">
         <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
       </div>
-      <div className="info-blob info-blob-2" data-rv>
+      <div className="info-blob info-blob-2" data-rv data-sp="">
         <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
       </div>
 

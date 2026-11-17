@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useSiteConfig } from './hooks/useSiteConfig';
 import { useViewport } from './hooks/useViewport';
 import { usePhoneReveal } from './hooks/usePhoneReveal';
+import { usePhoneScrollFx } from './hooks/usePhoneScrollFx';
+import { useLandscapeFullscreen } from './hooks/useLandscapeFullscreen';
 import { useHashLanding } from './hooks/useHashLanding';
 import Nav from './components/Nav';
 import Hero from './components/Hero';
@@ -32,6 +34,8 @@ export default function App() {
   const { isPhone } = useViewport();
 
   usePhoneReveal(isPhone);
+  usePhoneScrollFx(isPhone); // chuyển động theo cuộn (điện thoại)
+  useLandscapeFullscreen(isPhone); // quay ngang → toàn màn hình (Android, iPad)
   useHashLanding(); // …/#rsvp (mã QR) → mở thẳng phần Xác nhận
 
   useEffect(() => {

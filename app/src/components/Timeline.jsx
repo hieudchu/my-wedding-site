@@ -75,7 +75,7 @@ function TimelineWave({ items }) {
   const n = items.length;
   if (!n) return null;
   return (
-    <div className="tlw" style={{ '--n': n }}>
+    <div className="tlw" style={{ '--n': n }} data-sp="">
       <svg className="tlw-line" data-dv="" viewBox={`0 0 100 ${n * 100}`} preserveAspectRatio="none" aria-hidden="true">
         <path d={wavePath(n)} fill="none" stroke="currentColor" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
       </svg>
@@ -251,7 +251,7 @@ export default function Timeline({ config, siteText = {} }) {
       </div>
 
       <div className="countdown rv" data-rv>
-        <div className="countdown-photo">
+        <div className="countdown-photo" data-sp="">
           <MediaImage
             storagePath="background/moment-2.jpg"
             label="Hiếu và Minh"
@@ -259,7 +259,7 @@ export default function Timeline({ config, siteText = {} }) {
             sizes="(max-width: 860px) 100vw, 820px"
           />
         </div>
-        <div className="countdown-card">
+        <div className="countdown-card" data-sp="">
           <div className="lbl">
             {siteText.timeline_countdown_label || 'Cùng đếm ngược đến ngày vui'}
           </div>

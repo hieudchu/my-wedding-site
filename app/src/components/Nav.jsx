@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMediaList } from '../hooks/useMedia';
-import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
+import { createPortal } from 'react-dom';
+import { mqMatches, PHONE_QUERY, useViewport } from '../hooks/useViewport';
 import Ico from './Icon';
+import MusicBubble from './MusicBubble';
 
 const NAV_OFFSET = 70; // desktop: chiều cao thanh nav khi cuộn tới section
 
@@ -62,6 +64,15 @@ export default function Nav({ config, siteText = {}, visible }) {
   const [loop, setLoop] = useState(true);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
+  const { isPhone } = useViewport();
+  // Nhạc LUÔN BẬT (2026-11-17, chủ thiệp chọn — thay quy tắc "không tự phát" cũ).
+  // Trình duyệt chặn phát có tiếng khi khách chưa chạm trang, nên: thử phát ngay; bị chặn
+  // thì phát ở lần chạm / bấm phím đầu tiên, bất kể chạm vào đâu. Khách tự bấm dừng thì
+  // tôn trọng, không tự phát lại. Ẩn tab thì dừng, quay lại thì phát tiếp.
+  const userPaused = useRef(false);
+  const hiddenPaused = useRef(false);
+  const [blocked, setBlocked] = useState(false);
+  const [bubbleOff, setBubbleOff] = useState(false); // khách kéo bong bóng vào ×
 
   const current = tracks[trackIdx] || null;
   const musicUrl = current?.url || null;
@@ -73,12 +84,59 @@ export default function Nav({ config, siteText = {}, visible }) {
     if (a) a.volume = volume;
   }, [volume]);
 
+  const playMusic = () => {
+    const a = audioRef.current;
+    if (!a || !musicUrl) return;
+    userPaused.current = false;
+    a.play().then(() => { setPlaying(true); setBlocked(false); }).catch(() => {});
+  };
+  const pauseMusic = () => {
+    const a = audioRef.current;
+    userPaused.current = true;
+    if (a) a.pause();
+    setPlaying(false);
+  };
   const toggleMusic = () => {
     const a = audioRef.current;
     if (!a || !musicUrl) return;
-    if (playing) { a.pause(); setPlaying(false); }
-    else a.play().then(() => setPlaying(true)).catch(() => {});
+    if (playing) pauseMusic();
+    else playMusic();
   };
+
+  const hasMusic = !!musicUrl;
+  useEffect(() => {
+    if (!hasMusic) return undefined;
+    const EVTS = ['pointerup', 'touchend', 'click', 'keydown'];
+    let done = false;
+    const off = () => EVTS.forEach((t) => document.removeEventListener(t, start, true));
+    function start() {
+      if (done) return;
+      if (userPaused.current) { done = true; off(); return; }
+      const a = audioRef.current;
+      if (!a) return;
+      a.play()
+        .then(() => { done = true; off(); setPlaying(true); setBlocked(false); })
+        .catch(() => setBlocked(true));
+    }
+    EVTS.forEach((t) => document.addEventListener(t, start, true));
+    start();
+    return () => { done = true; off(); };
+  }, [hasMusic]);
+
+  useEffect(() => {
+    const onVis = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      if (document.hidden) {
+        if (!a.paused) { a.pause(); hiddenPaused.current = true; }
+      } else if (hiddenPaused.current) {
+        hiddenPaused.current = false;
+        if (!userPaused.current) a.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   const ratioFrom = (e) => {
     const track = e.currentTarget.querySelector('.slider-track') || e.currentTarget;
@@ -167,10 +225,16 @@ export default function Nav({ config, siteText = {}, visible }) {
   const scrollTo = (id) => (e) => {
     e.preventDefault();
     setMenu(false); // chọn xong thì đóng menu điện thoại luôn
-    const el = document.getElementById(id);
+    // Đang tự cuộn tới mục: nav không trốn (usePhoneScrollFx)
+    document.documentElement.setAttribute('data-nav-pin', String(Date.now() + 1600));
+    // Điện thoại dọc: "Thiệp mời" cuộn tới chính thẻ thiệp (vừa khít một màn, mobile.css),
+    // không tới đầu section (ảnh phía trên thẻ)
+    const card = id === 'details' && mqMatches(PHONE_QUERY) && mqMatches('(orientation: portrait) and (max-width: 759.98px)')
+      ? document.querySelector('#details .info-card') : null;
+    const el = card || document.getElementById(id);
     if (!el) return;
     // Điện thoại: nav cao 66px (dọc) / 58px (ngang) → đo thật thay vì dùng hằng số
-    const offset = mqMatches(PHONE_QUERY) ? (navRef.current?.offsetHeight || NAV_OFFSET) : NAV_OFFSET;
+    const offset = (mqMatches(PHONE_QUERY) ? (navRef.current?.offsetHeight || NAV_OFFSET) : NAV_OFFSET) + (card ? 12 : 0);
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
   };
 
@@ -185,75 +249,7 @@ export default function Nav({ config, siteText = {}, visible }) {
   const progressNum = dur ? (cur / dur) * 100 : 0;
   const volPct = `${Math.round(volume * 100)}%`;
 
-  return (
-    <nav ref={navRef} className={`nav ${visible ? 'visible' : ''}`}>
-      <audio
-        ref={audioRef}
-        src={musicUrl || undefined}
-        /* Không bao giờ 'auto': một bài vài MB nhân với mọi lượt xem là hết băng thông.
-           'metadata' chỉ lấy phần đầu file (độ dài bài + vài trăm KB), và chỉ khi
-           trang đã tải xong ảnh — xem `warm` ở trên. */
-        preload={warm || panel || playing ? 'metadata' : 'none'}
-        loop={loop && tracks.length <= 1}
-        onTimeUpdate={(e) => { if (dragMode.current !== 'seek') setCur(e.currentTarget.currentTime); }}
-        onLoadedMetadata={onMeta}
-        onDurationChange={onMeta}
-        onEnded={handleEnded}
-      />
-
-      <a href="#hero" className="nav-brand" onClick={scrollTo('hero')}>
-        <img src="/assets/medallion-ink.png" alt="" />
-        <span>{config.groomShort} &amp; {config.brideShort}</span>
-      </a>
-
-      <div className="nav-right">
-        {links.map(([id, label]) => (
-          <a key={id} href={`#${id}`} className={`nav-link ${id === 'rsvp' ? 'nav-link--cta' : ''}`} onClick={scrollTo(id)}>{label}</a>
-        ))}
-
-        {/* Hamburger chỉ hiện ở bố cục điện thoại — media query lo phần ẩn/hiện */}
-        <button
-          className={`burger ${menu ? 'open' : ''}`}
-          onClick={() => { setMenu((m) => !m); setPanel(false); }}
-          aria-label="Menu"
-          aria-expanded={menu}
-        >
-          <span><i /><i /><i /></span>
-        </button>
-
-        <div className="music-pill">
-          <button
-            className={`music-btn ${playing ? 'on' : ''}`}
-            onClick={toggleMusic}
-            title={nowPlaying}
-            aria-label="Bật hoặc tắt nhạc nền"
-          >
-            <span className="music-bars"><span /><span /><span /></span>
-            <span className="mb-disc" aria-hidden="true" />
-            <Ico name="note" className="mb-note" />
-          </button>
-          <button
-            className={`caret-btn ${panel ? 'open' : ''}`}
-            onClick={() => { setPanel((p) => !p); setMenu(false); }}
-            aria-label="Điều chỉnh nhạc"
-            aria-expanded={panel}
-          >
-            {/* Nhãn chỉ hiện ở desktop (desktop.css) — chấm ▾ trơ trọi khó đoán là nút */}
-            <span className="d-caret-label">Nhạc nền</span>
-            <span className="d-caret-ico">▾</span>
-          </button>
-        </div>
-      </div>
-
-      {menu && (
-        <div className="nav-menu">
-          {links.map(([id, label]) => (
-            <a key={id} href={`#${id}`} className={id === 'rsvp' ? 'nav-menu-cta' : undefined} onClick={scrollTo(id)}>{label}</a>
-          ))}
-        </div>
-      )}
-
-      {panel && (
+  const panelEl = (
         <div className={`music-panel ${playing ? 'is-playing' : ''}`}>
           <div className="mp-head">
             <div className="mp-disc" aria-hidden="true"><img src="/assets/medallion-gold.png" alt="" /></div>
@@ -341,7 +337,111 @@ export default function Nav({ config, siteText = {}, visible }) {
             </button>
           </div>
         </div>
+  );
+
+  // Điện thoại: bong bóng nhạc nổi thay viên nhạc trên nav (MusicBubble.jsx)
+  const bubble = isPhone && hasMusic && !bubbleOff && typeof document !== 'undefined'
+    ? createPortal(
+      <MusicBubble
+        open={panel}
+        playing={playing}
+        progress={progressNum}
+        blocked={blocked}
+        onToggle={() => { setPanel((p) => !p); setMenu(false); }}
+        onClose={() => setPanel(false)}
+        onDismiss={() => { pauseMusic(); setPanel(false); setBubbleOff(true); }}
+      >
+        {panelEl}
+      </MusicBubble>,
+      document.body,
+    )
+    : null;
+
+  return (
+    <>
+    <nav ref={navRef} className={`nav ${visible ? 'visible' : ''}`}>
+      <audio
+        ref={audioRef}
+        src={musicUrl || undefined}
+        /* Không bao giờ 'auto': một bài vài MB nhân với mọi lượt xem là hết băng thông.
+           'metadata' chỉ lấy phần đầu file (độ dài bài + vài trăm KB), và chỉ khi
+           trang đã tải xong ảnh — xem `warm` ở trên. */
+        preload={warm || panel || playing ? 'metadata' : 'none'}
+        loop={loop && tracks.length <= 1}
+        onTimeUpdate={(e) => { if (dragMode.current !== 'seek') setCur(e.currentTarget.currentTime); }}
+        onLoadedMetadata={onMeta}
+        onDurationChange={onMeta}
+        onEnded={handleEnded}
+      />
+
+      <a href="#hero" className="nav-brand" onClick={scrollTo('hero')}>
+        <img src="/assets/medallion-ink.png" alt="" />
+        <span>{config.groomShort} &amp; {config.brideShort}</span>
+      </a>
+
+      <div className="nav-right">
+        {links.map(([id, label]) => (
+          <a key={id} href={`#${id}`} className={`nav-link ${id === 'rsvp' ? 'nav-link--cta' : ''}`} onClick={scrollTo(id)}>{label}</a>
+        ))}
+
+        {/* Hamburger chỉ hiện ở bố cục điện thoại — media query lo phần ẩn/hiện */}
+        <button
+          className={`burger ${menu ? 'open' : ''}`}
+          onClick={() => { setMenu((m) => !m); setPanel(false); }}
+          aria-label="Menu"
+          aria-expanded={menu}
+        >
+          <span><i /><i /><i /></span>
+        </button>
+
+        {!isPhone && (
+        <div className="music-pill">
+          <button
+            className={`music-btn ${playing ? 'on' : ''}`}
+            onClick={toggleMusic}
+            title={nowPlaying}
+            aria-label="Bật hoặc tắt nhạc nền"
+          >
+            <span className="music-bars"><span /><span /><span /></span>
+            <span className="mb-disc" aria-hidden="true" />
+            <Ico name="note" className="mb-note" />
+          </button>
+          <button
+            className={`caret-btn ${panel ? 'open' : ''}`}
+            onClick={() => { setPanel((p) => !p); setMenu(false); }}
+            aria-label="Điều chỉnh nhạc"
+            aria-expanded={panel}
+          >
+            {/* Nhãn chỉ hiện ở desktop (desktop.css) — chấm ▾ trơ trọi khó đoán là nút */}
+            <span className="d-caret-label">Nhạc nền</span>
+            <span className="d-caret-ico">▾</span>
+          </button>
+        </div>
+        )}
+      </div>
+
+      {menu && (
+        <div className="nav-menu">
+          {links.map(([id, label]) => (
+            <a key={id} href={`#${id}`} className={id === 'rsvp' ? 'nav-menu-cta' : undefined} onClick={scrollTo(id)}>{label}</a>
+          ))}
+          {isPhone && bubbleOff && hasMusic && (
+            <button
+              type="button"
+              className="nav-menu-music"
+              onClick={() => { setBubbleOff(false); setMenu(false); playMusic(); }}
+            >
+              <Ico name="note" />Bật lại nhạc nền
+            </button>
+          )}
+        </div>
       )}
+
+      {!isPhone && panel && panelEl}
+
+      {isPhone && <span className="nav-progress" aria-hidden="true" />}
     </nav>
+    {bubble}
+    </>
   );
 }

@@ -254,6 +254,9 @@ export function entryId(folder, file) {
   return `${folder}-${file}`;
 }
 
+/** Độ lệch đồng hồ máy admin so với kho được bỏ qua khi quét lại (giây). */
+const RESTAMP_SLACK = 120;
+
 /**
  * Dựng lại bản kê từ danh sách thật trong kho, giữ caption và thứ tự cũ nếu còn.
  * Dùng cho nút "Quét lại kho" khi bản kê lệch với thực tế.
@@ -265,17 +268,27 @@ export function buildFromListing(listingByFolder, previous) {
     for (const f of files) {
       if (!f?.name || f.name === '.emptyFolderPlaceholder') continue;
       const old = findEntry(previous, `${folder}/${f.name}`);
+      const v = storageVersion(f);
+      // Admin ghi `v` bằng đồng hồ máy SAU khi tải ảnh + bản nén (nowVersion), còn kho
+      // ghi mốc lúc nhận ảnh gốc, sớm hơn vài giây. Quét lại đổi `v` sang mốc kho, nên
+      // nếu giữ nguyên opt.v / fit.v thì bản nén và khung đã chỉnh mất hiệu lực, dù ảnh
+      // không đổi (11/2026: cả 22 ảnh rơi về ảnh gốc 3000px, khung căn giữa).
+      // Mốc kho không mới hơn lần admin tải lên (cho lệch đồng hồ RESTAMP_SLACK giây)
+      // → vẫn là file đó → dời opt.v / fit.v theo. File bị thay sau đó thì mốc kho mới
+      // hơn → giữ nguyên, bản nén / khung cũ tự vô hiệu như trước.
+      const same = !!old?.v && v <= old.v + RESTAMP_SLACK;
+      const restamp = (x) => (x && same && x.v === old.v ? { ...x, v } : x);
       next = withEntry(next, folder, {
         id: old?.id || entryId(folder, f.name),
         file: f.name,
-        v: storageVersion(f),
+        v,
         w: old?.w || 0,
         h: old?.h || 0,
         caption: old?.caption || '',
-        opt: old?.opt,
+        opt: restamp(old?.opt),
         // Khung chỉ còn hiệu lực nếu `fit.v` khớp `v` mới (fitFor), nên mang sang
         // luôn cũng an toàn: file bị thay ngoài trang này thì khung tự vô hiệu.
-        fit: old?.fit,
+        fit: restamp(old?.fit),
       });
     }
     const keepOrder = listFolder(previous, folder).map((e) => e.id);

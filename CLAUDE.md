@@ -186,6 +186,11 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   them when `opt.v === v` — a replaced photo whose variants were not regenerated falls
   back to the original instead of showing the old image.
 - `normalizeEntry()` must keep `opt` **and `fit`**; every manifest write goes through it.
+- Upload paths stamp `v` with the admin's clock (`nowVersion`, a few seconds after storage
+  received the original); "Quét lại kho" (`buildFromListing`) re-stamps `v` from storage. It
+  therefore moves `opt.v`/`fit.v` along when the storage stamp is not newer than the old `v`
+  (+120 s clock slack). Before 2026-11-17 it did not, and every rescanned photo silently fell
+  back to the 3000px original with a centred crop (fixed in the live manifest the same day).
 - **Image framing** (11/2026): an entry's `fit` (`{ v, d: {x,y,z}, m: {x,y,z} | null }`)
   is the admin-chosen focal point (% of the image) + zoom (1–3) for desktop (`d`) and
   phone layouts (`m`, null = same as `d`). Non-destructive: files are never cropped and

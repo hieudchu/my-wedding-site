@@ -324,6 +324,15 @@ Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,
   it raises `rate_limited` (P0001) and `RSVP.jsx` shows a "try again later" notice instead
   of the thank-you card. Admins are exempt. Bulk-testing inserts trips it — clear
   `submit_log` afterwards.
+- **Guests edit instead of re-adding** (migrations `20261118000100`, `20261118000200`, helper
+  `lib/editToken.js`): the browser keeps a random `edit_token` — main RSVP in
+  `localStorage['hm-rsvp']`, wishes in **cookie** `hm_wish`, `/adult` in `localStorage['hm-adult-rsvp']`
+  — and writes only through the security-definer rpcs `guest_rsvp_save` / `wish_save` /
+  `adult_rsvp_save` (update the row with that token, else insert; `updated_at` marks edits). Anon
+  cannot insert a row with `edit_token` set directly. On return the form is prefilled and the button
+  reads "Cập nhật…". **`phone_e164` is unique among `audience = 'guest'` rows**
+  (`rsvps_guest_phone_uq`): the form asks `rsvp_phone_taken` as the number is typed and shows
+  "Số điện thoại này đã được xác nhận tham dự"; the save rpc raises `phone_taken` (P0001).
 - Never call `.insert(...).select()` from the guest site — anon has no SELECT grant,
   so Supabase returns an RLS error even though the row was written.
 

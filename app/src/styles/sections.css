@@ -1413,6 +1413,37 @@
   background: var(--paper-2);
 }
 
+/* Khách đổi ý (2026-11-18): số điện thoại trùng, gửi lại lời chúc, link sửa trong thẻ cảm ơn */
+.rsvp-field .rsvp-phone-taken {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--red);
+}
+
+.rsvp-field input[aria-invalid] {
+  border-color: var(--red);
+}
+
+.rsvp-wish-again {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.rsvp-edit {
+  margin-top: 14px;
+  padding: 6px 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--red);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .rsvp-invite {
   margin: 22px 0 0;
   text-align: center;

@@ -3,27 +3,13 @@ import { supabase } from '../lib/supabase';
 import { formatDateParts } from '../lib/config';
 import ScriptName from '../components/ScriptName';
 import { adultNavH } from './useAdultScrollFx';
+import { newToken, loadLocal, saveLocal } from '../lib/editToken';
 
 const NOTE_MAX = 300; // = ràng buộc rsvps_message_len
 const isRateLimited = (err) => err?.code === 'P0001' && err?.message === 'rate_limited';
 
-// Lần gửi trước trên máy này: { t: mã sửa, name, attending, note }. Mã t gửi kèm mỗi lần → hàm
-// adult_rsvp_save sửa đúng dòng cũ thay vì thêm dòng mới (migration 20261118000100).
+// Lần gửi trước trên máy này: { t: mã sửa, name, attending, note } (lib/editToken.js)
 const STORE_KEY = 'hm-adult-rsvp';
-const loadSaved = () => {
-  try {
-    const v = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-    return v && typeof v.t === 'string' ? v : null;
-  } catch { return null; }
-};
-const store = (v) => { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch { /* chế độ riêng tư */ } };
-const newToken = () => {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
-  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-};
 
 /**
  * Xác nhận của trang /adult: chỉ họ tên + tham dự / không + lời nhắn tuỳ ý.
@@ -84,7 +70,7 @@ function AEnvelope({ config }) {
 }
 
 export default function AdultRSVP({ config, venueTitle, partyTime }) {
-  const [saved] = useState(loadSaved);
+  const [saved] = useState(() => loadLocal(STORE_KEY));
   const [name, setName] = useState(saved?.name || '');
   const [attending, setAttending] = useState(typeof saved?.attending === 'boolean' ? saved.attending : null); // true | false | null
   const [note, setNote] = useState(saved?.note || '');
@@ -147,7 +133,7 @@ export default function AdultRSVP({ config, venueTitle, partyTime }) {
         p_token: rec.t, p_name: rec.name, p_attending: rec.attending, p_message: rec.note || null,
       });
       if (error) throw error;
-      store(rec);
+      saveLocal(STORE_KEY, rec);
       setHasSent(true);
     } catch (err) {
       if (isRateLimited(err)) { setSending(false); setLimited(true); return; }

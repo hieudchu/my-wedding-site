@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { formatDateParts } from '../lib/config';
 import { formatVNPhone, toE164VN, GUEST_OPTIONS, guestLabel } from '../lib/phone';
 import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
+import { newToken, loadLocal, saveLocal, loadCookie, saveCookie } from '../lib/editToken';
 
 const WISH_MAX = 500;
 
@@ -64,18 +65,36 @@ const NOTE_MAX = 300;
  *
  * Ô nhập cao 56px và chữ 17px: dưới 16px là iOS Safari tự phóng to trang mỗi lần
  * khách bấm vào ô.
+ *
+ * Khách đổi ý (2026-11-18): máy giữ mã sửa (lib/editToken.js) — xác nhận ở localStorage
+ * 'hm-rsvp', lời chúc ở cookie 'hm_wish'. Gửi lại → rpc guest_rsvp_save / wish_save SỬA dòng cũ.
+ * Mở lại trang thì form điền sẵn, nút thành "Cập nhật". Số điện thoại là duy nhất: trùng với
+ * xác nhận của người khác → báo ngay dưới ô (rpc rsvp_phone_taken) và chặn nút gửi.
  */
 /** Lỗi do trigger chống spam trong database (raise 'rate_limited'). */
 const isRateLimited = (err) => err?.code === 'P0001' && err?.message === 'rate_limited';
+/** Số điện thoại đã có trong xác nhận của người khác (unique index rsvps_guest_phone_uq). */
+const isPhoneTaken = (err) => err?.code === 'P0001' && err?.message === 'phone_taken';
+const RSVP_KEY = 'hm-rsvp';
+const WISH_KEY = 'hm_wish';
 
 export default function RSVP({ config, siteText = {} }) {
+  // Lần gửi trước trên máy này (đọc một lần)
+  const [savedRsvp] = useState(() => loadLocal(RSVP_KEY));
+  const [savedWish] = useState(() => loadCookie(WISH_KEY));
+  const rsvpToken = useRef(savedRsvp?.t || null);
+  const wishToken = useRef(savedWish?.t || null);
+  const [rsvpDone, setRsvpDone] = useState(Boolean(savedRsvp));
+  const [wishDone, setWishDone] = useState(Boolean(savedWish));
+  const [phoneTaken, setPhoneTaken] = useState(false);
+
   const [mode, setMode] = useState(null);
-  const [name, setName] = useState('');
-  const [guests, setGuests] = useState('');
-  const [side, setSide] = useState(''); // 'groom' | 'bride' — khách nhà trai / nhà gái
-  const [phone, setPhone] = useState('');
-  const [note, setNote] = useState('');
-  const [wish, setWish] = useState('');
+  const [name, setName] = useState(savedRsvp?.name || savedWish?.name || '');
+  const [guests, setGuests] = useState(savedRsvp?.guests || '');
+  const [side, setSide] = useState(savedRsvp?.side || ''); // 'groom' | 'bride' — khách nhà trai / nhà gái
+  const [phone, setPhone] = useState(savedRsvp?.phone || '');
+  const [note, setNote] = useState(savedRsvp?.note || '');
+  const [wish, setWish] = useState(savedWish?.wish || '');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   // Database chặn vì gửi quá nhiều lần (trigger guard_guest_submit, migration
@@ -105,30 +124,47 @@ export default function RSVP({ config, siteText = {} }) {
   const pickYes = () => { releaseHeight(); setSent(false); setLimited(false); setMode((m) => (m === 'yes' ? null : 'yes')); };
   const pickNo = () => { releaseHeight(); setSent(false); setLimited(false); setMode((m) => (m === 'no' ? null : 'no')); };
 
+  // Số điện thoại đủ số → hỏi database đã có ai xác nhận bằng số này chưa (trừ chính máy này)
+  useEffect(() => {
+    setPhoneTaken(false);
+    const e164 = toE164VN(phone);
+    if (!e164 || mode !== 'yes') return undefined;
+    let live = true;
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc('rsvp_phone_taken', { p_phone_e164: e164, p_token: rsvpToken.current });
+        if (live && !error) setPhoneTaken(Boolean(data));
+      } catch { /* mạng lỗi: để lúc gửi database chặn */ }
+    }, 400);
+    return () => { live = false; clearTimeout(t); };
+  }, [phone, mode]);
+
   const submit = async () => {
-    if (sending || !name.trim()) return;
+    if (sending || !name.trim() || phoneTaken) return;
     setSending(true);
     // Cột khớp schema THẬT của bảng `rsvps` (xem migration
     // supabase/migrations/20261110000000_rsvp_form_v3_and_rls.sql):
     //   guest_count là SỐ NGUYÊN đã có sẵn → "Trên 10 người" lưu 10 + cờ guests_over_10
     //   ô "Ghi chú" dùng lại cột `message` đã có, không tạo cột `note` trùng nghĩa
-    const row = {
-      name: name.trim().slice(0, 120),
-      attending: true,
-      side: side || null,
-      guest_count: guests ? (guests === '10+' ? 10 : parseInt(guests, 10)) : null,
-      guests_over_10: guests === '10+',
-      phone: phone.trim() || null,
-      phone_e164: toE164VN(phone),
-      message: note.trim().slice(0, NOTE_MAX) || null,
-    };
+    if (!rsvpToken.current) rsvpToken.current = newToken();
+    const rec = { t: rsvpToken.current, name: name.trim().slice(0, 120), side, guests, phone: phone.trim(), note: note.trim().slice(0, NOTE_MAX) };
     try {
-      // KHÔNG gọi .select() sau insert — anon không có quyền đọc (RLS) nên sẽ
-      // báo lỗi giả dù bản ghi đã vào.
-      const { error } = await supabase.from('rsvps').insert(row);
+      const { error } = await supabase.rpc('guest_rsvp_save', {
+        p_token: rec.t,
+        p_name: rec.name,
+        p_side: side || null,
+        p_guest_count: guests ? (guests === '10+' ? 10 : parseInt(guests, 10)) : null,
+        p_over_10: guests === '10+',
+        p_phone: rec.phone || null,
+        p_phone_e164: toE164VN(phone),
+        p_message: rec.note || null,
+      });
       if (error) throw error;
+      saveLocal(RSVP_KEY, rec);
+      setRsvpDone(true);
     } catch (err) {
       if (isRateLimited(err)) { setSending(false); setLimited(true); return; }
+      if (isPhoneTaken(err)) { setSending(false); setPhoneTaken(true); return; }
       // Không chặn khách lại vì lỗi mạng — vẫn hiện lời cảm ơn, nhưng ghi log
       // để chủ nhà còn lần ra được khi đối soát danh sách.
       console.error('[rsvp] insert failed', err);
@@ -144,9 +180,12 @@ export default function RSVP({ config, siteText = {} }) {
     const who = name.trim().slice(0, 120);
     if (sending || !msg || !who) return;
     setSending(true);
+    if (!wishToken.current) wishToken.current = newToken();
     try {
-      const { error } = await supabase.from('wishes').insert({ name: who, message: msg, is_preset: isPreset });
+      const { error } = await supabase.rpc('wish_save', { p_token: wishToken.current, p_name: who, p_message: msg, p_preset: isPreset });
       if (error) throw error;
+      saveCookie(WISH_KEY, { t: wishToken.current, name: who, wish: isPreset ? '' : msg });
+      setWishDone(true);
     } catch (err) {
       if (isRateLimited(err)) { setSending(false); setLimited(true); return; }
       console.error('[wish] insert failed', err);
@@ -215,6 +254,9 @@ export default function RSVP({ config, siteText = {} }) {
       <figure className="rsvp-thanks-art">
         <CoupleLoop alt={`Tranh minh hoạ ${config.groomShort} và ${config.brideShort} bên bờ biển`} />
       </figure>
+      <button type="button" className="rsvp-edit" onClick={() => { releaseHeight(); setSent(false); }}>
+        {mode === 'no' ? 'Sửa lời chúc' : 'Sửa lại xác nhận'}
+      </button>
     </div>
   );
 
@@ -241,7 +283,7 @@ export default function RSVP({ config, siteText = {} }) {
           >
             <img className="pick-heart" src="/assets/rsvp/heart.png" width="46" height="46" alt="" aria-hidden="true" />
             <span className="title">{siteText.rsvp_attend_yes || 'Đồng ý tham dự'}</span>
-            <span className="sub">{siteText.rsvp_attend_yes_sub || 'Chúng tôi sẽ đến'}</span>
+            <span className="sub">{rsvpDone ? 'Đã xác nhận · bấm để sửa' : (siteText.rsvp_attend_yes_sub || 'Chúng tôi sẽ đến')}</span>
           </button>
 
           {showForm && (
@@ -301,7 +343,14 @@ export default function RSVP({ config, siteText = {} }) {
                     placeholder="0912 345 678"
                     maxLength={16}
                     onChange={(e) => setPhone(formatVNPhone(e.target.value))}
+                    aria-invalid={phoneTaken || undefined}
+                    aria-describedby={phoneTaken ? 'rsvp-phone-taken' : undefined}
                   />
+                  {phoneTaken && (
+                    <small id="rsvp-phone-taken" className="rsvp-phone-taken" role="alert">
+                      Số điện thoại này đã được xác nhận tham dự.
+                    </small>
+                  )}
                 </label>
 
                 <label className="rsvp-field full">
@@ -317,8 +366,8 @@ export default function RSVP({ config, siteText = {} }) {
                 </label>
               </div>
 
-              <button className="rsvp-submit" onClick={submit} disabled={sending || !name.trim()}>
-                {sending ? 'Đang gửi…' : 'Xác nhận tham dự'}
+              <button className="rsvp-submit" onClick={submit} disabled={sending || !name.trim() || phoneTaken}>
+                {sending ? 'Đang gửi…' : rsvpDone ? 'Cập nhật xác nhận' : 'Xác nhận tham dự'}
               </button>
               {limitNote}
 
@@ -338,7 +387,7 @@ export default function RSVP({ config, siteText = {} }) {
           >
             <img className="pick-letter" src="/assets/rsvp/envelope.png?v=2" width="62" height="62" alt="" aria-hidden="true" />
             <span className="title">{siteText.rsvp_attend_no || 'Gửi lời chúc'}</span>
-            <span className="sub">{siteText.rsvp_attend_no_sub || 'Không thể tham dự'}</span>
+            <span className="sub">{wishDone ? 'Đã gửi lời chúc · bấm để sửa' : (siteText.rsvp_attend_no_sub || 'Không thể tham dự')}</span>
           </button>
 
           {mode === 'no' && !sent && (
@@ -367,9 +416,10 @@ export default function RSVP({ config, siteText = {} }) {
                 </label>
               </div>
               <p className="rsvp-count" aria-live="polite">{wish.length}/{WISH_MAX}</p>
+              {wishDone && <p className="rsvp-wish-again">Gửi lại sẽ thay cho lời chúc trước của Quý khách.</p>}
 
               <button className="rsvp-submit" onClick={() => sendWish(wish)} disabled={sending || !name.trim() || !wish.trim()}>
-                {sending ? 'Đang gửi…' : 'Gửi'}
+                {sending ? 'Đang gửi…' : wishDone ? 'Cập nhật lời chúc' : 'Gửi'}
               </button>
               <button
                 className="rsvp-submit rsvp-submit--ghost"

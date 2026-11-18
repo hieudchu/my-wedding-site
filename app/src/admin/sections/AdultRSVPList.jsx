@@ -201,7 +201,13 @@ export default function AdultRSVPList({ adminConfig }) {
 
   // CSV UTF-8 có BOM để Excel đọc đúng dấu
   const exportCsv = () => {
-    const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    // Ô bắt đầu bằng = + - @ (hoặc tab / xuống dòng) thì Excel chạy như công thức, kể cả trong
+    // ngoặc kép: khách gõ tên =HYPERLINK(...) là thành link độc trong file. Thêm ' phía trước.
+    const cell = (v) => {
+      let s = String(v ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
     const lines = [['ho_ten', 'trang_thai', 'loi_nhan', 'gui_luc', 'sua_luc'].join(',')]
       .concat(visible.map((r) => [r.name, r.attending ? 'Tham dự' : 'Không đến', r.message || '', timeVN(r.created_at), r.updated_at ? timeVN(r.updated_at) : ''].map(cell).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });

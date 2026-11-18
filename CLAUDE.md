@@ -329,7 +329,11 @@ Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,
   30 per minute per table; it silently drops a duplicate sent within 10 min. Over the limit
   it raises `rate_limited` (P0001) and `RSVP.jsx` shows a "try again later" notice instead
   of the thank-you card. Admins are exempt. Bulk-testing inserts trips it — clear
-  `submit_log` afterwards.
+  `submit_log` afterwards. Since migration `20261118000400` (after a spam test on production),
+  `guest_throttle()` also limits **edits** through the save rpcs (30 per IP / 10 min, 120/min
+  site-wide → `rate_limited`) and `rsvp_phone_taken` lookups (40 per IP / 10 min, then it always
+  answers false; the unique index still blocks the save). `phone_e164` must match `^\+[0-9]{8,15}$`.
+  The `/adult` CSV export prefixes cells starting with `= + - @` with `'` (formula injection).
 - **Guests edit instead of re-adding** (migrations `20261118000100`, `20261118000200`, helper
   `lib/editToken.js`): the browser keeps a random `edit_token` — main RSVP in
   `localStorage['hm-rsvp']`, wishes in **cookie** `hm_wish`, `/adult` in `localStorage['hm-adult-rsvp']`

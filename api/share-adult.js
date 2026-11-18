@@ -2,7 +2,7 @@
  * Trang thiệp bố mẹ (/adult, /thiep-moi) cho bot Zalo / Messenger / WhatsApp: các bot này không
  * chạy JS, chỉ đọc thẻ og:* trong HTML. Ảnh xem trước đổi được trong admin (site_config
  * `share_adult_image` = đường dẫn trong kho `media`, vd. "share/adult-m3x9k2.jpg"; trống = ảnh mặc
- * định public/og-adult-3.jpg), nên HTML phải ghép lúc phục vụ, không viết cứng lúc build.
+ * định public/og-adult-4.jpg), nên HTML phải ghép lúc phục vụ, không viết cứng lúc build.
  *
  * Lấy adult.html đã build (vite.config.js), thay og:image / twitter:image / og:url rồi trả về.
  * og:url đổi theo từng ảnh (/thiep-moi/<mã ảnh>): Zalo gộp bản xem trước theo og:url, giữ nguyên

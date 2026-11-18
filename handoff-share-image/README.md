@@ -26,7 +26,7 @@ Mở `file://` cũng được, nhưng font có thể không nạp.
 | | |
 |---|---|
 | Kích thước | **1200 × 630 px** (1.91:1), `body` đúng cỡ này, không cuộn |
-| Dung lượng | JPEG **< 300 KB** (WhatsApp bỏ ảnh nặng hơn). `tools/render.mjs` tự hạ chất lượng cho vừa |
+| Dung lượng | JPEG **< 120 KB** (Zalo không hiện ảnh 149 KB; WhatsApp bỏ ảnh > 300 KB). `tools/render.mjs` tự hạ chất lượng cho vừa |
 | Chữ | Ảnh bị thu nhỏ còn ~350px ngang → chữ thân ≥ 24px, tên ≥ 48px trong khung 1200. Tương phản đủ, không đặt chữ mỏng lên ảnh |
 | WhatsApp | Có khi cắt **vuông ở giữa** (~630×630 vùng giữa). Tên đôi nên còn đọc được trong vùng giữa nếu được |
 | Font | Chỉ 5 bộ trong `fonts/` (TAN Whistling, Playfair Display, Cormorant Garamond, Inter, JetBrains Mono). Không thêm font |
@@ -57,11 +57,11 @@ Con dấu: `assets/medallion-gold.png` (vàng), `medallion-ink.png` (nét mực)
 ## Đầu ra
 
 - `index.html` đã sửa (có thể thêm `variant-2.html`… nếu muốn đưa nhiều phương án).
-- Hoặc thẳng ảnh JPEG 1200×630 < 300 KB.
+- Hoặc thẳng ảnh JPEG 1200×630 < 120 KB.
 - Một dòng ghi chú: ảnh nào, vì sao.
 
 Chủ nhà tự tải ảnh lên ở **Admin › Khách bố mẹ mời › Ảnh xem trước khi gửi link**. Admin cắt ảnh về
-1200×630 (cắt giữa nếu sai tỉ lệ) và nén < 300 KB.
+1200×630 (cắt giữa nếu sai tỉ lệ) và nén < 120 KB.
 
 ## Xuất ảnh (Claude Code làm)
 

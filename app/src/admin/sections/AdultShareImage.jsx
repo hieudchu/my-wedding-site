@@ -7,15 +7,16 @@ import './AdultShareImage.css';
  * Ảnh xem trước khi gửi link thiệp bố mẹ qua Zalo / Messenger / WhatsApp (2026-11-18).
  * Ảnh tải lên kho `media` ở share/adult-<mã>.jpg (tên mới mỗi lần: Zalo giữ ảnh theo URL và bỏ qua
  * URL có ?v=), rồi ghi đường dẫn vào site_config `share_adult_image`. api/share-adult.js đọc khoá
- * này và ghép vào thẻ og:image khi bot tới. Trống = ảnh mặc định public/og-adult-3.jpg.
- * Ảnh luôn được đưa về 1200×630 JPEG < 300 KB (cắt giữa nếu sai tỉ lệ) ngay trong trình duyệt.
+ * này và ghép vào thẻ og:image khi bot tới. Trống = ảnh mặc định public/og-adult-4.jpg.
+ * Ảnh luôn được đưa về 1200×630 JPEG < 120 KB (cắt giữa nếu sai tỉ lệ) ngay trong trình duyệt.
  */
 
 const KEY = 'share_adult_image';
 const W = 1200;
 const H = 630;
-const MAX_BYTES = 300 * 1024;
-const DEFAULT_IMG = '/og-adult-3.jpg';
+// Zalo không hiện ảnh 149 KB (2026-11-18) dù ảnh ~115 KB thì hiện → giữ dưới 120 KB
+const MAX_BYTES = 120 * 1024;
+const DEFAULT_IMG = '/og-adult-4.jpg';
 const SHARE_LINK = 'https://hieu-minh-wedding.vercel.app/thiep-moi';
 
 const publicUrl = (p) => supabase.storage.from('media').getPublicUrl(p).data.publicUrl;
@@ -44,7 +45,7 @@ async function toShareJpeg(file) {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, W, H);
     let blob = null;
-    for (const q of [0.9, 0.84, 0.78, 0.72, 0.64, 0.56]) {
+    for (const q of [0.88, 0.82, 0.78, 0.72, 0.66, 0.6, 0.52]) {
       blob = await new Promise((ok) => canvas.toBlob(ok, 'image/jpeg', q));
       if (blob && blob.size <= MAX_BYTES) break;
     }

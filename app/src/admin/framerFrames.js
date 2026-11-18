@@ -85,6 +85,11 @@ export function framesFor(slot, imgW, imgH) {
         // sections.css .countdown-photo (khối PHONE_QUERY + màn ngang): 2:3 bo 6px, thẻ đè 32px chân ảnh
         { id: 'm', profile: 'm', ratio: 2 / 3, shape: 'rect', radius: 6, decor: 'countdown', overlap: 0.05,
           title: 'Điện thoại', short: 'Dọc 2:3', sub: 'Khung dọc 2:3, cả màn dọc lẫn ngang (ngang rộng tối đa 560px). Thẻ đếm ngược đè lên khoảng 32px mép dưới.' },
+        // Trang /adult (adult.css .a-photo-frame): ảnh kẹp album 4:5, bốn góc giấy dán đè ~6% mỗi góc
+        { id: 'a-d', profile: 'd', ratio: 4 / 5, shape: 'rect', radius: 2,
+          title: 'Thiệp bố mẹ · máy tính', short: 'Bố mẹ 4:5', sub: 'Trang /adult: ảnh kẹp album 4:5, bốn góc giấy dán đè lên bốn góc ảnh. Dùng chung tiêu điểm máy tính.' },
+        { id: 'a-m', profile: 'm', ratio: 4 / 5, shape: 'rect', radius: 2,
+          title: 'Thiệp bố mẹ · điện thoại', short: 'Bố mẹ 4:5', sub: 'Trang /adult trên điện thoại: cùng khung 4:5. Dùng chung tiêu điểm điện thoại.' },
       ];
     default:
       return [

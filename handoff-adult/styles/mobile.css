@@ -1,0 +1,882 @@
+/* ═══════════════════════════════════════════════════════════
+   THIỆP CƯỚI HIẾU & MINH — ĐIỆN THOẠI THEO BẢN DESKTOP (2026-11-11)
+
+   Nạp SAU desktop.css. Mọi luật nằm trong PHONE_QUERY (chép nguyên từng ký tự từ
+   hooks/useViewport.js), nên desktop không đổi theo file này.
+
+   Mang từ desktop sang (chủ thiệp chọn):
+   · Nút "Xác nhận" nổi bật trong menu ☰ (vừa cỡ điện thoại, không chen lên thanh nav)
+   · Thiệp mời: bốn góc "bậc thang" Art Deco thay góc chữ L (dòng chữ tiếng Anh đã bỏ)
+   · Xác nhận tham dự: hai thẻ chọn cùng một hàng, form bên dưới, tranh trong thẻ cảm ơn,
+     bỏ tick đỏ, không xô trang khi gửi
+   · Chuyển động (DeskMotion, chạy cả điện thoại): vạch ❖ mọc ra, góc thiệp tự vẽ, tên
+     viết tay, chữ ký H/M viết tay, sợi chỉ lịch trình lộ dần, đếm ngược bảng lật,
+     phong thư tan tại chỗ. Lấp lánh theo chuột không áp dụng (màn cảm ứng).
+   Giữ nguyên: logo thiệp mời, màu chữ ký H/M, nền.
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+
+  /* ════════ NAV · nút "Xác nhận" trong menu ☰ ════════ */
+  .nav-menu a.nav-menu-cta {
+    justify-content: center;
+    min-height: 52px;
+    margin: 12px clamp(12px, 4vw, 20px) 14px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--red);
+    color: #FBF1DF;
+    font-family: 'Playfair Display', var(--serif);
+    font-size: 19px;
+    box-shadow: 0 12px 22px -10px rgba(126, 20, 22, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+  .nav-menu a.nav-menu-cta:active { background: var(--red-deep); }
+
+  /* ════════ THIỆP MỜI · bốn góc bậc thang (SVG STEP_CORNER, như desktop) ════════ */
+  /* Góc 48px: nét trong cách mép 16px, không chạm hai nút (lề 20px); đệm đáy 52px để góc
+     dưới không đè nút gọi điện */
+  .info-card { border: 0; padding-bottom: 52px; }
+  .info-card .corner {
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+  }
+  .info-card .corner svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .info-card .corner.tl,
+  .info-card .corner.tr,
+  .info-card .corner.bl,
+  .info-card .corner.br { border: 0; }
+  .info-card .corner.tl { top: 0; left: 0; }
+  .info-card .corner.tr { top: 0; right: 0; left: auto; transform: scaleX(-1); }
+  .info-card .corner.bl { bottom: 0; left: 0; top: auto; transform: scaleY(-1); }
+  .info-card .corner.br { bottom: 0; right: 0; top: auto; left: auto; transform: scale(-1, -1); }
+
+  /* ════════ XÁC NHẬN THAM DỰ ════════ */
+  /* Tranh "sắp về chung một nhà" chỉ còn trong thẻ cảm ơn */
+  .rsvp-scene { display: none; }
+  #rsvp { overflow-anchor: none; }
+
+  /* Hai thẻ chọn cùng một hàng; form / phong thư / thẻ cảm ơn xuống hàng riêng bên dưới */
+  .rsvp-picks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    align-content: flex-start;
+    gap: 10px;
+  }
+  .rsvp-picks > .rsvp-form,
+  .rsvp-picks > .rsvp-thanks,
+  .rsvp-picks > .d-env { order: 2; flex: 1 1 100%; margin: 4px 0 0; max-width: none; }
+
+  .pick-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 136px;
+    padding: 18px 8px 16px;
+    border-radius: 20px;
+    text-align: center;
+  }
+  .pick-card .pick-heart,
+  .pick-card .pick-letter { margin-bottom: 2px; }
+  .pick-card .pick-heart { margin-top: 8px; } /* bù cho phong thư 62px cao hơn trái tim 46px */
+  /* align-self: center — sections.css đặt end/start cho bố cục lưới cũ, trong cột flex nó
+     thành lệch phải/trái */
+  .pick-card .title { align-self: center; font-size: clamp(17px, 5vw, 21px); line-height: 1.15; text-wrap: balance; }
+  .pick-card .sub { align-self: center; font-size: 13px; letter-spacing: 0.02em; }
+
+  /* Thẻ cảm ơn: không tick, tranh dưới chữ, câu "không tham dự" tách hai dòng */
+  .rsvp-thanks .check { display: none; }
+  .rsvp-thanks .d-br { display: inline; }
+  .rsvp-thanks-art { display: block; margin: 20px auto -4px; }
+  .rsvp-thanks-art :is(img, video) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1400 / 1045;
+    border-radius: 12px;
+  }
+
+  /* ════════ CHUYỂN ĐỘNG (DeskMotion — chạy cả điện thoại) ════════
+     Như desktop.css: trạng thái "chưa hiện" chỉ áp khi html[data-dm] (JS chạy, không
+     giảm chuyển động). Thiếu JS / giảm chuyển động → mọi thứ hiện sẵn, đứng yên. */
+
+  /* Vạch ❖ trong thiệp mời: hai vạch mọc ra từ giữa, dấu ❖ nở ra trước */
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-dv] .rule { transform: scaleX(0); transition: transform 0.7s var(--ease-soft) 0.125s; }
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-dv] .rule:first-child { transform-origin: right; }
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-dv] .rule:last-child { transform-origin: left; }
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-dv] .mark { display: inline-block; opacity: 0; transform: scale(0.4) rotate(-45deg); transition: opacity 0.3s ease, transform 0.45s var(--ease-soft); }
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-in] .rule,
+  html[data-dm][data-fx-draw="on"] .orn-divider[data-in] .mark { opacity: 1; transform: none; }
+
+  /* Thẻ thiệp hiện nhanh gấp đôi các phần khác (0.9s → 0.45s), cùng nhịp với góc + chữ */
+  html.rv-io .info-card[data-rv] { transition-duration: 0.45s; }
+
+  /* Bốn góc bậc thang tự vẽ nét, hạt vuông + vạch nhỏ hiện sau */
+  html[data-dm][data-fx-draw="on"] .info-card[data-dv] .corner .ln { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.9s cubic-bezier(0.55, 0.1, 0.3, 1) 0.2s; }
+  html[data-dm][data-fx-draw="on"] .info-card[data-dv] .corner .ln2 { transition-delay: 0.35s; }
+  html[data-dm][data-fx-draw="on"] .info-card[data-dv] .corner .gem,
+  html[data-dm][data-fx-draw="on"] .info-card[data-dv] .corner .tick { opacity: 0; transition: opacity 0.4s ease 0.85s; }
+  html[data-dm][data-fx-draw="on"] .info-card[data-in] .corner .ln { stroke-dashoffset: 0; }
+  html[data-dm][data-fx-draw="on"] .info-card[data-in] .corner .gem,
+  html[data-dm][data-fx-draw="on"] .info-card[data-in] .corner .tick { opacity: 1; }
+
+  /* Sợi chỉ lịch trình lộ dần từ trên xuống */
+  html[data-dm][data-fx-draw="on"] .tlw-line[data-dv] { clip-path: inset(0 -10% 100% -10%); transition: clip-path 1.6s cubic-bezier(0.45, 0.05, 0.35, 1) 0.1s; }
+  html[data-dm][data-fx-draw="on"] .tlw-line[data-in] { clip-path: inset(0 -10% 0 -10%); }
+
+  /* Chữ ký H/M trên ảnh chân dung: lộ dần từ trái sang theo nhịp bút */
+  .family-sig b { font-weight: inherit; }
+  html[data-dm][data-fx-sign="on"] .family-sig[data-dv] b {
+    display: block;
+    clip-path: inset(-30% 105% -30% -10%);
+    transition: clip-path 0.75s cubic-bezier(0.6, 0.1, 0.3, 1) 0.25s;
+  }
+  html[data-dm][data-fx-sign="on"] .family-sig[data-in] b { clip-path: inset(-30% -10% -30% -10%); }
+
+  /* "Hiếu & Minh" trong thiệp mời: viết tay từng chữ */
+  html[data-dm][data-fx-sign="on"] .info-couple[data-dv] > .nm,
+  html[data-dm][data-fx-sign="on"] .info-couple[data-dv] > em {
+    display: inline-block;
+    clip-path: inset(-40% 105% -30% -10%);
+    transition: clip-path 0.55s cubic-bezier(0.6, 0.1, 0.3, 1) 0.3s;
+  }
+  html[data-dm][data-fx-sign="on"] .info-couple[data-dv] > em { transition-duration: 0.25s; transition-delay: 0.85s; }
+  html[data-dm][data-fx-sign="on"] .info-couple[data-dv] > .nm:last-of-type { transition-delay: 1.05s; }
+  html[data-dm][data-fx-sign="on"] .info-couple[data-in] > .nm,
+  html[data-dm][data-fx-sign="on"] .info-couple[data-in] > em { clip-path: inset(-40% -10% -30% -10%); }
+
+  /* Đếm ngược bảng lật: mỗi số một ô giấy có đường gấp giữa, số mới lật xuống */
+  .d-flip { display: block; }
+  html[data-dm][data-fx-flip="on"] .cd-unit .n {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 1.5em;
+    margin: 0 auto;
+    padding: 0.12em 0.16em;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #FFFDF8 0 50%, #F6EEE2 50% 100%);
+    box-shadow: inset 0 0 0 1px rgba(168, 128, 60, 0.24), 0 8px 14px -10px rgba(51, 35, 31, 0.45);
+    perspective: 320px;
+  }
+  html[data-dm][data-fx-flip="on"] .cd-unit .n::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(168, 128, 60, 0.28);
+  }
+  html[data-dm][data-fx-flip="on"] .cd-unit .u { margin-top: 8px; }
+  html[data-dm][data-fx-flip="on"] .d-flip {
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+    animation: d-flip 0.6s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  }
+  @keyframes d-flip {
+    from { transform: rotateX(80deg); opacity: 0.15; }
+    to { transform: none; opacity: 1; }
+  }
+
+  /* Phong thư: thư trượt vào, nắp gập, dấu son, rồi tan tại chỗ; thẻ cảm ơn hiện dần.
+     Chép từ desktop.css (keyframes trong @media chỉ có hiệu lực khi điều kiện khớp). */
+  html[data-dm][data-fx-env="on"] .d-env { display: block; position: relative; height: 0; z-index: 6; pointer-events: none; }
+  .d-env-box {
+    position: absolute;
+    left: 50%;
+    top: 90px;
+    width: 200px;
+    height: 128px;
+    margin-left: -100px;
+    perspective: 700px;
+    will-change: transform, opacity;
+    animation: d-env-fly 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .d-env-back,
+  .d-env-front,
+  .d-env-flap { position: absolute; left: 0; right: 0; border-radius: 4px; }
+  .d-env-back { top: 0; bottom: 0; z-index: 1; background: #E6D6C1; box-shadow: 0 18px 30px -16px rgba(51, 35, 31, 0.55); }
+  .d-env-letter {
+    position: absolute;
+    left: 13px;
+    right: 13px;
+    top: -58px;
+    height: 108px;
+    z-index: 2;
+    display: grid;
+    place-items: start center;
+    padding-top: 14px;
+    background: #FFFDF8;
+    border: 1px solid rgba(168, 128, 60, 0.4);
+    font-family: var(--script);
+    font-size: 20px;
+    color: var(--red);
+    will-change: transform;
+    animation: d-env-letter 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .d-env-front {
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    background: #F1E5D4;
+    clip-path: polygon(0 0, 50% 56%, 100% 0, 100% 100%, 0 100%);
+  }
+  .d-env-flap {
+    top: 0;
+    height: 62%;
+    z-index: 1;
+    background: #DCC9B0;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top;
+    backface-visibility: hidden;
+    will-change: transform;
+    animation: d-env-flap 2.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .d-env-flap::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #A21E21, #7E1416 60%, #5E0F11);
+    opacity: 0;
+    animation: d-env-seal 2.4s ease both;
+  }
+  @keyframes d-env-letter {
+    0%, 10% { transform: translateY(0); }
+    34%, 100% { transform: translateY(60px); }
+  }
+  @keyframes d-env-flap {
+    0%, 34% { transform: rotateX(180deg); z-index: 1; }
+    34.01%, 100% { z-index: 4; }
+    52%, 100% { transform: rotateX(0deg); }
+  }
+  @keyframes d-env-seal {
+    0%, 54% { opacity: 0; transform: scale(1.4); }
+    64%, 100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes d-env-fly {
+    0% { opacity: 0; transform: translateY(8px) scale(0.97); }
+    10% { opacity: 1; transform: none; }
+    74% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: scale(0.94); }
+  }
+  html[data-dm][data-fx-env="on"] .d-env + .rsvp-thanks { animation: d-thanks-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 2.1s both; }
+  @keyframes d-thanks-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   NÂNG CẤP CHUYỂN ĐỘNG KHI CUỘN + BONG BÓNG NHẠC (2026-11-17)
+
+   · html[data-sfx] do hooks/usePhoneScrollFx.js gắn (chỉ điện thoại, không giảm chuyển
+     động). Biến --sp / --sx / --sf / --sd trên mọi [data-sp], --page-p trên html.
+   · Chỉ dùng thuộc tính rời translate / scale / rotate cho hiệu ứng mới: chúng cộng dồn
+     với transform sẵn có (img.has-fit dùng transform: scale() cho khung admin chỉnh).
+   · Bong bóng nhạc: components/MusicBubble.jsx (chỉ dựng ở bố cục điện thoại).
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+
+  /* ════════ NAV · trốn khi cuộn xuống, hiện khi cuộn lên · vạch tiến độ vàng ════════ */
+  .nav { transition: opacity 0.7s ease, transform 0.7s ease, translate 0.45s var(--ease-soft), box-shadow 0.4s ease; }
+  html[data-sfx][data-nav-hide] .nav { translate: 0 calc(-100% - 3px); }
+  html[data-sfx][data-scrolled] .nav { box-shadow: 0 14px 28px -24px rgba(51, 35, 31, 0.6); }
+  .nav-progress { display: none; }
+  html[data-sfx] .nav-progress {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold-soft), var(--gold) 60%, var(--red));
+    transform-origin: 0 50%;
+    transform: scaleX(var(--page-p, 0));
+    pointer-events: none;
+  }
+
+  /* Menu ☰: từng hàng trượt lên nối nhau (backwards: xong thì trả lại :active) */
+  html[data-dm] .nav-menu > * { animation: riseSm 0.42s var(--ease-soft) backwards; }
+  html[data-dm] .nav-menu > :nth-child(2) { animation-delay: 0.04s; }
+  html[data-dm] .nav-menu > :nth-child(3) { animation-delay: 0.08s; }
+  html[data-dm] .nav-menu > :nth-child(4) { animation-delay: 0.12s; }
+  html[data-dm] .nav-menu > :nth-child(5) { animation-delay: 0.16s; }
+
+  .nav-menu .nav-menu-music {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    margin: 0 clamp(12px, 4vw, 20px) 14px;
+    border: 1px solid rgba(168, 128, 60, 0.45);
+    border-radius: 14px;
+    background: transparent;
+    font-family: 'Playfair Display', var(--serif);
+    font-size: 18px;
+    color: var(--red);
+    cursor: pointer;
+  }
+  .nav-menu-music .ico-svg { display: block; width: 20px; height: 20px; color: var(--gold); }
+
+  /* ════════ HERO · thẻ lùi vào trong khi cuộn qua, khu dưới trượt lên phủ ════════ */
+  html[data-sfx] .hero--phone .hm-slide {
+    scale: calc(1 - var(--sx, 0) * 0.08);
+    opacity: calc(1 - var(--sx, 0) * 0.75);
+    transform-origin: 50% 80%;
+  }
+  html[data-sfx] .hero--phone .hm-bar { opacity: calc(1 - var(--sx, 0) * 1.8); }
+
+  /* ════════ ĐẦU MỤC · từng dòng hiện nối nhau (nhãn → tiêu đề → đoạn) ════════
+     Lịch trình. Gia đình, Xác nhận có bộ chuyển động theo cuộn riêng (cuối file). */
+  html.rv-io .tl-head[data-rv]:not(.rv-in) { opacity: 1; transform: none; }
+  html.rv-io .tl-head[data-rv] > * {
+    transition: opacity 0.8s var(--ease-rise), translate 0.95s var(--ease-rise), filter 0.8s ease;
+    transition-delay: calc(var(--k, 0) * 0.09s);
+  }
+  html.rv-io .tl-head[data-rv]:not(.rv-in) > * { opacity: 0; translate: 0 20px; filter: blur(5px); }
+  .tl-head[data-rv] > :nth-child(2) { --k: 1; }
+  .tl-head[data-rv] > :nth-child(3) { --k: 2; }
+  .tl-head[data-rv] > :nth-child(n+4) { --k: 3; }
+
+  html[data-sfx] .info-blob[data-sp] img { scale: 1.1; translate: 0 calc((var(--sp, 0.5) - 0.5) * -8%); }
+  html[data-sfx] .info-blob-2[data-sp] img { translate: 0 calc((var(--sp, 0.5) - 0.5) * 8%); }
+
+  /* ════════ THIỆP MỜI · thẻ "mở ra" từ mép trên như tấm thiệp gập ════════ */
+  html.rv-io .info-card[data-rv] {
+    transform-origin: 50% 0;
+    transition: opacity 0.7s var(--ease-rise), transform 0.95s var(--ease-rise);
+  }
+  html.rv-io .info-card[data-rv]:not(.rv-in) { transform: perspective(1100px) rotateX(-10deg) translateY(36px) scale(0.96); }
+  .info { overflow-x: clip; }
+
+  /* ════════ LỊCH TRÌNH · sợi chỉ chạy theo ngón tay (không còn tự chạy 1,6 giây) ════════
+     --sd: phần sợi chỉ đã qua vạch 70% chiều cao màn. Cuộn lên thì chỉ rút lại. */
+  html[data-sfx][data-dm][data-fx-draw="on"] .tlw[data-sp] > .tlw-line {
+    clip-path: inset(0 -10% calc((1 - var(--sd, 0)) * 100%) -10%);
+    transition: clip-path 0.15s linear;
+  }
+
+  /* Đếm ngược: xem khối "ĐẾM NGƯỢC · LẬT BẢNG THEO CUỘN" cuối file */
+
+  /* ════════ FOOTER · con dấu xoay vào chỗ, chữ trôi lên khi cuộn tới cuối ════════ */
+  html[data-sfx] .footer[data-sp] > img {
+    rotate: calc((1 - var(--sf, 1)) * -100deg);
+    scale: calc(0.7 + var(--sf, 1) * 0.3);
+    opacity: calc(var(--sf, 1) * 1.3 - 0.1);
+  }
+  html[data-sfx] .footer[data-sp] > :not(img) {
+    opacity: calc(var(--sf, 1) * 1.6 - 0.45);
+    translate: 0 calc((1 - var(--sf, 1)) * 28px);
+  }
+
+  /* ════════ Nhấn nút: lún nhẹ ════════ */
+  :is(.btn-primary, .btn-ghost, .rsvp-submit, .hm-btn, .nav-menu a, .nav-menu-music):active { scale: 0.97; }
+
+  /* ════════ BONG BÓNG NHẠC (MusicBubble.jsx) ════════
+     Lớp: nav 120 < nền tối 150 < bảng 155 < vòng × 158 < bong bóng 160 < lightbox 300. */
+  /* Lò xo (bản 2): vị trí do JS ghi thẳng style.transform mỗi khung (MusicBubble.jsx) →
+     KHÔNG transition transform. Nép / lánh / hiện / phóng dùng translate · scale · opacity
+     (thuộc tính rời, chạy trên GPU) với easing lò xo cùng thông số. */
+  .mbub { --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1); }
+  @supports (transition-timing-function: linear(0, 1)) {
+    .mbub, .mbub-scrim, .mbub-bin { --ease-spring: linear(0, 0.0245, 0.0867, 0.1719, 0.2693, 0.3705, 0.4697, 0.5629, 0.6476, 0.7226, 0.7874, 0.842, 0.8872, 0.9237, 0.9525, 0.9746, 0.9911, 1.0029, 1.011, 1.0161, 1.0188, 1.0199, 1.0197, 1.0186, 1.017, 1.0152, 1.0132, 1.0112, 1.0093, 1.0075, 1.006, 1.0046, 1.0035, 1.0025, 1.0017, 1.0011, 1.0006, 1.0003, 1, 0.9998, 1); }
+  }
+  .mbub {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 160;
+    width: var(--s, 60px);
+    height: var(--s, 60px);
+    will-change: transform;
+    backface-visibility: hidden;
+    contain: layout style;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      translate 0.46s var(--ease-spring),
+      opacity 0.3s ease,
+      scale 0.46s var(--ease-spring);
+  }
+  html[data-dm] .mbub:not(.in) { opacity: 0; scale: 0.3; }
+  .mbub.is-tucked { opacity: 0.8; }
+  .mbub.is-tucked[data-side="r"] { translate: calc(var(--s, 60px) * 0.42) 0; }
+  .mbub.is-tucked[data-side="l"] { translate: calc(var(--s, 60px) * -0.42) 0; }
+  .mbub.is-away { opacity: 0; pointer-events: none; }
+  .mbub.is-away[data-side="r"] { translate: calc(var(--s, 60px) + 24px) 0; }
+  .mbub.is-away[data-side="l"] { translate: calc(-1 * var(--s, 60px) - 24px) 0; }
+  .mbub.is-bye { opacity: 0; scale: 0.15; transition: scale 0.32s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.32s ease-in; }
+
+  .mbub-btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    transition: scale 0.3s var(--ease-spring);
+  }
+  .mbub-btn:active { scale: 0.92; transition-duration: 0.12s; }
+  .mbub.is-drag .mbub-btn { scale: 1.1; cursor: grabbing; }
+  .mbub-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  /* Vành kem + tiến trình đỏ (như vòng quanh nút ▶ trong bảng) */
+  .mbub-ring { position: absolute; inset: 0; width: 100%; height: 100%; rotate: -90deg; overflow: visible; pointer-events: none; }
+  .mbub-ring circle { fill: none; stroke-width: 7; }
+  .mbub-ring .bg { stroke: var(--card); }
+  .mbub-ring .fg { stroke: var(--red); stroke-linecap: round; transition: stroke-dasharray 0.4s linear; }
+
+  /* Đĩa than: rãnh đĩa + nhãn đỏ con dấu vàng, nhãn xoay khi phát */
+  .mbub-disc {
+    position: absolute;
+    inset: 4px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, transparent 0 30%, rgba(216, 183, 120, 0.5) 30.5% 32%, transparent 32.5%),
+      repeating-radial-gradient(circle, #2E0E11 0 1.1px, #1A0708 1.1px 2.6px);
+    box-shadow:
+      0 0 0 1px rgba(168, 128, 60, 0.55),
+      0 18px 30px -14px rgba(26, 7, 8, 0.8),
+      0 6px 12px -6px rgba(26, 7, 8, 0.55);
+    transition: box-shadow 0.4s ease;
+  }
+  .mbub-disc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 200deg, transparent 0 18%, rgba(255, 255, 255, 0.16) 25%, transparent 33% 68%, rgba(255, 255, 255, 0.09) 75%, transparent 83%);
+    pointer-events: none;
+  }
+  .mbub-disc img {
+    width: 44%;
+    height: 44%;
+    padding: 3px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: radial-gradient(circle at 35% 30%, #A51F22, var(--red) 62%, #5E0F11);
+    box-shadow: 0 0 0 1px rgba(216, 183, 120, 0.6);
+    pointer-events: none;
+    animation: mpSpin 6s linear infinite;
+    animation-play-state: paused;
+  }
+  .mbub.is-playing .mbub-disc img { animation-play-state: running; }
+  .mbub.is-playing .mbub-disc {
+    box-shadow:
+      0 0 0 1px var(--gold-soft),
+      0 0 18px 2px rgba(216, 183, 120, 0.4),
+      0 18px 30px -14px rgba(26, 7, 8, 0.8);
+  }
+  /* Sóng vàng toả nhẹ khi đang phát */
+  html[data-dm] .mbub.is-playing:not(.is-drag) .mbub-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(216, 183, 120, 0.7);
+    pointer-events: none;
+    animation: mbubWave 2.8s ease-out infinite;
+  }
+  @keyframes mbubWave {
+    from { opacity: 0.8; scale: 1; }
+    to { opacity: 0; scale: 1.5; }
+  }
+
+  /* Huy hiệu ▶ góc trong: nhạc đang dừng */
+  .mbub-badge {
+    position: absolute;
+    top: -3px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--red);
+    color: #FBF1DF;
+    box-shadow: 0 0 0 2px var(--card), 0 4px 8px -3px rgba(26, 7, 8, 0.5);
+    transition: opacity 0.3s ease, scale 0.3s var(--ease-soft);
+    pointer-events: none;
+  }
+  .mbub[data-side="r"] .mbub-badge { left: -3px; }
+  .mbub[data-side="l"] .mbub-badge { right: -3px; }
+  .mbub-badge .ico-svg { display: block; width: 12px; height: 12px; margin-left: 1px; }
+  .mbub.is-playing .mbub-badge { opacity: 0; scale: 0.4; }
+
+  /* Lời nhắc khi trình duyệt chặn tự phát */
+  .mbub-hint {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    max-width: calc(100vw - var(--s, 60px) - 40px);
+    padding: 10px 14px;
+    border: 1px solid rgba(168, 128, 60, 0.35);
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 14px 28px -16px rgba(51, 35, 31, 0.55);
+    font-family: 'Playfair Display', var(--serif);
+    font-size: 15px;
+    line-height: 1.25;
+    color: var(--ink);
+    white-space: nowrap;
+    opacity: 0;
+    scale: 0.92;
+    pointer-events: none;
+    transition: opacity 0.35s ease, scale 0.35s var(--ease-soft);
+  }
+  .mbub[data-side="r"] .mbub-hint { right: calc(100% + 10px); transform-origin: 100% 50%; }
+  .mbub[data-side="l"] .mbub-hint { left: calc(100% + 10px); transform-origin: 0 50%; }
+  .mbub-hint.on { opacity: 1; scale: 1; transition-delay: 0.6s; }
+  .mbub.is-tucked .mbub-hint { opacity: 0; }
+
+  /* Nền tối khi mở bảng: chạm để thu lại */
+  .mbub-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background: rgba(25, 10, 11, 0.34);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    will-change: opacity;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    touch-action: none;
+  }
+  .mbub-scrim.on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.26s ease, visibility 0s; }
+
+  /* Bảng nhạc bung từ bong bóng (thiết kế "đĩa than" giữ nguyên, chỉ đổi chỗ đặt) */
+  /* Bảng dựng sẵn, ẩn; Web Animations lo phóng/co (transform + opacity). */
+  .mbub-pop {
+    position: fixed;
+    z-index: 155;
+    visibility: hidden;
+    pointer-events: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+  .mbub-pop.on { visibility: visible; }
+  .mbub-pop.on.is-open { pointer-events: auto; }
+  html[data-player="dia"] .mbub-pop .music-panel {
+    position: relative;
+    z-index: 1;
+    inset: auto;
+    width: 100%;
+    max-height: var(--pop-max, 70vh);
+    margin: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: none;
+  }
+  /* Nội dung bảng hiện nối nhau sau khi bảng đã mọc ra (chỉ opacity + transform) */
+  html[data-dm] .mbub-pop.is-open .music-panel > * { animation: mbubIn 0.36s var(--ease-soft) 0.12s backwards; }
+  html[data-dm] .mbub-pop.is-open .music-panel > :nth-child(2) { animation-delay: 0.16s; }
+  html[data-dm] .mbub-pop.is-open .music-panel > :nth-child(3) { animation-delay: 0.2s; }
+  html[data-dm] .mbub-pop.is-open .music-panel > :nth-child(4) { animation-delay: 0.23s; }
+  html[data-dm] .mbub-pop.is-open .music-panel > :nth-child(n+5) { animation-delay: 0.26s; }
+  @keyframes mbubIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  .mbub-tail {
+    position: absolute;
+    z-index: 2;
+    width: 14px;
+    height: 14px;
+    background: var(--card);
+    border: 1px solid rgba(168, 128, 60, 0.32);
+    rotate: 45deg;
+  }
+  .mbub-tail.t-u { top: -7px; border-right: 0; border-bottom: 0; }
+  .mbub-tail.t-r { right: -7px; border-left: 0; border-bottom: 0; }
+  .mbub-tail.t-l { left: -7px; border-right: 0; border-top: 0; }
+
+  /* Vòng × ở đáy màn, chỉ hiện khi đang kéo */
+  .mbub-bin {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 158;
+    height: 200px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 44px; /* = BIN_B trong MusicBubble.jsx */
+    background: linear-gradient(to top, rgba(25, 10, 11, 0.6), rgba(25, 10, 11, 0));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .mbub-bin.on { opacity: 1; }
+  .mbub-bin-ring {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border: 1.5px solid rgba(216, 183, 120, 0.75);
+    border-radius: 50%;
+    background: rgba(25, 10, 11, 0.6);
+    font-size: 30px;
+    line-height: 1;
+    color: #FBF1DF;
+    translate: 0 24px;
+    scale: 0.8;
+    transition: translate 0.35s var(--ease-soft), scale 0.25s var(--ease-soft), background 0.2s;
+  }
+  .mbub-bin.on .mbub-bin-ring { translate: 0 0; scale: 1; }
+  .mbub-bin.hot .mbub-bin-ring { scale: 1.22; background: var(--red); }
+  .mbub-bin-txt {
+    font-family: 'Playfair Display', var(--serif);
+    font-size: 16px;
+    color: #FBF1DF;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mbub,
+    .mbub-pop,
+    .mbub-scrim,
+    .mbub-bin,
+    .mbub-bin-ring { transition-duration: 0.01s; }
+    .mbub-disc img { animation: none; }
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   THIỆP MỜI · ĐIỆN THOẠI DỌC: thẻ vừa khít MỘT màn (2026-11-17)
+
+   Cao = 100svh − nav − 24px (svh = màn nhỏ nhất, có cả thanh địa chỉ → không nhảy khi
+   thanh co giãn, đúng ngay từ lúc vào trang). Cỡ chữ / khoảng cách co theo svh trong
+   khoảng clamp() nên iPhone SE (667) tới Pro Max / S24 Ultra (~930) đều vừa một màn.
+   Nội dung không bao giờ bị cắt: đây là min-height — màn quá thấp thì thẻ tự cao thêm.
+   Con dấu nhỏ lại (80 → 38–56px) để đẩy chữ lên; bốn góc bậc thang to ra (48 → 56–68px),
+   lùi 6px vào trong mép thẻ. Nét thứ hai của góc chạm tối đa 40% cạnh góc (~27px) →
+   đệm thẻ 30px ngang / ≥ 34px dọc nên chữ và nút không bao giờ đè lên góc.
+   Ngang và tablet không đổi.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+  @media (orientation: portrait) and (max-width: 759.98px) {
+    .info-card {
+      --corner: clamp(56px, 16vw, 68px);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - var(--nav-h) - 24px);
+      min-height: calc(100svh - var(--nav-h) - 24px);
+      padding: clamp(34px, 5svh, 48px) 30px;
+    }
+    .info-card > * { flex: none; }
+
+    .info-card .corner { width: var(--corner); height: var(--corner); }
+    .info-card .corner.tl { top: 6px; left: 6px; }
+    .info-card .corner.tr { top: 6px; right: 6px; }
+    .info-card .corner.bl { bottom: 6px; left: 6px; }
+    .info-card .corner.br { bottom: 6px; right: 6px; }
+    /* Góc to hơn → nét dày theo, vẫn ~1px trên màn */
+    .info-card .corner .ln { stroke-width: 1.5; }
+    .info-card .corner .ln2 { stroke-width: 0.95; }
+    .info-card .corner .tick { stroke-width: 1.2; }
+
+    /* Con dấu đo theo CHIỀU CAO (ảnh dọc ~2:3, đo theo bề ngang thì cao hơn dự tính) */
+    .info-card .info-medallion { width: auto; height: clamp(34px, 6svh, 60px); margin: 0 auto clamp(8px, 1.4svh, 14px); }
+    .info-heading { margin: clamp(10px, 2svh, 20px) 0 0; font-size: clamp(28px, 4.6svh, 40px); }
+    .info-couple { margin-top: clamp(4px, 1svh, 12px); font-size: clamp(26px, 4.4svh, 38px); }
+    .info-card .orn-divider { margin: clamp(8px, 2.2svh, 30px) auto; }
+    .info-card .date-row .num { font-size: clamp(30px, 5.4svh, 48px); line-height: 1.1; }
+    .info-card .info-actions { margin-top: clamp(16px, 3svh, 30px); gap: clamp(8px, 1.4svh, 12px); }
+    .info-card .info-actions .btn { min-height: clamp(48px, 6.6svh, 56px); }
+  }
+  /* Màn dọc thấp (iPhone SE / 8: 667px): đệm thẻ và nút gọn lại để vẫn vừa một màn */
+  @media (orientation: portrait) and (max-width: 759.98px) and (max-height: 740px) {
+    .info-card { padding-block: 24px; }
+    .info-card .orn-divider { margin-block: 10px; }
+    .info-card .date-row .mid { gap: 4px; }
+    .info-card .date-row .mid .month { font-size: 18px; }
+    .info-card .info-actions { gap: 8px; margin-top: 12px; }
+    .info-card .info-actions .btn { min-height: 46px; }
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   NGANG · TOÀN MÀN HÌNH (hooks/useLandscapeFullscreen.js, 2026-11-17)
+   html[data-fs-ask]: đang ngang, chờ lần chạm đầu → lời nhắc nhỏ ở đáy màn, tự mờ sau 5 giây.
+   Không có ở iPhone (Safari iOS không cho trang web toàn màn hình).
+   ═══════════════════════════════════════════════════════════ */
+@media (max-height: 520px) and (orientation: landscape), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) and (orientation: landscape) {
+  html[data-fs-ask] body::after {
+    content: 'Chạm vào màn hình để xem toàn màn hình';
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    z-index: 170;
+    translate: -50% 0;
+    padding: 10px 16px;
+    border: 1px solid rgba(168, 128, 60, 0.35);
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 14px 28px -16px rgba(51, 35, 31, 0.55);
+    font-family: 'Playfair Display', var(--serif);
+    font-size: 15px;
+    line-height: 1.25;
+    color: var(--ink);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: fsAsk 5s ease 0.8s both;
+  }
+  @keyframes fsAsk {
+    0% { opacity: 0; transform: translateY(10px); }
+    8%, 85% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html[data-fs-ask] body::after { animation: fsAskStill 5s step-end 0.8s both; }
+    @keyframes fsAskStill { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   GIA ĐÌNH · CHUYỂN ĐỘNG THEO NGÓN TAY (bản chốt, phương án 3b · 2026-11-17)
+
+   Không có thời gian chạy: mọi thứ gắn với vị trí cuộn của CHÍNH phần tử đó (--sp do
+   hooks/usePhoneScrollFx.js ghi lên mọi [data-sp]). Kéo tới đâu hiện tới đó, dừng tay là
+   dừng, cuộn ngược lên thì lui lại y như lúc tới. Thứ tự hiện tự nhiên theo vị trí từng dòng.
+     --e "vào": 0 → 1 trong ~26% dưới màn  ·  --x "ra": 0 → 1 trong 20% trên màn
+   Vào: nổi lên + rõ dần. Ra: trôi lên chậm + nhạt bớt (không mất hẳn, vẫn đọc được).
+   Ảnh vòm: lớn dần 90% → 100%, ảnh bên trong lùi 1.16× → 1.08× + thị sai nhẹ.
+   Chữ ký H/M: viết theo cuộn, cuộn lên thì xoá ngược.
+   Giảm chuyển động / không JS → không có html[data-sfx]: chữ ký + khối chữ hiện như cũ
+   (một lần, [data-rv] / [data-dv]), hoặc hiện sẵn nếu giảm chuyển động.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+  /* Chữ / ảnh lệch lúc chưa vào không được làm trang rộng hơn màn (iOS cho vuốt ngang) */
+  .family { overflow-x: clip; }
+
+  /* Hiệu ứng nằm ở phần tử con → bỏ trạng thái ẩn một-lần của khung [data-rv] cha */
+  html[data-sfx].rv-io .family-photo[data-rv]:not(.rv-in),
+  html[data-sfx].rv-io .family-text[data-rv]:not(.rv-in) { opacity: 1; transform: none; scale: 1; filter: none; }
+
+  html[data-sfx] :is(:is(.family-text > .eyebrow, .family-text > .family-name, .family-text > .family-bio, .family-text .family-row), .family-photo-frame, .family-sig)[data-sp] {
+    --e: clamp(0, calc((var(--sp, 0.5) - 0.02) / 0.26), 1);
+    --x: clamp(0, calc((var(--sp, 0.5) - 0.8) / 0.2), 1);
+  }
+  html[data-sfx] :is(.family-text > .eyebrow, .family-text > .family-name, .family-text > .family-bio, .family-text .family-row)[data-sp] {
+    opacity: calc(var(--e) - var(--x) * 0.55);
+    translate: 0 calc((1 - var(--e)) * 28px - var(--x) * 18px);
+    transition: opacity 0.12s linear, translate 0.12s linear;
+  }
+  html[data-sfx] .family-photo-frame[data-sp] {
+    opacity: calc(0.2 + var(--e) * 0.8 - var(--x) * 0.3);
+    scale: calc(0.9 + var(--e) * 0.1);
+    translate: 0 calc((1 - var(--e)) * 48px - var(--x) * 24px);
+    transform-origin: 50% 100%;
+    transition: opacity 0.12s linear, scale 0.12s linear, translate 0.12s linear;
+  }
+  html[data-sfx] .family-photo-frame[data-sp] img {
+    scale: calc(1.16 - var(--e) * 0.08);
+    translate: 0 calc((var(--sp, 0.5) - 0.5) * -7%);
+  }
+  html[data-sfx][data-dm] .family-sig[data-sp] b {
+    clip-path: inset(-30% calc(105% - var(--e) * 115%) -30% -10%);
+    transition: clip-path 0.12s linear;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   ĐẾM NGƯỢC · LẬT BẢNG THEO CUỘN (bản chốt, phương án 4c · 2026-11-17)
+
+   Theo ngón tay như mục Gia đình: không có thời gian chạy, gắn với --sp (usePhoneScrollFx)
+   của ảnh và của thẻ. Cuộn ngược lên thì lui lại y như lúc tới.
+   · Ảnh: trôi sâu trong khung (phóng 1.2×, thị sai ±7%).
+   · Thẻ: nổi lên 60px + rõ dần khi vào 24% dưới màn; gần đỉnh màn trôi lên nhẹ, nhạt còn 50%.
+   · Bốn ô Ngày · Giờ · Phút · Giây lật xuống lần lượt (rotateX −85° → 0) như bảng giờ sân
+     bay, mỗi ô trễ một nhịp. Bảng lật số mỗi giây (.d-flip) giữ nguyên bên trong.
+   Giảm chuyển động / không JS → không có html[data-sfx]: hiện như bản gốc, đứng yên.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+  .countdown-card .cd-unit:nth-of-type(1) { --i: 0; }
+  .countdown-card .cd-unit:nth-of-type(2) { --i: 1; }
+  .countdown-card .cd-unit:nth-of-type(3) { --i: 2; }
+  .countdown-card .cd-unit:nth-of-type(4) { --i: 3; }
+
+  /* Bỏ trạng thái ẩn một-lần (ảnh mờ nhoè, thẻ trễ 0,35 giây), dùng biến cuộn */
+  html[data-sfx] .countdown .countdown-photo[data-sp] { opacity: 1; scale: 1; filter: none; }
+  html[data-sfx] .countdown-photo[data-sp] img { scale: 1.2; translate: 0 calc((var(--sp, 0.5) - 0.5) * -14%); }
+
+  html[data-sfx] .countdown .countdown-card[data-sp] {
+    --e: clamp(0, calc((var(--sp, 0.5) - 0.02) / 0.24), 1);
+    --x: clamp(0, calc((var(--sp, 0.5) - 0.82) / 0.18), 1);
+    opacity: calc(var(--e) - var(--x) * 0.5);
+    transform: none;
+    translate: 0 calc((1 - var(--e)) * 60px - var(--x) * 16px);
+    scale: calc(0.94 + var(--e) * 0.06);
+    transition: opacity 0.12s linear, translate 0.12s linear, scale 0.12s linear;
+  }
+  html[data-sfx] .countdown-card[data-sp] .lbl { opacity: clamp(0, calc(var(--e) * 1.6), 1); }
+  html[data-sfx] .countdown-card[data-sp] .cd-unit {
+    --ei: clamp(0, calc(var(--e) * 1.9 - var(--i) * 0.25), 1);
+    opacity: var(--ei);
+    transform: perspective(520px) rotateX(calc((1 - var(--ei)) * -85deg));
+    transform-origin: 50% 0;
+    transition: opacity 0.12s linear, transform 0.12s linear;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   XÁC NHẬN THAM DỰ · ĐẦU MỤC (bản chốt, phương án 5d · 2026-11-17)
+   Một lần, rồi yên: "XÁC NHẬN THAM DỰ" → "Trân trọng cảm ơn Quý khách!" → đoạn mời hiện nối
+   nhau (nổi 20px + rõ dần) khi cuộn tới lần đầu; cuộn ngược lên mọi thứ đã nằm sẵn.
+   Giảm chuyển động / không JS → không có html.rv-io: hiện sẵn.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+  html.rv-io .rsvp-inner > .rv[data-rv]:not(.rv-in) { opacity: 1; transform: none; }
+  html.rv-io .rsvp-inner > .rv > :is(.eyebrow, h2, .rsvp-lede) { transition: opacity 0.8s var(--ease-rise), translate 0.95s var(--ease-rise); }
+  html.rv-io .rsvp-inner > .rv > h2 { transition-delay: 0.1s; }
+  html.rv-io .rsvp-inner > .rv > .rsvp-lede { transition-delay: 0.25s; }
+  html.rv-io .rsvp-inner > .rv:not(.rv-in) > :is(.eyebrow, h2, .rsvp-lede) { opacity: 0; translate: 0 20px; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   HERO · XẤP ẢNH (bản chốt, phương án 6b · 2026-11-17)
+   PhoneHero ghi transform + opacity lên từng .hm-card trong sự kiện scroll của dải thẻ.
+   Ở đây chỉ: gốc xoay dưới thẻ (xoè như xấp hình) + tách lớp GPU sẵn cho thẻ.
+   Giảm chuyển động: JS không ghi gì → thẻ phẳng như bản gốc.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
+  html[data-dm] .hero--phone .hm-slide > .hm-card {
+    transform-origin: 50% 120%;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+}

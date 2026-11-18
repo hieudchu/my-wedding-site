@@ -79,6 +79,10 @@ export default function FamilySettings() {
     <div>
       <h1>Gia đình · Family</h1>
       <p className="page-desc">Quản lý danh sách thành viên gia đình cô dâu & chú rể</p>
+      <p className="page-desc">
+        Thiệp bố mẹ (/adult) hiện tên theo đúng thứ tự này, hai bên chia đôi dưới nhãn &ldquo;Nhà trai&rdquo; /
+        &ldquo;Nhà gái&rdquo; (không hiện chức danh). Tên dài hơn 24 ký tự sẽ xuống hai dòng trên điện thoại.
+      </p>
 
       {[
         { title: 'Nhà trai · Groom\'s Family', side: 'groom', list: groomMembers },

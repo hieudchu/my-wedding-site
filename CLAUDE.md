@@ -28,6 +28,8 @@ These directories are NOT used by `npm run dev` and must never be edited for pro
   Phone portrait + landscape UI/UX pass. `app.jsx`/`styles/` are generated verbatim from
   `app/src` by its `tools/build-from-production.mjs`; `INTERACTIONS.md` documents every
   control. Its `tools/fetch-data.mjs` forces `opt.v`/`fit.v` = `v` in the copied manifest.
+- `handoff-adult/` — handoff bundle for Claude Design, snapshot of **2026-11-17**: the `/adult`
+  page base build that Claude Design started from. **Stale** since the 2026-11-18 redesign.
 
 ## Key Entry Point
 
@@ -41,6 +43,22 @@ from the admin area.
 - `app/src/main.jsx` — Entry point
 - `app/src/App.jsx` — Guest site root. Section flow:
   **Hero → Family (groom) → Family (bride) → WeddingInfo → Timeline → RSVP → Footer**
+  **`/adult`** (2026-11-17, redesigned 2026-11-18 from the Claude Design bundle
+  `~/Downloads/design_handoff_adult_page`) is a second guest page: the invitation the **parents of
+  both families** send to their colleagues and bosses. Red hero card → one paper invitation card
+  (two columns on desktop) → one album-mounted photo → RSVP (name + attending yes/no + optional
+  message) → footer, plus a floating "Xác nhận tham dự" bubble. No music/timeline/countdown.
+  Lazy route in `main.jsx`, code in `app/src/adult/` (`AdultApp.jsx`, `AdultRSVP.jsx`,
+  `AdultDecor.jsx` SVG frame/sprig/seal, `useAdultScrollFx.js`, `adult.css` with `a-` classes, no
+  `PHONE_QUERY`; motion flags live on `.a-page`, never on `html`). Scroll with `adultScrollTo`,
+  never `scrollIntoView` (Zalo webview / iframes scroll the parent). The bubble is measured with
+  `getBoundingClientRect` on `scroll`, not IntersectionObserver. Its own text keys
+  `adult_venue_title|hall|address`, `adult_party_time` (migration `20261118000000`) fall back to
+  the shared keys when empty. Writes `rsvps` rows with `audience = 'adult'` and **also records
+  declines** (`attending = false`); admin lists them in their own section **`/admin/rsvp-adult`**
+  (`AdultRSVPList.jsx`: merges re-sends by folded name, CSV export, the four text keys); the main
+  "Khách xác nhận" tab shows `audience = 'guest'` only. It shares `index.html`, so its link
+  preview is the main site's.
   There is **no opening gate** — it was removed on 2026-11-02 for all screens including
   desktop. Section ids: `hero`, `groom`, `bride`, `details`, `timeline`, `rsvp` (no `home`).
 - `app/src/components/` — One component per section file
@@ -286,6 +304,11 @@ Tables: `site_config`, `family_members`, `timeline_events`, `rsvps`, `wishes`,
   (now disabled; there is exactly one admin account), so never rely on "logged in"
   alone. The Storage `media` write policies use `is_admin()` too (migration
   `20261111000100`); before that, any self-registered user could delete every photo.
+- `rsvps.side` and `guest_count` are nullable since migration `20261117000000`. Until then they
+  were still NOT NULL, so a main-site RSVP without a side or guest count failed silently (guests
+  saw the thank-you card, the row was lost). `audience` is `'guest'` (main page) or `'adult'`.
+  `rsvp_summary` groups adult rows as side `'adult'` (each attending row = 1 guest) and has a
+  `declined` column.
 - `rsvps` keeps its original columns (`guest_count` is an **integer**). "Trên 10 người"
   is stored as `guest_count = 10` plus `guests_over_10 = true`. The form's "Ghi chú"
   field reuses the existing `message` column.

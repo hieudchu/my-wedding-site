@@ -75,6 +75,7 @@ export default function RSVPList() {
           .from('rsvps')
           .select('id, created_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden, called_at')
           .eq('attending', true)
+          .eq('audience', 'guest') // khách trang /adult có mục riêng (AdultRSVPList)
           .order('created_at', { ascending: false }),
         supabase.from('rsvp_summary').select('*'),
       ]);
@@ -172,6 +173,7 @@ export default function RSVPList() {
 
   // Số liệu theo bên lấy từ view rsvp_summary (chỉ tính dòng không ẩn)
   const stat = (key) => summary
+    .filter((s) => s.side !== 'adult') // dòng của trang /adult tính ở mục riêng
     .filter((s) => key === 'all' || s.side === key)
     .reduce((a, s) => ({
       responses: a.responses + Number(s.responses),

@@ -9,6 +9,7 @@ import FamilySettings from './sections/FamilySettings';
 import TimelineSettings from './sections/TimelineSettings';
 import MediaManager from './sections/MediaManager';
 import RSVPList from './sections/RSVPList';
+import AdultRSVPList from './sections/AdultRSVPList';
 import WishList from './sections/WishList';
 import './admin.css';
 import './admin-isolation.css';
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { path: '/admin/media', label: 'Media · Ảnh & nhạc', icon: '&#9733;' },
   { divider: true },
   { path: '/admin/rsvp', label: 'Khách xác nhận · RSVP', icon: '&#9993;' },
+  { path: '/admin/rsvp-adult', label: 'Khách bố mẹ mời · RSVP adult', icon: '&#10059;' },
   { path: '/admin/wishes', label: 'Lời chúc · Wishes', icon: '&#9734;' },
 ];
 
@@ -54,7 +56,7 @@ export default function AdminApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
   // Hai tab danh sách được rộng hơn các tab cài đặt (.admin-main.wide)
-  const wide = location.pathname === '/admin/rsvp' || location.pathname === '/admin/wishes';
+  const wide = ['/admin/rsvp', '/admin/rsvp-adult', '/admin/wishes'].includes(location.pathname);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -83,6 +85,7 @@ export default function AdminApp() {
     if (path === '/admin/timeline') return <TimelineSettings />;
     if (path === '/admin/media') return <MediaManager />;
     if (path === '/admin/rsvp') return <RSVPList />;
+    if (path === '/admin/rsvp-adult') return <AdultRSVPList adminConfig={adminConfig} />;
     if (path === '/admin/wishes') return <WishList />;
     return <GeneralSettings adminConfig={adminConfig} />;
   };
@@ -101,6 +104,7 @@ export default function AdminApp() {
         </button>
         <nav className="admin-quicktabs" aria-label="Chuyển nhanh">
           <Link to="/admin/rsvp" className={location.pathname === '/admin/rsvp' ? 'active' : ''}>Khách xác nhận</Link>
+          <Link to="/admin/rsvp-adult" className={location.pathname === '/admin/rsvp-adult' ? 'active' : ''}>Bố mẹ mời</Link>
           <Link to="/admin/wishes" className={location.pathname === '/admin/wishes' ? 'active' : ''}>Lời chúc</Link>
         </nav>
       </header>

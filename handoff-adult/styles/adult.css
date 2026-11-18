@@ -1,0 +1,238 @@
+/* ═══ Trang /adult · thiệp bố mẹ hai bên gửi đồng nghiệp, cấp trên (2026-11-17) ═══
+   Chỉ dùng class `a-`, nạp lười cùng AdultApp.jsx. Không đụng PHONE_QUERY: trang một
+   cột, co giãn bằng clamp() từ 320px tới desktop. Token màu / chữ lấy từ globals.css.
+   Bản dựng nền để thiết kế tiếp với Claude Design (handoff-adult/). */
+
+.a-page {
+  --a-red: var(--red, #7E1416);
+  --a-gold: var(--gold, #A8803C);
+  --a-gold-soft: var(--gold-soft, #D8B778);
+  --a-ink: var(--ink, #33231F);
+  --a-ink-soft: var(--ink-soft, #6B564F);
+  --a-card: var(--card, #FFFCF5);
+  --a-play: 'Playfair Display', var(--serif);
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(16px, 4vw, 48px) 16px 40px;
+  /* Như nền trang chính (sections.css): vân xám hoà vào màu giấy bằng overlay. Thiếu
+     blend-mode thì ra nền XÁM. Gắn lên khối này chứ không lên body. */
+  background:
+    url('../assets/background/paper-floral.jpg') center top / min(100%, 900px) auto repeat,
+    var(--paper-2, #F6EDE0);
+  background-blend-mode: overlay, normal;
+  color: var(--a-ink);
+  font-family: var(--serif);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 6vw, 56px);
+}
+
+/* ── Thẻ thiệp ─────────────────────────────────────────────── */
+.a-card {
+  position: relative;
+  width: min(100%, 600px);
+  padding: clamp(36px, 8vw, 64px) clamp(22px, 7vw, 56px) clamp(32px, 7vw, 52px);
+  background: var(--a-card);
+  border: 1px solid rgba(168, 128, 60, 0.45);
+  outline: 1px solid rgba(168, 128, 60, 0.22);
+  outline-offset: -10px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 24px 60px -30px rgba(94, 15, 17, 0.35);
+  text-align: center;
+}
+.a-corner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--a-gold);
+  pointer-events: none;
+}
+.a-corner.tl { top: 18px; left: 18px; border-right: 0; border-bottom: 0; }
+.a-corner.tr { top: 18px; right: 18px; border-left: 0; border-bottom: 0; }
+.a-corner.bl { bottom: 18px; left: 18px; border-right: 0; border-top: 0; }
+.a-corner.br { bottom: 18px; right: 18px; border-left: 0; border-top: 0; }
+
+.a-seal { width: 56px; height: auto; display: block; margin: 0 auto 14px; }
+
+.a-eyebrow {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--a-gold);
+}
+
+.a-houses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 26px 0 22px;
+  padding: 18px 0;
+  border-top: 1px solid rgba(168, 128, 60, 0.3);
+  border-bottom: 1px solid rgba(168, 128, 60, 0.3);
+}
+.a-house { display: flex; flex-direction: column; gap: 6px; }
+.a-house + .a-house { border-left: 1px solid rgba(168, 128, 60, 0.3); }
+.a-house-label {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--a-red);
+  margin-bottom: 2px;
+}
+.a-house-name { font-family: var(--a-play); font-size: clamp(15px, 3.9vw, 18px); line-height: 1.35; }
+.a-house-name small { font-size: 0.8em; color: var(--a-ink-soft); }
+.a-dim { color: var(--muted, #8C7A72); }
+
+.a-lead, .a-invite, .a-honor {
+  margin: 0;
+  font-size: clamp(18px, 4.6vw, 21px);
+  line-height: 1.5;
+  color: var(--a-ink-soft);
+}
+.a-lead { font-style: italic; }
+
+.a-couple {
+  margin: 18px 0 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--a-play);
+  font-weight: 400;
+  color: var(--a-red);
+}
+.a-person { display: flex; flex-direction: column; font-size: clamp(26px, 7.4vw, 38px); line-height: 1.15; }
+.a-person small {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--a-gold);
+  margin-bottom: 4px;
+}
+.a-amp { font-family: var(--serif); font-style: italic; font-size: clamp(24px, 6vw, 30px); color: var(--a-gold); }
+
+.a-invite strong { font-weight: 600; color: var(--a-ink); }
+
+.a-when { margin: 24px 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.a-when-time { font-family: var(--sans); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--a-ink-soft); }
+.a-when-date { font-family: var(--a-play); font-size: clamp(30px, 8.4vw, 42px); letter-spacing: 0.06em; color: var(--a-ink); }
+
+.a-where { display: flex; flex-direction: column; gap: 4px; }
+.a-where-name { font-family: var(--a-play); font-size: clamp(19px, 5vw, 22px); color: var(--a-red); }
+.a-where-addr { font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--a-ink-soft); }
+
+.a-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 26px 0 22px; }
+
+.a-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+.a-btn:active { transform: scale(0.98); }
+.a-btn-red { background: var(--a-red); color: #FFF8EE; }
+.a-btn-red:hover { background: var(--red-deep, #5E0F11); }
+.a-btn-red:disabled { background: #C9B6AE; cursor: not-allowed; }
+.a-btn-ghost { background: transparent; color: var(--a-red); border-color: rgba(126, 20, 22, 0.4); }
+.a-btn-ghost:hover { background: rgba(126, 20, 22, 0.06); }
+
+.a-honor { font-size: clamp(16px, 4.2vw, 18px); font-style: italic; }
+
+/* ── Ảnh ───────────────────────────────────────────────────── */
+.a-photo { margin: 0; width: min(100%, 520px); }
+.a-photo-frame {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 999px 999px 6px 6px; /* vòm như khung ảnh trang chính */
+  border: 6px solid var(--a-card);
+  box-shadow: 0 20px 50px -28px rgba(51, 35, 31, 0.5);
+}
+.a-photo-frame img, .a-photo-frame .ph { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Xác nhận ──────────────────────────────────────────────── */
+.a-rsvp {
+  width: min(100%, 560px);
+  text-align: center;
+  scroll-margin-top: 16px;
+}
+.a-rsvp-title { margin: 10px 0 8px; font-family: var(--a-play); font-weight: 400; font-size: clamp(26px, 7vw, 34px); color: var(--a-red); }
+.a-rsvp-lead { margin: 0 auto 22px; max-width: 30em; font-size: 18px; line-height: 1.5; color: var(--a-ink-soft); }
+
+.a-form, .a-thanks {
+  text-align: left;
+  background: var(--a-card);
+  border: 1px solid rgba(168, 128, 60, 0.35);
+  padding: clamp(20px, 6vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.a-field { display: flex; flex-direction: column; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; position: relative; }
+.a-label { font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--a-ink); padding: 0; }
+.a-label i { color: var(--a-red); font-style: normal; }
+.a-label small { font-weight: 400; color: var(--muted, #8C7A72); }
+.a-field input, .a-field textarea {
+  font: 16px/1.4 var(--sans); /* ≥ 16px: iOS không phóng to khi chạm */
+  color: var(--a-ink);
+  background: #fff;
+  border: 1px solid rgba(107, 86, 79, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-height: 48px;
+  width: 100%;
+}
+.a-field textarea { resize: vertical; min-height: 96px; }
+.a-field input:focus, .a-field textarea:focus { outline: 2px solid rgba(126, 20, 22, 0.35); outline-offset: 1px; border-color: var(--a-red); }
+.a-count { align-self: flex-end; font-family: var(--sans); font-size: 12px; color: var(--muted, #8C7A72); }
+
+.a-choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.a-opt {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(107, 86, 79, 0.3);
+  background: #fff;
+  font: 15px/1.3 var(--sans);
+  color: var(--a-ink);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.a-opt.on { background: var(--a-red); border-color: var(--a-red); color: #FFF8EE; }
+.a-opt, .a-btn, .a-link { -webkit-tap-highlight-color: transparent; }
+.a-opt:focus-visible, .a-btn:focus-visible { outline: 2px solid rgba(126, 20, 22, 0.45); outline-offset: 2px; }
+@media (max-width: 360px) { .a-choice-row { grid-template-columns: 1fr; } }
+
+.a-alert { margin: 0; padding: 12px 14px; border-radius: 10px; background: #F7EAEA; color: #7E1416; font: 14px/1.5 var(--sans); }
+.a-submit { width: 100%; min-height: 52px; font-size: 16px; }
+.a-hint { margin: -8px 0 0; text-align: center; font: 13px/1.4 var(--sans); color: var(--muted, #8C7A72); }
+
+.a-thanks { text-align: center; align-items: center; }
+.a-thanks img { width: 48px; }
+.a-thanks h3 { margin: 0; font-family: var(--a-play); font-weight: 400; font-size: 24px; color: var(--a-red); }
+.a-thanks p { margin: 0; font-size: 18px; line-height: 1.5; color: var(--a-ink-soft); }
+.a-link { background: none; border: 0; padding: 12px; font: 14px var(--sans); color: var(--a-red); text-decoration: underline; cursor: pointer; }
+
+/* ── Chân trang ────────────────────────────────────────────── */
+.a-foot { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 8px; }
+.a-foot img { width: 40px; opacity: 0.9; }
+.a-foot p { margin: 0; font-size: 18px; font-style: italic; color: var(--a-ink-soft); }
+.a-foot span { font-family: var(--sans); font-size: 12px; letter-spacing: 0.2em; color: var(--a-gold); }
+
+@media (prefers-reduced-motion: reduce) {
+  .a-btn, .a-opt { transition: none; }
+}

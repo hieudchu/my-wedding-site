@@ -1,0 +1,89 @@
+/* Mục "Khách bố mẹ mời" (trang /adult, 2026-11-18). Dùng lại khung rw- của admin.css,
+   chỉ thêm lưới riêng ra- (năm cột: tên · trạng thái · lời nhắn · giờ · thao tác). */
+.rw-sides.ra-sides { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ra-sides .rw-side-label { white-space: normal; }
+
+.ra-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) 112px minmax(200px, 2fr) 96px 130px;
+  gap: 0 16px;
+  padding: 12px 16px;
+  align-items: start;
+  border-top: 1px solid #f0eded;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ra-head {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7F706C;
+  font-weight: 500;
+  border-top: none;
+  border-bottom: 1px solid #e8e2e0;
+}
+.ra-group:first-of-type .ra-row:first-child { border-top: none; }
+.ra-row:hover { background: #fcfbfa; }
+.ra-row.is-hidden { background: #f6f3f2; color: #8F817D; }
+.ra-row.is-past { background: #faf8f7; color: #7F706C; padding-left: 32px; font-size: 13px; }
+.ra-row.is-past strong { font-weight: 500; }
+
+.ra-name { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.ra-name strong { font-weight: 600; overflow-wrap: anywhere; }
+.ra-edits {
+  appearance: none; border: none; background: none; padding: 0; font: inherit;
+  font-size: 12px; color: #9C6567; cursor: pointer; text-decoration: underline dotted;
+}
+
+.ra-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ra-badge.yes { background: #7E1416; color: #FBF1DF; }
+.ra-badge.no { background: #EDE2D8; color: #6F5B53; }
+
+.ra-note {
+  appearance: none; border: none; background: none; padding: 0; margin: 0;
+  font: inherit; font-size: 13.5px; color: inherit; text-align: left;
+  min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer;
+}
+.ra-note.open { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ra-note.empty { color: #A89996; cursor: default; }
+.ra-time { white-space: nowrap; font-variant-numeric: tabular-nums; color: #7F706C; font-size: 13px; }
+
+.ra-text { margin-top: 28px; }
+.ra-text-note { font-size: 13px; color: #7F706C; line-height: 1.5; margin: -4px 0 16px; }
+.ra-text-warn { font-size: 13px; color: #9C2B2E; margin: 0 0 12px; }
+.ra-field-err { font-size: 12.5px; color: #9C2B2E; margin: 6px 0 0; }
+.ra-field-help { font-size: 12.5px; color: #7F706C; margin: 6px 0 0; line-height: 1.5; }
+.rw-head-act a.admin-btn { text-decoration: none; display: inline-flex; align-items: center; }
+.rw-head-act { flex-wrap: wrap; justify-content: flex-end; }
+
+@media (max-width: 1100px) {
+  .ra-head { display: none; }
+  .ra-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name status" "note note" "time act";
+    gap: 8px 12px;
+  }
+  .ra-name { grid-area: name; }
+  .ra-status { grid-area: status; }
+  .ra-note { grid-area: note; }
+  .ra-note.empty { display: none; }
+  .ra-time { grid-area: time; align-self: center; }
+  .ra-row .rw-g-act { grid-area: act; }
+}
+@media (max-width: 768px) {
+  .ra-group { background: white; border: 1px solid #e8e2e0; border-radius: 12px; overflow: hidden; }
+  .ra-row { padding: 14px; border-top: none; }
+  .ra-row.is-past { border-top: 1px solid #f0eded; padding-left: 24px; }
+  .ra-note { background: #faf8f7; border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+  .ra-row .rw-btn { min-height: 40px; }
+  .rw-head-act { justify-content: stretch; }
+}

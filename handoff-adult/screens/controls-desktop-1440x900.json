@@ -1,0 +1,118 @@
+{
+ "trang": [
+  {
+   "tag": "a",
+   "cls": "a-btn a-btn-ghost",
+   "label": "Xem bản đồ",
+   "w": 137,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "a",
+   "cls": "a-btn a-btn-red",
+   "label": "Xác nhận tham dự",
+   "w": 185,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "input",
+   "cls": "",
+   "label": "Ví dụ: Nguyễn Văn An",
+   "w": 494,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-opt ",
+   "label": "Tôi sẽ tham dự",
+   "w": 242,
+   "h": 52,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-opt ",
+   "label": "Rất tiếc, tôi không thể đến",
+   "w": 242,
+   "h": 52,
+   "disabled": false
+  },
+  {
+   "tag": "textarea",
+   "cls": "",
+   "label": "Lời chúc hoặc điều Quý khách muốn nhắn",
+   "w": 494,
+   "h": 96,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-btn a-btn-red a-submit",
+   "label": "Gửi xác nhận",
+   "w": 494,
+   "h": 52,
+   "disabled": true
+  }
+ ],
+ "form": [
+  {
+   "tag": "a",
+   "cls": "a-btn a-btn-ghost",
+   "label": "Xem bản đồ",
+   "w": 137,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "a",
+   "cls": "a-btn a-btn-red",
+   "label": "Xác nhận tham dự",
+   "w": 185,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "input",
+   "cls": "",
+   "label": "Ví dụ: Nguyễn Văn An",
+   "w": 494,
+   "h": 48,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-opt on",
+   "label": "Tôi sẽ tham dự",
+   "w": 242,
+   "h": 52,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-opt ",
+   "label": "Rất tiếc, tôi không thể đến",
+   "w": 242,
+   "h": 52,
+   "disabled": false
+  },
+  {
+   "tag": "textarea",
+   "cls": "",
+   "label": "Chúc hai cháu trăm năm hạnh phúc. Gia đì",
+   "w": 494,
+   "h": 96,
+   "disabled": false
+  },
+  {
+   "tag": "button",
+   "cls": "a-btn a-btn-red a-submit",
+   "label": "Gửi xác nhận",
+   "w": 494,
+   "h": 52,
+   "disabled": false
+  }
+ ]
+}

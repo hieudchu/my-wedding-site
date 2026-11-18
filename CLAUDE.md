@@ -55,7 +55,10 @@ from the admin area.
   `getBoundingClientRect` on `scroll`, not IntersectionObserver. Its own text keys
   `adult_venue_title|hall|address`, `adult_party_time` (migration `20261118000000`) fall back to
   the shared keys when empty. Writes `rsvps` rows with `audience = 'adult'` and **also records
-  declines** (`attending = false`); admin lists them in their own section **`/admin/rsvp-adult`**
+  declines** (`attending = false`) through the rpc `adult_rsvp_save` (migration `20261118000100`):
+  the browser keeps a random `edit_token` in `localStorage['hm-adult-rsvp']`, so a guest who changes
+  their mind updates their row (`updated_at`) instead of adding one, and on return sees the thank-you
+  card with "Sửa lại xác nhận". Anon cannot insert a row with `edit_token` set directly; admin lists them in their own section **`/admin/rsvp-adult`**
   (`AdultRSVPList.jsx`: merges re-sends by folded name, CSV export, the four text keys); the main
   "Khách xác nhận" tab shows `audience = 'guest'` only. Its link preview is its own: `vite.config.js`
   copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-2.jpg`,

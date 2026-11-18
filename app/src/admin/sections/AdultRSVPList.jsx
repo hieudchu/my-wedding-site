@@ -134,7 +134,7 @@ export default function AdultRSVPList({ adminConfig }) {
     try {
       const { data, error } = await supabase
         .from('rsvps')
-        .select('id, created_at, name, attending, message, hidden')
+        .select('id, created_at, updated_at, name, attending, message, hidden')
         .eq('audience', 'adult')
         .order('created_at', { ascending: false });
       if (data) setRows(data);
@@ -203,7 +203,7 @@ export default function AdultRSVPList({ adminConfig }) {
   const exportCsv = () => {
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [['ho_ten', 'trang_thai', 'loi_nhan', 'gui_luc'].join(',')]
-      .concat(visible.map((r) => [r.name, r.attending ? 'Tham dự' : 'Không đến', r.message || '', timeVN(r.created_at)].map(cell).join(',')));
+      .concat(visible.map((r) => [r.name, r.attending ? 'Tham dự' : 'Không đến', r.message || '', timeVN(r.updated_at || r.created_at)].map(cell).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -242,7 +242,9 @@ export default function AdultRSVPList({ adminConfig }) {
         >
           {note || '—'}
         </button>
-        <div className="ra-time">{timeVN(r.created_at)}</div>
+        <div className="ra-time" title={r.updated_at ? `Gửi lần đầu ${timeVN(r.created_at)}` : undefined}>
+          {timeVN(r.updated_at || r.created_at)}{r.updated_at && <small> · đã sửa</small>}
+        </div>
         <div className="rw-g-act">
           <button type="button" className="rw-btn" onClick={() => toggleHidden(r)}>{r.hidden ? 'Hiện lại' : 'Ẩn'}</button>
           <button type="button" className="rw-btn danger" onClick={() => remove(r)}>Xoá</button>

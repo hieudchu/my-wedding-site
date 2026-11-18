@@ -7,12 +7,31 @@ import { adultNavH } from './useAdultScrollFx';
 const NOTE_MAX = 300; // = ràng buộc rsvps_message_len
 const isRateLimited = (err) => err?.code === 'P0001' && err?.message === 'rate_limited';
 
+// Lần gửi trước trên máy này: { t: mã sửa, name, attending, note }. Mã t gửi kèm mỗi lần → hàm
+// adult_rsvp_save sửa đúng dòng cũ thay vì thêm dòng mới (migration 20261118000100).
+const STORE_KEY = 'hm-adult-rsvp';
+const loadSaved = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    return v && typeof v.t === 'string' ? v : null;
+  } catch { return null; }
+};
+const store = (v) => { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch { /* chế độ riêng tư */ } };
+const newToken = () => {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
+
 /**
  * Xác nhận của trang /adult: chỉ họ tên + tham dự / không + lời nhắn tuỳ ý.
  * Không hỏi SĐT, số người, nhà trai / nhà gái (chủ thiệp chọn, 2026-11-17).
  *
- * Ghi vào `rsvps` với audience = 'adult'; side / guest_count / phone để trống.
- * Lời TỪ CHỐI cũng được ghi (attending = false). Không gọi .select() sau insert.
+ * Ghi vào `rsvps` (audience = 'adult') qua rpc adult_rsvp_save; side / guest_count / phone trống.
+ * Lời TỪ CHỐI cũng được ghi (attending = false). Máy đã gửi thì lần sau mở trang thấy thẻ cảm ơn;
+ * "Sửa lại xác nhận" rồi gửi → sửa dòng cũ (theo mã trong localStorage), không thêm dòng.
  * Lỗi mạng: vẫn cảm ơn, ghi log; bị chặn spam (rate_limited) thì báo thử lại sau.
  *
  * Thiết kế 2026-11-17: hai lựa chọn là thẻ có chấm tròn (radio), xếp dọc; nút Gửi + dòng
@@ -65,11 +84,14 @@ function AEnvelope({ config }) {
 }
 
 export default function AdultRSVP({ config, venueTitle, partyTime }) {
-  const [name, setName] = useState('');
-  const [attending, setAttending] = useState(null); // true | false | null
-  const [note, setNote] = useState('');
+  const [saved] = useState(loadSaved);
+  const [name, setName] = useState(saved?.name || '');
+  const [attending, setAttending] = useState(typeof saved?.attending === 'boolean' ? saved.attending : null); // true | false | null
+  const [note, setNote] = useState(saved?.note || '');
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(null); // null | 'yes' | 'no'
+  const [sent, setSent] = useState(saved?.name && typeof saved.attending === 'boolean' ? (saved.attending ? 'yes' : 'no') : null); // null | 'yes' | 'no'
+  const [hasSent, setHasSent] = useState(Boolean(saved?.name)); // máy này đã gửi → nút "Cập nhật"
+  const token = useRef(saved?.t || null);
   const [limited, setLimited] = useState(false);
   const [sendN, setSendN] = useState(0); // đếm lần gửi → key cho phong thư
   const sectionRef = useRef(null);
@@ -118,18 +140,18 @@ export default function AdultRSVP({ config, venueTitle, partyTime }) {
     if (sending || !ready) return;
     setSending(true);
     setLimited(false);
-    const row = {
-      name: name.trim().slice(0, 120),
-      attending,
-      audience: 'adult',
-      message: note.trim().slice(0, NOTE_MAX) || null,
-    };
+    if (!token.current) token.current = newToken();
+    const rec = { t: token.current, name: name.trim().slice(0, 120), attending, note: note.trim().slice(0, NOTE_MAX) };
     try {
-      const { error } = await supabase.from('rsvps').insert(row);
+      const { error } = await supabase.rpc('adult_rsvp_save', {
+        p_token: rec.t, p_name: rec.name, p_attending: rec.attending, p_message: rec.note || null,
+      });
       if (error) throw error;
+      store(rec);
+      setHasSent(true);
     } catch (err) {
       if (isRateLimited(err)) { setSending(false); setLimited(true); return; }
-      console.error('[adult-rsvp] insert failed', err);
+      console.error('[adult-rsvp] save failed', err);
     }
     setSending(false);
     keepH();
@@ -237,7 +259,7 @@ export default function AdultRSVP({ config, venueTitle, partyTime }) {
 
             <div className="a-send">
               <button type="submit" className="a-btn a-btn-red a-submit" disabled={!ready || sending}>
-                {sending ? 'Đang gửi…' : 'Gửi xác nhận'}
+                {sending ? 'Đang gửi…' : hasSent ? 'Cập nhật xác nhận' : 'Gửi xác nhận'}
               </button>
               {!ready && <p className="a-hint">{missing}</p>}
             </div>

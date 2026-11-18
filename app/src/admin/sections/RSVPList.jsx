@@ -73,7 +73,7 @@ export default function RSVPList() {
       const [{ data, error }, { data: sum, error: sumError }] = await Promise.all([
         supabase
           .from('rsvps')
-          .select('id, created_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden, called_at')
+          .select('id, created_at, updated_at, name, side, guest_count, guests_over_10, phone, phone_e164, message, hidden, called_at')
           .eq('attending', true)
           .eq('audience', 'guest') // khách trang /adult có mục riêng (AdultRSVPList)
           .order('created_at', { ascending: false }),
@@ -205,11 +205,13 @@ export default function RSVPList() {
         { header: 'SĐT', width: 16 },
         { header: 'Ghi chú', width: 40, wrap: true },
         { header: 'Đã gọi', width: 17 },
+        { header: 'Sửa lúc', width: 17 },
       ], visible.map((r) => [
         excelDateVN(r.created_at), r.name, SIDE_LABEL[r.side] || '',
         r.guests_over_10 ? { value: 10, format: '"Trên "0' } : (r.guest_count ?? null),
         r.phone || '', r.message || '',
         r.called_at ? excelDateVN(r.called_at) : null,
+        r.updated_at ? excelDateVN(r.updated_at) : null,
       ]));
       toast('Đã tải file Excel');
     } catch (err) {
@@ -374,6 +376,7 @@ export default function RSVPList() {
                   <span className="rw-g-meta">
                     <span className={`rw-tag side-${r.side || 'none'}`}>{SIDE_LABEL[r.side] || 'Chưa chọn bên'}</span>
                     <span>{timeVN(r.created_at)}</span>
+                    {r.updated_at && <span className="rw-edited">Sửa {timeVN(r.updated_at)}</span>}
                     {r.called_at && <span className="rw-g-called">Đã gọi {timeVN(r.called_at)}</span>}
                   </span>
                 </div>

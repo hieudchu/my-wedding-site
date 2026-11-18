@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
 import { downloadExcel, excelDateVN, datedName } from '../exportExcel';
+import './RSVPList.css'; // .rw-edited
 
 const TZ = 'Asia/Ho_Chi_Minh';
 const PAGE = 100;   // phân trang ngay trên trình duyệt — dữ liệu vẫn tải một lần
@@ -71,7 +72,7 @@ export default function WishList() {
     try {
       const { data, error } = await supabase
         .from('wishes')
-        .select('id, created_at, name, message, is_preset, hidden')
+        .select('id, created_at, updated_at, name, message, is_preset, hidden')
         .order('created_at', { ascending: false });
       if (data) setRows(data);
       ok = !error;
@@ -178,7 +179,8 @@ export default function WishList() {
         { header: 'Họ tên', width: 26 },
         { header: 'Lời chúc', width: 70, wrap: true },
         { header: 'Soạn sẵn', width: 10 },
-      ], visible.map((w) => [excelDateVN(w.created_at), w.name || '', w.message, w.is_preset ? 'Có' : '']));
+        { header: 'Sửa lúc', width: 17 },
+      ], visible.map((w) => [excelDateVN(w.created_at), w.name || '', w.message, w.is_preset ? 'Có' : '', w.updated_at ? excelDateVN(w.updated_at) : null]));
       toast('Đã tải file Excel');
     } catch (err) {
       console.error('[admin] xuất Excel lỗi', err);
@@ -341,7 +343,10 @@ export default function WishList() {
                 className={`rw-wt-row${isOpen ? ' open' : ''}${w.hidden ? ' is-hidden' : ''}${w.is_preset ? ' preset' : ' own'}`}
                 onClick={() => onRowClick(w)}
               >
-                <div className="rw-wt-time">{timeVN(w.created_at)}</div>
+                <div className="rw-wt-time">
+                  {timeVN(w.created_at)}
+                  {w.updated_at && <span className="rw-edited">Sửa {timeVN(w.updated_at)}</span>}
+                </div>
                 <div className="rw-wt-name">{w.name ? w.name : <span className="rw-dim">Không ghi tên</span>}</div>
                 <div className="rw-wt-msg">
                   <p className="rw-wt-text">{w.message}</p>

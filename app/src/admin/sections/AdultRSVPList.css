@@ -87,3 +87,6 @@
   .ra-row .rw-btn { min-height: 40px; }
   .rw-head-act { justify-content: stretch; }
 }
+
+/* Khách sửa lại (updated_at): "Sửa …" dưới giờ gửi, cùng màu với hai tab kia (.rw-edited) */
+.ra-time .rw-edited { display: block; margin-top: 2px; font-size: 11.5px; color: #8A5A12; }

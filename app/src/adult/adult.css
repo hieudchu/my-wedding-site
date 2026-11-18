@@ -23,11 +23,10 @@
   min-height: 100vh;
   min-height: 100svh;
   padding-top: var(--a-nav-h);
-  /* Như nền trang chính: vân xám hoà vào màu giấy bằng overlay (thiếu blend → nền XÁM) */
+  /* Như nền trang chính: ảnh vân đã trộn sẵn màu giấy (xem ghi chú ở body, sections.css) */
   background:
-    url('/assets/background/paper-floral.jpg') center top / min(100%, 900px) auto repeat,
+    url('/assets/background/paper-floral-paper.jpg?v=20261118a') center top / min(100%, 900px) auto repeat,
     var(--paper-2, #F6EDE0);
-  background-blend-mode: overlay, normal;
   color: var(--a-ink);
   font-family: var(--a-play);
   font-variant-numeric: lining-nums;

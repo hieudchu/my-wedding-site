@@ -1601,12 +1601,14 @@
      Một lớp hoa văn DUY NHẤT đặt trên body, các section sáng để trong suốt → hoa văn
      chạy liền mạch qua ranh giới giữa các section. Một màu nền chung --paper-2.
      Ô lặp = ảnh khách gửi + bản lật dọc → nối liền theo chiều dọc.
-     Ảnh là bản đồ nổi xám trung tính 128, trộn overlay nên giữ màu nền. */
+     paper-floral-paper.jpg = paper-floral.jpg (bản đồ nổi xám 128) đã trộn SẴN overlay với
+     #F6EDE0. KHÔNG dùng lại background-blend-mode ở đây: WebKit iOS bỏ qua phép trộn khi
+     phần tử cao hơn ~3000px → cả trang hiện ảnh XÁM gốc (iPhone, 11/2026). Đổi --paper-2
+     thì phải trộn lại ảnh. Footer/hero thấp nên vẫn trộn overlay được. */
   body {
     background:
-      url('/assets/background/paper-floral.jpg?v=20261101u') center top / 100% auto repeat-y,
+      url('/assets/background/paper-floral-paper.jpg?v=20261118a') center top / 100% auto repeat-y,
       var(--paper-2);
-    background-blend-mode: overlay, normal;
   }
   .family,
   .family.bride,
@@ -2780,9 +2782,8 @@
   @media not all and (hover: none) and (pointer: coarse), (min-width: 1440px) {
     body {
       background:
-        url('/assets/background/paper-floral.jpg?v=20261101u') center top / 100% auto repeat-y,
+        url('/assets/background/paper-floral-paper.jpg?v=20261118a') center top / 100% auto repeat-y,
         var(--paper-2);
-      background-blend-mode: overlay, normal;
     }
     .family,
     .family.bride,

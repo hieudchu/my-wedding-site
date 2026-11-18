@@ -269,6 +269,13 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
   every 2 days so the project is not paused after 7 idle days. It needs no secrets — it
   reads the URL and publishable key from the live `index.html`.
 
+- **Page background is a pre-blended image** (2026-11-18): `body` (and `/adult` `.a-page`) use
+  `paper-floral-paper.jpg` / `paper-floral-desktop-paper.jpg` = the grey relief maps
+  `paper-floral*.jpg` already overlay-blended onto `#F6EDE0`. Never go back to
+  `background-blend-mode` on a tall element: iOS WebKit drops the blend on elements taller than
+  ~3000px and every iPhone showed the raw grey texture. Changing `--paper-2` means re-baking both
+  images. Short elements (hero, footer, cards) still use `overlay` safely.
+
 Two traps found during the mobile port:
 
 - `usePhoneReveal` must also watch `[data-rv]` nodes added after first render (timeline

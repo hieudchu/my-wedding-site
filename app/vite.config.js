@@ -29,7 +29,9 @@ function adultHtml() {
       const meta = (sel, v) => swap(new RegExp(`(<meta ${sel} content=")[^"]*(")`), `$1${attr(v)}$2`);
       swap(/<title>[^<]*<\/title>/, `<title>${ADULT_TITLE.replace(/&/g, '&amp;')}</title>`);
       meta('name="description"', ADULT_DESC);
-      meta('property="og:url"', `${SITE}/adult`);
+      // Zalo gộp bản xem trước theo og:url. /adult từng bị lưu kèm thẻ trang chính (2026-11-18,
+      // trước khi adult.html lên), nên og:url trỏ địa chỉ mới /thiep-moi (cùng trang) để Zalo đọc lại.
+      meta('property="og:url"', `${SITE}/thiep-moi`);
       meta('property="og:title"', ADULT_SHARE_TITLE);
       meta('property="og:description"', ADULT_DESC);
       meta('property="og:image"', ADULT_IMG);

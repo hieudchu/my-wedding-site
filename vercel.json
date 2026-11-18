@@ -13,6 +13,14 @@
       "destination": "/adult.html"
     },
     {
+      "source": "/thiep-moi",
+      "destination": "/adult.html"
+    },
+    {
+      "source": "/thiep-moi/",
+      "destination": "/adult.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

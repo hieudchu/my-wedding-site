@@ -62,7 +62,8 @@ from the admin area.
   (`AdultRSVPList.jsx`: merges re-sends by folded name, CSV export, the four text keys); the main
   "Khách xác nhận" tab shows `audience = 'guest'` only. Its link preview is its own: `vite.config.js`
   copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-2.jpg`,
-  and `vercel.json` rewrites `/adult` to it (before the SPA catch-all).
+  and `vercel.json` rewrites `/adult` to it (before the SPA catch-all). `/thiep-moi` is the same page
+  and is the preview's `og:url`: Zalo had cached `/adult` with the main site's card.
   There is **no opening gate** — it was removed on 2026-11-02 for all screens including
   desktop. Section ids: `hero`, `groom`, `bride`, `details`, `timeline`, `rsvp` (no `home`).
 - `app/src/components/` — One component per section file

@@ -5,7 +5,11 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/adult/?",
+      "source": "/adult",
+      "destination": "/adult.html"
+    },
+    {
+      "source": "/adult/",
       "destination": "/adult.html"
     },
     {

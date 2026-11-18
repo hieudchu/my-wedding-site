@@ -63,7 +63,7 @@ from the admin area.
   card with "Sửa lại xác nhận". Anon cannot insert a row with `edit_token` set directly; admin lists them in their own section **`/admin/rsvp-adult`**
   (`AdultRSVPList.jsx`: merges re-sends by folded name, CSV export, the four text keys); the main
   "Khách xác nhận" tab shows `audience = 'guest'` only. Its link preview is its own: `vite.config.js`
-  copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-2.jpg`.
+  copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-3.jpg`.
   `vercel.json` sends `/adult`, `/thiep-moi` and `/thiep-moi/:v` (same page; the link to send) to the
   function **`api/share-adult.js`**, which serves `adult.html` with `og:image` swapped for the image
   chosen in admin (`site_config.share_adult_image`, a `media/share/adult-<id>.jpg` path; empty = the

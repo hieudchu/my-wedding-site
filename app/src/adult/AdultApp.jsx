@@ -57,8 +57,9 @@ function adultText(siteText, config) {
     venueHall: t('adult_venue_hall'),
     venueAddress: t('adult_venue_address') || config.venueAddress,
     partyTime,
-    // Giờ đón khách = wedding_time; chỉ hiện khi khác giờ trên thiệp
-    welcomeTime: config.weddingTime && config.weddingTime !== partyTime ? config.weddingTime : '',
+    // Giờ đón khách = wedding_time.
+    // Chỉ khi đón khách SỚM hơn giờ tiệc ("HH:MM" so sánh chuỗi được); muộn hơn thì vô nghĩa, ẩn
+    welcomeTime: config.weddingTime && config.weddingTime < partyTime ? config.weddingTime : '',
   };
 }
 

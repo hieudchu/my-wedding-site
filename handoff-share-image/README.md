@@ -41,7 +41,7 @@ Mở `file://` cũng được, nhưng font có thể không nạp.
 | Tên ngắn | Đăng Hiếu & Thiện Minh |
 | Tên đầy đủ | Chu Đăng Hiếu & Nguyễn Thu Thiện Minh |
 | Câu mời | Trân trọng kính mời Quý khách tới dự lễ thành hôn của hai con chúng tôi |
-| Giờ, ngày | 18:30 · Thứ sáu, 15.01.2027 (đón khách 18h00) |
+| Giờ, ngày | 17:30 · Thứ sáu, 15.01.2027 |
 | Nơi | Khách sạn Sheraton · Hà Nội (Phòng tiệc Sông Hồng) |
 | Bố mẹ | Nhà trai: Chu Đăng Trung, Phạm Hồng Thuý · Nhà gái: Nguyễn Văn Đông, Nguyễn Thị Kim Phương |
 

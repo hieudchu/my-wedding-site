@@ -28,6 +28,8 @@ These directories are NOT used by `npm run dev` and must never be edited for pro
   Phone portrait + landscape UI/UX pass. `app.jsx`/`styles/` are generated verbatim from
   `app/src` by its `tools/build-from-production.mjs`; `INTERACTIONS.md` documents every
   control. Its `tools/fetch-data.mjs` forces `opt.v`/`fit.v` = `v` in the copied manifest.
+- `handoff-share-image/` — small Claude Design bundle (2026-11-18) for the `/adult` link-preview
+  image: `index.html` is the current 1200×630 image, `tools/render.mjs` exports it to JPEG.
 - `handoff-adult/` — handoff bundle for Claude Design, snapshot of **2026-11-17**: the `/adult`
   page base build that Claude Design started from. **Stale** since the 2026-11-18 redesign.
 
@@ -61,9 +63,13 @@ from the admin area.
   card with "Sửa lại xác nhận". Anon cannot insert a row with `edit_token` set directly; admin lists them in their own section **`/admin/rsvp-adult`**
   (`AdultRSVPList.jsx`: merges re-sends by folded name, CSV export, the four text keys); the main
   "Khách xác nhận" tab shows `audience = 'guest'` only. Its link preview is its own: `vite.config.js`
-  copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-2.jpg`,
-  and `vercel.json` rewrites `/adult` to it (before the SPA catch-all). `/thiep-moi` is the same page
-  and is the preview's `og:url`: Zalo had cached `/adult` with the main site's card.
+  copies the built `index.html` to `adult.html` with the `/adult` title/description/`og-adult-2.jpg`.
+  `vercel.json` sends `/adult`, `/thiep-moi` and `/thiep-moi/:v` (same page; the link to send) to the
+  function **`api/share-adult.js`**, which serves `adult.html` with `og:image` swapped for the image
+  chosen in admin (`site_config.share_adult_image`, a `media/share/adult-<id>.jpg` path; empty = the
+  default) and `og:url` = `/thiep-moi/<id>`, because Zalo groups previews by `og:url`. Any error →
+  plain `adult.html`. Admin › Khách bố mẹ mời › "Ảnh xem trước khi gửi link" (`AdultShareImage.jsx`)
+  crops uploads to 1200×630 JPEG < 300 KB. Design bundle for the image: `handoff-share-image/`.
   There is **no opening gate** — it was removed on 2026-11-02 for all screens including
   desktop. Section ids: `hero`, `groom`, `bride`, `details`, `timeline`, `rsvp` (no `home`).
 - `app/src/components/` — One component per section file

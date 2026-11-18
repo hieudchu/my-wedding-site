@@ -6,19 +6,23 @@
   "rewrites": [
     {
       "source": "/adult",
-      "destination": "/adult.html"
+      "destination": "/api/share-adult"
     },
     {
       "source": "/adult/",
-      "destination": "/adult.html"
+      "destination": "/api/share-adult"
     },
     {
       "source": "/thiep-moi",
-      "destination": "/adult.html"
+      "destination": "/api/share-adult"
     },
     {
       "source": "/thiep-moi/",
-      "destination": "/adult.html"
+      "destination": "/api/share-adult"
+    },
+    {
+      "source": "/thiep-moi/:v",
+      "destination": "/api/share-adult"
     },
     {
       "source": "/(.*)",
@@ -53,5 +57,11 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/share-adult.js": {
+      "includeFiles": "app/dist/adult.html",
+      "maxDuration": 10
+    }
+  }
 }

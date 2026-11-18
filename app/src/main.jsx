@@ -25,7 +25,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/admin/*" element={<Suspense fallback={null}><AdminApp /></Suspense>} />
           <Route path="/adult" element={<Suspense fallback={null}><AdultApp /></Suspense>} />
           {/* Cùng trang, địa chỉ gốc của thẻ xem trước (og:url) — xem vite.config.js */}
-          <Route path="/thiep-moi" element={<Suspense fallback={null}><AdultApp /></Suspense>} />
+          <Route path="/thiep-moi/*" element={<Suspense fallback={null}><AdultApp /></Suspense>} />
           <Route path="*" element={<App />} />
         </Routes>
       </BrowserRouter>

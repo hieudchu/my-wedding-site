@@ -10,6 +10,7 @@ import TimelineSettings from './sections/TimelineSettings';
 import MediaManager from './sections/MediaManager';
 import RSVPList from './sections/RSVPList';
 import AdultRSVPList from './sections/AdultRSVPList';
+import AdultShareImage from './sections/AdultShareImage';
 import WishList from './sections/WishList';
 import './admin.css';
 import './admin-isolation.css';
@@ -85,7 +86,14 @@ export default function AdminApp() {
     if (path === '/admin/timeline') return <TimelineSettings />;
     if (path === '/admin/media') return <MediaManager />;
     if (path === '/admin/rsvp') return <RSVPList />;
-    if (path === '/admin/rsvp-adult') return <AdultRSVPList adminConfig={adminConfig} />;
+    if (path === '/admin/rsvp-adult') {
+      return (
+        <>
+          <AdultRSVPList adminConfig={adminConfig} />
+          <AdultShareImage adminConfig={adminConfig} />
+        </>
+      );
+    }
     if (path === '/admin/wishes') return <WishList />;
     return <GeneralSettings adminConfig={adminConfig} />;
   };

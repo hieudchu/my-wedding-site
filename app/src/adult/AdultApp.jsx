@@ -324,9 +324,6 @@ export default function AdultApp() {
         <footer className="a-foot" id="cuoi-trang" data-sp="">
           <img src="/assets/medallion-gold.png" alt="" loading="lazy" />
           <p className="a-foot-thanks a-fx" data-sp="">Gia đình hai họ trân trọng cảm ơn</p>
-          <p className="a-foot-names a-script a-fx" data-sp="">
-            <ScriptName full={config.groomShort} /> <em>&amp;</em> <ScriptName full={config.brideShort} />
-          </p>
           <span className="a-foot-date">{d.dd} · {d.mm} · {d.yyyy}</span>
         </footer>
       </div>

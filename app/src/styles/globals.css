@@ -848,23 +848,43 @@ a:hover {
 }
 /* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
 .intro-frame.empty { opacity: 0; }
-/* Trước cảnh thẻ đỏ: khung mở ra toàn màn hình, viền vàng tan (IntroVideo OPEN_AT) — để thẻ
-   trong video trùng thẻ hero thật thay vì nằm lọt trong khung rồi bị phóng ra */
-.intro-video .intro-frame.open {
-  border-radius: 0;
+/* Kết: CHÍNH khung trượt + co giãn thành thẻ thiệp thật (IntroVideo toCard), hình tan thành đỏ
+   #4A000B, viền vàng bên trong hiện ra — giống hệt thẻ hero (.hm-title / .hero-title-card) */
+.intro-video .intro-frame.card {
+  background: #4A000B;
+  border-radius: 4px;
+  transition:
+    left var(--card-move, 1.3s) var(--ease-soft), top var(--card-move, 1.3s) var(--ease-soft),
+    width var(--card-move, 1.3s) var(--ease-soft), height var(--card-move, 1.3s) var(--ease-soft),
+    transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft),
+    opacity 0.35s ease, box-shadow 0.9s ease;
   box-shadow:
-    0 0 0 1px rgba(216, 183, 120, 0),
+    0 0 0 1px rgba(216, 183, 120, 0.22),
     0 0 0 9px rgba(50, 0, 12, 0),
     0 0 0 10px rgba(216, 183, 120, 0),
-    0 34px 70px -24px rgba(0, 0, 0, 0);
+    0 34px 70px -24px rgba(0, 0, 0, 0.6);
 }
-.intro-video.intro-landscape .intro-frame.open {
+.intro-video.intro-landscape .intro-frame.card {
   box-shadow:
-    -1px 0 0 rgba(216, 183, 120, 0),
-    1px 0 0 rgba(216, 183, 120, 0),
-    -22px 0 36px -16px rgba(0, 0, 0, 0),
-    22px 0 36px -16px rgba(0, 0, 0, 0);
+    0 0 0 1px rgba(216, 183, 120, 0.22),
+    0 0 0 0 rgba(0, 0, 0, 0),
+    0 8px 16px -4px rgba(0, 0, 0, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.55);
 }
+.intro-frame.card .intro-media {
+  opacity: 0;
+  transition: opacity 0.8s ease 0.6s; /* khung đi được nửa đường thì hình mới tan thành đỏ */
+}
+.intro-frame::after {
+  content: '';
+  position: absolute;
+  inset: var(--card-inset, 12px);
+  border: 1px solid rgba(216, 183, 120, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease 0.9s;
+}
+.intro-frame.card::after { opacity: 1; }
 .intro-landscape .intro-frame {
   border-radius: 0;
   box-shadow:

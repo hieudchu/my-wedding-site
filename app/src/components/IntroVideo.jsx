@@ -109,11 +109,22 @@ const VOL_HI = 0.55; // to dần tới mức vừa ở cuối video
 const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi
 const MUSIC_GAP_MS = 3000; // chủ thiệp (11/2026): nhạc nền KHÔNG vào ngay — nghỉ một nhịp rồi mới vào nhẹ
 const DUR = { full: 16.6, short: 2.5 };
-// Khung "mở" ra toàn màn hình trước khi cảnh cuối thu vào thẻ đỏ (giây của bản đầy đủ). Không mở
-// thì thẻ trong video nằm lọt thỏm trong khung rồi bị phóng ra thẻ thật — hai khung đè nhau.
-// Thẻ bắt đầu thu ở 13,9 s; khung mở trong 1 s từ 12,6 s. Bản ngắn / ảnh thẻ: mở sẵn từ đầu.
-const OPEN_AT = 12.6;
-const fullBox = () => ({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
+// Kết (chủ thiệp 11/2026): CHÍNH KHUNG video trượt + co giãn thành thẻ thiệp thật ở đúng chỗ của
+// nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
+// thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì
+// thành phóng to rồi thu lại — cả hai đều bị chê. Video dừng ở khung hình ngay trước đoạn đó.
+const CARD_AT = { full: 13.85, short: 0.45 }; // giây video bắt đầu thu vào thẻ (13,9 s / 17,1−16,6 s)
+const CARD_MOVE_MS = 1300; // khung → thẻ
+const CARD_HOLD_MS = 900; // thẻ đỏ đứng một nhịp rồi mới mờ vào trang
+/** Khung thẻ thiệp thật trên trang (+ khoảng lùi của viền vàng bên trong). */
+function cardRect() {
+  const el = document.querySelector('.hm-title, .hero-title-card');
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  const f = el.querySelector('.frame')?.getBoundingClientRect();
+  return { x: r.left, y: r.top, w: r.width, h: r.height, inset: f ? Math.max(0, f.left - r.left) : 12 };
+}
 
 /**
  * Thẻ audio + (nếu có) Web Audio GainNode để chỉnh âm lượng — iOS bỏ qua `audio.volume`,
@@ -289,25 +300,68 @@ export default function IntroVideo({ ready, enabled, music }) {
   readyRef.current = ready;
 
   const [morph, setMorph] = useState(null);
-  const [open, setOpen] = useState(() => !!p && p.dur === DUR.short);
-  const openRef = useRef(open);
-  openRef.current = open;
-  const boxNow = () => (openRef.current ? fullBox() : frameBox(p.kind));
-  const [box, setBox] = useState(() => (p ? (p.dur === DUR.short ? fullBox() : frameBox(p.kind)) : null));
+  const [card, setCard] = useState(null); // đang thành thẻ: { x, y, w, h, inset }
+  const cardRef = useRef(null);
+  cardRef.current = card;
+  const boxNow = () => cardRef.current || frameBox(p.kind);
+  const [box, setBox] = useState(() => (p ? frameBox(p.kind) : null));
   useEffect(() => {
     if (!p) return undefined;
-    const onResize = () => setBox(boxNow());
+    const onResize = () => {
+      if (cardRef.current) { const r = cardRect(); if (r) { setCard(r); setBox(r); } return; }
+      setBox(frameBox(p.kind));
+    };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  useEffect(() => { if (p && open) setBox(fullBox()); }, [open]);
+  /** Khung → thẻ thật. false nếu chưa đo được thẻ (khi đó để video tự thu vào thẻ như cũ). */
+  const toCard = () => {
+    if (cardRef.current) return true;
+    const r = cardRect();
+    if (!r) return false;
+    cardRef.current = r;
+    mainRef.current?.pause(); // đứng ở khung hình trước đoạn thu vào thẻ có sẵn trong video
+    setCard(r);
+    setBox(r);
+    return true;
+  };
   const leave = () => setPhase((ph) => (ph === 'out' || ph === 'done' ? ph : 'out'));
   // Kết tự nhiên (hết video / hết vòng lặp / ảnh thẻ): co khung về thẻ thật rồi mờ.
   // Khách chạm bỏ qua giữa chừng thì chỉ mờ (`leave`).
   const settle = () => {
-    if (p) setMorph(settleTransform(p.kind, boxNow()));
+    if (p && !cardRef.current) setMorph(settleTransform(p.kind, boxNow()));
     leave();
   };
+  // Thành thẻ xong: giữ một nhịp, rồi vào trang (chờ trang sẵn sàng tối đa LOOP_CAP_MS).
+  useEffect(() => {
+    if (!card || phase === 'out' || phase === 'done') return undefined;
+    const go = () => { if (readyRef.current) leave(); };
+    // Thẻ hero desktop còn đang thu nhẹ lúc trang vừa mở (.hero-stage 1,07 → 1 trong 2,2 s): đo lại
+    // liên tục để khung khớp từng pixel lúc mờ đi.
+    const follow = setInterval(() => {
+      const r = cardRect();
+      const b = cardRef.current;
+      if (r && b && (Math.abs(r.x - b.x) > 0.5 || Math.abs(r.w - b.w) > 0.5 || Math.abs(r.y - b.y) > 0.5 || Math.abs(r.h - b.h) > 0.5)) {
+        cardRef.current = r; setBox(r);
+      }
+    }, 120);
+    const t = setTimeout(go, CARD_MOVE_MS + CARD_HOLD_MS);
+    const cap = setTimeout(leave, CARD_MOVE_MS + CARD_HOLD_MS + LOOP_CAP_MS);
+    return () => { clearTimeout(t); clearTimeout(cap); clearInterval(follow); };
+  }, [card, ready]);
+  // Canh đúng lúc video bắt đầu thu vào thẻ (rAF chính xác hơn timeupdate ~4 lần/giây)
+  useEffect(() => {
+    if (phase !== 'play' || !p) return undefined;
+    const at = p.dur === DUR.short ? CARD_AT.short : CARD_AT.full;
+    let raf = 0;
+    const tick = () => {
+      const v = mainRef.current;
+      if (v && v.currentTime >= at) { toCard(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase]);
 
   // Chờ cài đặt admin: tắt → mờ ngay vào trang; bật → chiếu (và ghi cờ đã xem).
   const [waitedOut, setWaitedOut] = useState(false);
@@ -431,7 +485,7 @@ export default function IntroVideo({ ready, enabled, music }) {
     const onVis = () => {
       if (document.hidden) return;
       const v = phase === 'loop' ? loopRef.current : mainRef.current;
-      if (v && v.paused && !v.ended) v.play().catch(() => {});
+      if (v && v.paused && !v.ended && !cardRef.current) v.play().catch(() => {});
     };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('focus', onVis);
@@ -440,6 +494,7 @@ export default function IntroVideo({ ready, enabled, music }) {
 
   // Hết video chính: trang sẵn sàng thì vào, chưa thì chuyển sang vòng lặp (liền khung).
   const onMainEnded = () => {
+    if (cardRef.current) return; // đã thành thẻ — hẹn giờ ở trên lo phần vào trang
     if (readyRef.current) { settle(); return; }
     const l = loopRef.current;
     if (l) { l.muted = true; l.play().catch(() => {}); }
@@ -479,7 +534,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   // Đang hiện gì: chưa gì (chờ cài đặt / bị tắt), video, hay ảnh thẻ. Giữ nguyên lúc mờ ra.
   if (phase === 'play' || phase === 'loop') mode.current = 'video';
   else if (phase === 'still') mode.current = 'still';
-  if (phase === 'still' && !open) setTimeout(() => setOpen(true), 0);
+  if (phase === 'still' && !card) setTimeout(toCard, 0);
   const still = mode.current === 'still';
   return (
     <div
@@ -490,8 +545,12 @@ export default function IntroVideo({ ready, enabled, music }) {
     >
       <div
         // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
-        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''} ${open ? 'open' : ''}`}
-        style={{ left: box.x, top: box.y, width: box.w, height: box.h, ...(morph ? { transform: morph } : null) }}
+        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''} ${card ? 'card' : ''}`}
+        style={{
+          left: box.x, top: box.y, width: box.w, height: box.h,
+          ...(card ? { '--card-inset': `${card.inset}px`, '--card-move': `${CARD_MOVE_MS}ms` } : null),
+          ...(morph ? { transform: morph } : null),
+        }}
       >
       {mode.current === 'none' ? null : still ? (
         <img className="intro-media" src={p.card} alt="" decoding="async" />
@@ -516,16 +575,13 @@ export default function IntroVideo({ ready, enabled, music }) {
             autoPlay
             preload="auto"
             disablePictureInPicture
-            onTimeUpdate={(e) => {
-              if (!openRef.current && e.currentTarget.currentTime >= OPEN_AT) setOpen(true);
-            }}
             onPlaying={(e) => {
               started.current = true;
               if (musicOn.current) musicRef.current?.follow((music?.start || 0) + e.currentTarget.currentTime);
               else startMusic();
             }}
             // 'pause' cũng bắn khi video hết — lúc đó nhạc phải chạy tiếp (lắng xuống ở bước mờ)
-            onPause={(e) => { if (!e.currentTarget.ended) musicRef.current?.hold(); }}
+            onPause={(e) => { if (!e.currentTarget.ended && !cardRef.current) musicRef.current?.hold(); }}
             onWaiting={() => musicRef.current?.hold()}
             onEnded={onMainEnded}
             onError={() => { if (!started.current) setPhase('still'); else leave(); }}

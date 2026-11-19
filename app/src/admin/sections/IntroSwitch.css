@@ -1,0 +1,55 @@
+/* Công tắc video mở đầu (IntroSwitch.jsx). Để riêng: admin.css giữ y hệt file thiết kế. */
+.intro-switch {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'text toggle' 'text state';
+  align-items: center;
+  column-gap: 24px;
+  row-gap: 6px;
+}
+.intro-switch .is-text { grid-area: text; }
+.intro-switch h3 { margin-bottom: 8px; }
+.intro-switch p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #A89996;
+  max-width: 560px;
+}
+.is-toggle {
+  grid-area: toggle;
+  justify-self: end;
+  position: relative;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #e8e2e0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.is-toggle.on { background: #7E1416; }
+.is-toggle:disabled { opacity: 0.6; cursor: progress; }
+.is-toggle:focus-visible { outline: 2px solid #B58285; outline-offset: 2px; }
+.is-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+.is-toggle.on .is-knob { transform: translateX(22px); }
+.is-state {
+  grid-area: state;
+  justify-self: end;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #A89996;
+}
+.is-state.on { color: #7E1416; }

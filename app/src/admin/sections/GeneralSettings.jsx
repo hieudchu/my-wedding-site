@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../components/Toast';
+import IntroSwitch from './IntroSwitch';
 
 export default function GeneralSettings({ adminConfig }) {
   const { getValue, saveMultiple, saving } = adminConfig;
@@ -35,6 +36,8 @@ export default function GeneralSettings({ adminConfig }) {
     <div>
       <h1>Thông tin chung · General</h1>
       <p className="page-desc">Thông tin cơ bản hiển thị trên toàn bộ trang cưới</p>
+
+      <IntroSwitch adminConfig={adminConfig} toast={toast} />
 
       <div className="admin-card">
         <h3>Tên cô dâu & chú rể</h3>

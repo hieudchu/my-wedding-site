@@ -13,15 +13,16 @@ import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
 import DeskMotion from './components/DeskMotion';
+import IntroVideo from './components/IntroVideo';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
 
 /**
  * Trang thiệp cho khách.
  *
- * Không còn cổng mở thiệp: vào là thấy hero ngay, không phải bấm, không khoá
- * cuộn — áp dụng cả desktop. `entered` bật ngay sau lần vẽ đầu để hero và nav
- * vẫn hiện dần như cũ.
+ * Không còn cổng mở thiệp. Từ 11/2026 có video mở đầu (`IntroVideo`) phủ lên hero
+ * và kết thúc đúng ở thẻ thiệp; chạm bất kỳ là bỏ qua. Hero và nav vẫn dựng ngay
+ * phía dưới (`entered` bật sau lần vẽ đầu) để lúc video mờ đi trang đã sẵn sàng.
  */
 export default function App() {
   const { config, siteText, manifest, loading } = useSiteConfig();
@@ -56,6 +57,7 @@ export default function App() {
   return (
     <LightboxProvider>
       <DeskMotion />
+      <IntroVideo ready={!loading} enabled={loading ? null : siteText.intro_video !== 'off'} />
       <Nav config={config} siteText={siteText} visible={entered} />
       <Hero config={config} siteText={siteText} visible={entered} />
       <Family side="groom" config={config} siteText={siteText} />

@@ -793,3 +793,39 @@ a:hover {
 .ph::after {
   content: attr(data-label);
 }
+
+/* ===== Video mở đầu (IntroVideo.jsx, 11/2026) =====
+   Phủ kín màn hình trên mọi thứ (lightbox 950). Nền = màu hero để mép thừa khi tỉ lệ
+   màn hình khác video trông như một phần trang. Video "cover", căn giữa — ba bản dựng
+   sẵn khớp ba bố cục, nên thẻ đỏ cuối video rơi gần đúng chỗ thẻ hero. */
+.intro-video {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #32000C;
+  opacity: 1;
+  transition: opacity var(--intro-fade, 650ms) var(--ease-soft);
+  touch-action: none;
+  overscroll-behavior: contain;
+  cursor: pointer;
+}
+.intro-video.out { opacity: 0; }
+/* Kết tự nhiên: khung co cho thẻ đỏ trùng thẻ hero thật (JS tính transform), mờ trễ một nhịp */
+.intro-video.settle { transition-delay: var(--intro-settle, 250ms); }
+.intro-stage {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  transition: transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft);
+}
+.intro-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+  background: transparent;
+}
+.intro-media.hidden { visibility: hidden; }

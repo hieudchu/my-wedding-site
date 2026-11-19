@@ -16,6 +16,14 @@ import DeskMotion from './components/DeskMotion';
 import IntroVideo from './components/IntroVideo';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
+import { supabase } from './lib/supabase';
+
+/** Nhạc video mở đầu do admin chọn (site_config intro_music*); null = nhạc mặc định. */
+function introMusic(t) {
+  const start = Math.max(0, Number.parseFloat(t.intro_music_start) || 0);
+  if (!t.intro_music) return { url: null, start };
+  return { url: supabase.storage.from('media').getPublicUrl(t.intro_music).data.publicUrl, start };
+}
 
 /**
  * Trang thiệp cho khách.
@@ -57,7 +65,11 @@ export default function App() {
   return (
     <LightboxProvider>
       <DeskMotion />
-      <IntroVideo ready={!loading} enabled={loading ? null : siteText.intro_video !== 'off'} />
+      <IntroVideo
+        ready={!loading}
+        enabled={loading ? null : siteText.intro_video !== 'off'}
+        music={introMusic(siteText)}
+      />
       <Nav config={config} siteText={siteText} visible={entered} />
       <Hero config={config} siteText={siteText} visible={entered} />
       <Family side="groom" config={config} siteText={siteText} />

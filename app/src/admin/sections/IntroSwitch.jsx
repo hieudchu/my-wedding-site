@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import IntroMusic from './IntroMusic';
 import './IntroSwitch.css';
 
 /**
@@ -59,6 +60,7 @@ export default function IntroSwitch({ adminConfig, toast }) {
         <span className="is-knob" />
       </button>
       <span className={`is-state ${on ? 'on' : ''}`}>{on ? 'Đang bật' : 'Đang tắt'}</span>
+      <IntroMusic adminConfig={adminConfig} toast={toast} />
     </div>
   );
 }

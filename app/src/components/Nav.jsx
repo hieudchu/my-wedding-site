@@ -108,19 +108,35 @@ export default function Nav({ config, siteText = {}, visible }) {
     if (!hasMusic) return undefined;
     const EVTS = ['pointerup', 'touchend', 'click', 'keydown'];
     let done = false;
+    let unlocked = false;
     const off = () => EVTS.forEach((t) => document.removeEventListener(t, start, true));
-    function start() {
+    function start(e) {
       if (done) return;
       if (userPaused.current) { done = true; off(); return; }
       const a = audioRef.current;
       if (!a) return;
+      // Video mở đầu đang chiếu (IntroVideo đặt html[data-intro="on"]): nó có nhạc riêng, nhạc
+      // nền chờ tới sự kiện 'hm-intro-end'. Lần chạm trong lúc chờ chỉ "mở khoá" thẻ audio cho
+      // iOS: gọi play() trong chính cử chỉ của khách rồi pause() ngay cùng nhịp — chưa kịp ra
+      // tiếng nhưng Safari đã ghi nhận khách cho phép, lát nữa phát không cần chạm lại.
+      if (document.documentElement.dataset.intro === 'on') {
+        if (e && !unlocked && e.type !== 'pointerup') {
+          unlocked = true;
+          const pr = a.play();
+          a.pause();
+          if (pr && pr.catch) pr.catch(() => {});
+        }
+        return;
+      }
       a.play()
         .then(() => { done = true; off(); setPlaying(true); setBlocked(false); })
         .catch(() => setBlocked(true));
     }
+    const onIntroEnd = () => start();
     EVTS.forEach((t) => document.addEventListener(t, start, true));
+    window.addEventListener('hm-intro-end', onIntroEnd);
     start();
-    return () => { done = true; off(); };
+    return () => { done = true; off(); window.removeEventListener('hm-intro-end', onIntroEnd); };
   }, [hasMusic]);
 
   useEffect(() => {

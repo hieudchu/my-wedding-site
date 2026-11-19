@@ -2,7 +2,7 @@
 .intro-switch {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-areas: 'text toggle' 'text state';
+  grid-template-areas: 'text toggle' 'text state' 'music music';
   align-items: center;
   column-gap: 24px;
   row-gap: 6px;
@@ -53,3 +53,34 @@
   color: #A89996;
 }
 .is-state.on { color: #7E1416; }
+
+/* Nhạc mở đầu (IntroMusic.jsx) — nằm trong cùng thẻ, dưới công tắc */
+.im-block {
+  grid-area: music;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #f0ebe9;
+}
+.im-block h4 {
+  margin: 0 0 6px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 500;
+  color: #6B5E5B;
+}
+.im-block p { margin: 0 0 14px; font-size: 13px; line-height: 1.55; color: #A89996; max-width: 620px; }
+.im-now { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 10px; font-size: 13px; color: #6B5E5B; }
+.im-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #A89996; }
+.im-audio { width: 100%; max-width: 520px; height: 36px; margin-bottom: 12px; }
+.im-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+.im-start { display: flex; flex-direction: column; gap: 4px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #A89996; }
+.im-start input {
+  width: 110px;
+  padding: 9px 12px;
+  border: 1px solid #e8e2e0;
+  border-radius: 8px;
+  font: 14px 'Inter', system-ui, sans-serif;
+  color: #6B5E5B;
+}
+.im-upload { cursor: pointer; }
+.im-upload.is-busy { opacity: 0.6; cursor: progress; }

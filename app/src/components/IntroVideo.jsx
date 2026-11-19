@@ -21,7 +21,8 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
  */
 
 const SEEN_KEY = 'hm-intro-seen';
-const V = '?v=20261119';
+// Đổi số phiên bản của bản nào khi thay file của bản đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
+const VER = { portrait: '20261119b', landscape: '20261119', desktop: '20261119' };
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 const LOOP_CAP_MS = 8000; // chờ trang tối đa bấy nhiêu sau khi hết video
 const START_GRACE_MS = 3500; // video chưa chạy sau chừng này → coi như không phát được
@@ -92,6 +93,7 @@ function makePlan() {
 
   const kind = pickKind();
   const base = `/assets/intro/${kind}/`;
+  const V = `?v=${VER[kind]}`;
   const seen = readSeen();
   const still = mqMatches('(prefers-reduced-motion: reduce)') || slowNetwork();
   const c = navigator.connection;

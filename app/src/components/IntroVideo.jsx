@@ -97,6 +97,7 @@ function settleTransform(kind, box) {
   return `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
 }
 const POSTER_HOLD_MS = 700;
+const WAIT_CAP_MS = 2500; // đọc cài đặt bật/tắt quá lâu (mạng chậm, treo) → coi như bật, chiếu luôn
 
 // ---- Nhạc mở đầu (11/2026) ----
 // Riêng với danh sách nhạc nền; admin đổi được (site_config intro_music / intro_music_start,
@@ -296,9 +297,15 @@ export default function IntroVideo({ ready, enabled, music }) {
   };
 
   // Chờ cài đặt admin: tắt → mờ ngay vào trang; bật → chiếu (và ghi cờ đã xem).
+  const [waitedOut, setWaitedOut] = useState(false);
   useEffect(() => {
-    if (phase !== 'wait' || enabled == null) return;
-    if (!enabled) { leave(); return; }
+    if (phase !== 'wait') return undefined;
+    const t = setTimeout(() => setWaitedOut(true), WAIT_CAP_MS);
+    return () => clearTimeout(t);
+  }, [phase]);
+  useEffect(() => {
+    if (phase !== 'wait' || (enabled == null && !waitedOut)) return;
+    if (enabled === false) { leave(); return; }
     writeSeen();
     if (!p.still) {
       const url = music?.url || MUSIC_DEFAULT;
@@ -306,7 +313,7 @@ export default function IntroVideo({ ready, enabled, music }) {
       if (import.meta.env.DEV) window.__introMusic = musicRef.current; // chỉ để kiểm tra khi phát triển
     }
     setPhase(p.still ? 'still' : 'play');
-  }, [phase, enabled]);
+  }, [phase, enabled, waitedOut]);
 
   /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát thì thôi (intro không tiếng). */
   const startMusic = async () => {

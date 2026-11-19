@@ -827,7 +827,9 @@ a:hover {
   border-radius: 3px;
   background: #32000C;
   transform-origin: 0 0;
-  transition: transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft);
+  transition:
+    transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft),
+    opacity 0.35s ease;
   /* viền trong sát ảnh + viền ngoài cách 9px + bóng đổ */
   box-shadow:
     0 0 0 1px rgba(216, 183, 120, 0.55),
@@ -836,6 +838,7 @@ a:hover {
     0 34px 70px -24px rgba(0, 0, 0, 0.75);
 }
 /* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
+.intro-frame.empty { opacity: 0; }
 .intro-landscape .intro-frame {
   border-radius: 0;
   box-shadow:

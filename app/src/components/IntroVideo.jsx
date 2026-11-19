@@ -22,7 +22,7 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
 
 const SEEN_KEY = 'hm-intro-seen';
 // Đổi số phiên bản của bản nào khi thay file của bản đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
-const VER = { portrait: '20261120', landscape: '20261120', desktop: '20261120' };
+const VER = { portrait: '20261120b', landscape: '20261120b', desktop: '20261120b' };
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 const LOOP_CAP_MS = 8000; // chờ trang tối đa bấy nhiêu sau khi hết video
 const START_GRACE_MS = 3500; // video chưa chạy sau chừng này → coi như không phát được
@@ -142,7 +142,8 @@ function makePlan() {
     still,
     main: base + (seen ? 'short.mp4' : lite ? 'full-720.mp4' : 'full.mp4') + V,
     loop: `${base}loop.mp4${V}`,
-    poster: base + (seen ? 'poster-card.jpg' : 'poster-full.jpg') + V,
+    // ảnh chờ = khung ĐẦU của đúng bản sẽ phát (không phải thẻ đỏ cuối video)
+    poster: base + (seen ? 'poster-short.jpg' : 'poster-full.jpg') + V,
     card: `${base}poster-card.jpg${V}`,
   };
 }
@@ -265,7 +266,8 @@ export default function IntroVideo({ ready, enabled }) {
       aria-hidden="true"
     >
       <div
-        className="intro-frame"
+        // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
+        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''}`}
         style={{ left: box.x, top: box.y, width: box.w, height: box.h, ...(morph ? { transform: morph } : null) }}
       >
       {mode.current === 'none' ? null : still ? (

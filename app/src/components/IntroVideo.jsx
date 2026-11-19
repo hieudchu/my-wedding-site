@@ -161,12 +161,12 @@ function createMusic(url) {
     if (import.meta.env.DEV && /introtest=blocked/.test(window.location.search) && !navigator.userActivation?.isActive) return false;
     try { a.currentTime = at; } catch { /* chưa có metadata: trình duyệt tự tua sau */ }
     if (a.paused) set(Math.min(level() || VOL_LO, VOL_LO) || VOL_LO);
-    try {
-      if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
-      await a.play();
-    } catch { return false; }
-    if (ctx) {
-      await new Promise((r) => setTimeout(r, 120));
+    // resume() phải gọi ngay (cùng nhịp với cử chỉ của khách), rồi mới chờ.
+    const resumed = ctx && ctx.state !== 'running' ? ctx.resume().catch(() => {}) : null;
+    try { await a.play(); } catch { return false; }
+    if (ctx && ctx.state !== 'running') {
+      // Máy chậm cần vài trăm ms mới chuyển sang 'running' — chờ tới 0,8 s rồi mới kết luận bị chặn
+      await Promise.race([resumed, new Promise((r) => setTimeout(r, 800))]);
       if (ctx.state !== 'running') { a.pause(); return false; }
     }
     ramp(VOL_HI, rampS);
@@ -250,7 +250,7 @@ function makePlan() {
 const DEBUG = typeof window !== 'undefined' && /introdebug=1/.test(window.location.search);
 
 /** ?introdebug=1 — vài dòng trạng thái góc trên trái, để thử trên điện thoại thật (Safari). */
-function DebugPanel({ phase, musicRef, mainRef }) {
+function DebugPanel({ phase, needTap, musicRef, mainRef }) {
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((n) => n + 1), 250); return () => clearInterval(id); }, []);
   const m = musicRef.current?.state();
@@ -258,7 +258,7 @@ function DebugPanel({ phase, musicRef, mainRef }) {
   const site = document.querySelector('nav audio, .nav audio, audio');
   return (
     <pre className="intro-debug">
-      {`phase ${phase} · ${document.visibilityState}
+      {`phase ${phase} · tap ${needTap ? 'CẦN' : 'không'} · ${document.visibilityState}
 video ${v ? `${v.currentTime.toFixed(1)}${v.paused ? ' (dừng)' : ''}` : '-'}
 nhạc ${m ? `${m.paused ? 'dừng' : 'phát'} ${m.t.toFixed(1)}s vol ${m.vol.toFixed(2)} ctx ${m.ctx}` : '-'}
 audioSession ${navigator.audioSession?.type || 'không có'}
@@ -277,6 +277,9 @@ export default function IntroVideo({ ready, enabled, music }) {
   const mode = useRef('none');
   const musicRef = useRef(null);
   const musicOn = useRef(false);
+  const [needTap, setNeedTap] = useState(false);
+  const needTapRef = useRef(false);
+  needTapRef.current = needTap;
   const readyRef = useRef(ready);
   readyRef.current = ready;
 
@@ -315,7 +318,7 @@ export default function IntroVideo({ ready, enabled, music }) {
     setPhase(p.still ? 'still' : 'play');
   }, [phase, enabled, waitedOut]);
 
-  /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát thì thôi (intro không tiếng). */
+  /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */
   const startMusic = async () => {
     const m = musicRef.current;
     const v = mainRef.current;
@@ -323,6 +326,7 @@ export default function IntroVideo({ ready, enabled, music }) {
     const at = (music?.start || 0) + (v.currentTime || 0);
     const ok = await m.play(at, Math.max(0.6, p.dur - (v.currentTime || 0)));
     musicOn.current = ok;
+    setNeedTap(!ok);
   };
 
   // Khi lớp phủ bắt đầu mờ: nhạc lắng xuống. Khi xong hẳn: báo Nav phát nhạc nền.
@@ -349,15 +353,39 @@ export default function IntroVideo({ ready, enabled, music }) {
     return unlockScroll;
   }, [showing]);
 
-  // Chạm / bấm / phím / lăn chuột → bỏ qua (chủ thiệp 11/2026: không có nút nào, chạm là bỏ qua).
-  // Không chặn lan truyền — Nav cần chính cử chỉ này để mở khoá nhạc nền (iOS).
-  // Nhạc mở đầu thử tự phát khi video chạy; trình duyệt chặn tự phát tiếng (iPhone luôn chặn,
-  // máy tính thường chặn lần đầu) thì intro chạy không tiếng — không có cách nào khác.
+  // Chạm / bấm / phím. Không chặn lan truyền — Nav cần cử chỉ này để mở khoá nhạc nền (iOS).
+  // Trình duyệt chặn tự phát tiếng khi khách chưa chạm trang (iPhone luôn chặn, máy tính và
+  // Android thường chặn lần đầu). Chủ thiệp chọn (11/2026):
+  // - Nhạc đang bị chặn: hiện "Chạm để bật nhạc"; lần chạm đó BẬT NHẠC (không bỏ qua video).
+  //   Bắt ở touchend / click / keydown: iOS Safari KHÔNG tính pointerup là cử chỉ cho phép phát.
+  // - Còn lại: chạm / lăn chuột / phím → bỏ qua. Nút "Bỏ qua" và phím Esc luôn bỏ qua.
   useEffect(() => {
     if (phase === 'done' || phase === 'out') return undefined;
-    const EVTS = ['pointerdown', 'keydown', 'wheel'];
-    EVTS.forEach((t) => window.addEventListener(t, leave, { passive: true }));
-    return () => EVTS.forEach((t) => window.removeEventListener(t, leave));
+    const onSkipButton = (e) => !!e.target?.closest?.('.intro-skip');
+    const onDown = (e) => { if (!onSkipButton(e) && !needTapRef.current) leave(); };
+    const onActivate = (e) => {
+      if (!needTapRef.current || onSkipButton(e)) return;
+      needTapRef.current = false; // một lần chạm bắn cả touchend lẫn click — chỉ bật một lần
+      setNeedTap(false);
+      startMusic();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape' || !needTapRef.current) { leave(); return; }
+      needTapRef.current = false;
+      setNeedTap(false);
+      startMusic();
+    };
+    const ACT = ['touchend', 'click'];
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('wheel', leave, { passive: true });
+    window.addEventListener('keydown', onKey);
+    ACT.forEach((t) => window.addEventListener(t, onActivate, { passive: true }));
+    return () => {
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('wheel', leave);
+      window.removeEventListener('keydown', onKey);
+      ACT.forEach((t) => window.removeEventListener(t, onActivate));
+    };
   }, [phase]);
 
   // Phát video chính; không chạy được trong START_GRACE_MS → chuyển sang ảnh thẻ.
@@ -477,7 +505,13 @@ export default function IntroVideo({ ready, enabled, music }) {
         </>
       )}
       </div>
-      {DEBUG && <DebugPanel phase={phase} musicRef={musicRef} mainRef={mainRef} />}
+      {DEBUG && <DebugPanel phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
+      {(phase === 'play' || phase === 'loop') && (
+        <>
+          {needTap && <div className="intro-hint">♪ Chạm để bật nhạc</div>}
+          <button type="button" className="intro-skip" onClick={leave}>Bỏ qua</button>
+        </>
+      )}
     </div>
   );
 }

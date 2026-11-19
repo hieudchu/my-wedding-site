@@ -400,6 +400,20 @@ export default function IntroVideo({ ready, enabled, music }) {
     return () => clearTimeout(t);
   }, [phase]);
 
+  // Giữ nhạc khớp video: iPhone khởi động âm thanh chậm (~0,8 s sau cú chạm) nên nhạc trễ cố định.
+  // Mỗi giây so một lần; lệch quá 0,3 s thì tua nhạc về đúng chỗ video.
+  useEffect(() => {
+    if (phase !== 'play') return undefined;
+    const id = setInterval(() => {
+      const v = mainRef.current;
+      const m = musicRef.current;
+      if (!musicOn.current || !v || !m || v.paused || m.el.paused) return;
+      const want = (music?.start || 0) + v.currentTime;
+      if (Math.abs(m.el.currentTime - want) > 0.3) m.el.currentTime = want;
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]);
+
   // Quay lại trang (chuyển tab / ứng dụng / cửa sổ bị che rồi hiện lại): Safari có thể đã tự
   // dừng video câm và không tự chạy lại → gọi phát lại, kẻo lớp phủ kẹt giữa chừng.
   useEffect(() => {

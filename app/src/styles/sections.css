@@ -3482,3 +3482,18 @@
 .rsvp {
   overflow-x: clip;
 }
+
+/* Điện thoại / tablet QUAY NGANG (2026-11-20): vân hoa giữ đúng cỡ như khi xem dọc.
+   floral-relief.jpg là ảnh dọc 675×1200; "cover" trên màn ngang phải phóng ~1,8× → vân to.
+   floral-relief-tile.jpg = ảnh đó + bản lật ngang (1350×1200, lặp liền theo chiều ngang),
+   cao bằng cạnh dài màn (100vmax) — đúng cỡ của "cover" khi xem dọc. Video mở đầu bản ngang
+   và lớp phủ intro dùng cùng cách tính (globals.css .intro-landscape, make_wide.py). */
+@media (max-height: 520px) and (orientation: landscape), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) and (orientation: landscape) {
+  .hero--phone,
+  .footer {
+    background:
+      url('/assets/background/floral-relief-tile.jpg?v=20261120') center / auto 100vmax repeat,
+      #32000C;
+    background-blend-mode: overlay, normal;
+  }
+}

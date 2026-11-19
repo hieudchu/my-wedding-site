@@ -22,7 +22,7 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
 
 const SEEN_KEY = 'hm-intro-seen';
 // Đổi số phiên bản của bản nào khi thay file của bản đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
-const VER = { portrait: '20261120b', landscape: '20261120b', desktop: '20261120b' };
+const VER = { portrait: '20261120b', landscape: '20261120c', desktop: '20261120c' };
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 const LOOP_CAP_MS = 8000; // chờ trang tối đa bấy nhiêu sau khi hết video
 const START_GRACE_MS = 3500; // video chưa chạy sau chừng này → coi như không phát được

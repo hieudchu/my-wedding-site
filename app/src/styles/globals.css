@@ -818,6 +818,13 @@ a:hover {
     #32000C;
   background-blend-mode: overlay, normal;
 }
+/* Quay ngang: cùng nền với hero quay ngang (sections.css cuối file) — vân đúng cỡ bản dọc */
+.intro-video.intro-landscape {
+  background:
+    url('/assets/background/floral-relief-tile.jpg?v=20261120') center / auto 100vmax repeat,
+    #32000C;
+  background-blend-mode: overlay, normal;
+}
 .intro-video.out { opacity: 0; }
 /* Kết tự nhiên: khung co cho thẻ đỏ trùng thẻ hero thật (JS tính transform), mờ trễ một nhịp */
 .intro-video.settle { transition-delay: var(--intro-settle, 250ms); }

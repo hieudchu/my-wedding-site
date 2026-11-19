@@ -22,7 +22,7 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
 
 const SEEN_KEY = 'hm-intro-seen';
 // Đổi số phiên bản của bản nào khi thay file của bản đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
-const VER = { portrait: '20261119b', landscape: '20261119', desktop: '20261119' };
+const VER = { portrait: '20261120', landscape: '20261120', desktop: '20261120' };
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 const LOOP_CAP_MS = 8000; // chờ trang tối đa bấy nhiêu sau khi hết video
 const START_GRACE_MS = 3500; // video chưa chạy sau chừng này → coi như không phát được
@@ -37,24 +37,63 @@ const CARD = {
   desktop: [1920, 1080, 252, 205.2, 1416, 669.6],
 };
 
-/** Phép biến đổi đưa thẻ đỏ của video (đang "cover", căn giữa) trùng khít thẻ hero thật.
+/**
+ * Khung video (11/2026, theo yêu cầu chủ thiệp): video không tràn màn hình mà nằm trong một
+ * khung giữa nền đỏ vân hoa của hero.
+ * - desktop: khung chữ nhật 16:9, KHÔNG BAO GIỜ lớn hơn 1920×1080 điểm ảnh thật của màn
+ *   (chia devicePixelRatio) → video không bị phóng to nên luôn nét; màn càng to khung vẫn vậy.
+ * - landscape (điện thoại ngang): cao hết màn, chỉ chừa viền hai bên trái/phải. Tablet ngang
+ *   (tỉ lệ thấp) thì thêm dải trên/dưới để không cắt mất quá nhiều hai bên video.
+ * - portrait: khung chữ nhật có lề quanh. Cũng chặn theo điểm ảnh thật, nhưng không nhỏ hơn
+ *   88% chỗ trống (máy DPR 3–4 mà chặn cứng thì khung quá bé; phóng ≤ 1,15× là không thấy).
+ * Video "cover" trong khung, căn giữa.
+ */
+function frameBox(kind) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const [W, H] = CARD[kind];
+  let w;
+  let h;
+  if (kind === 'landscape') {
+    const side = Math.max(24, vw * 0.07);
+    w = vw - 2 * side;
+    h = vh;
+    const minA = (W / H) * 0.8; // cắt hai bên video tối đa 20%
+    if (w / h < minA) h = w / minA;
+  } else {
+    const m = kind === 'desktop' ? Math.max(40, Math.min(vw, vh) * 0.1) : Math.max(14, Math.min(vw, vh) * 0.05);
+    w = vw - 2 * m;
+    h = vh - 2 * m;
+    const [lo, hi] = kind === 'desktop' ? [W / H, W / H] : [0.43, 0.75];
+    if (w / h > hi) w = h * hi;
+    if (w / h < lo) h = w / lo;
+    const cap = W / dpr; // bề rộng CSS ứng với đúng bề rộng gốc của video
+    const floor = kind === 'desktop' ? 0 : 0.88 * w;
+    const nw = Math.max(Math.min(w, cap), floor);
+    h *= nw / w;
+    w = nw;
+  }
+  w = Math.round(w);
+  h = Math.round(h);
+  return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2), w, h };
+}
+
+/** Phép biến đổi (gốc ở góc trên-trái khung) đưa thẻ đỏ của video trùng khít thẻ hero thật.
  *  Chỉ dùng lúc kết: khi ấy trong thẻ là màu đỏ trơn nên co giãn không lộ. */
-function settleTransform(kind) {
+function settleTransform(kind, box) {
   const el = document.querySelector('.hm-title, .hero-title-card');
-  if (!el) return null;
+  if (!el || !box) return null;
   const r = el.getBoundingClientRect();
   if (!r.width || !r.height) return null;
   const [W, H, x, y, w, h] = CARD[kind];
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const s = Math.max(vw / W, vh / H);
-  const cx = x * s + (vw - W * s) / 2;
-  const cy = y * s + (vh - H * s) / 2;
+  const s = Math.max(box.w / W, box.h / H);
+  const cx = box.x + (box.w - W * s) / 2 + x * s; // thẻ trong video, toạ độ màn hình
+  const cy = box.y + (box.h - H * s) / 2 + y * s;
   const sx = r.width / (w * s);
   const sy = r.height / (h * s);
-  const tx = r.left - cx * sx;
-  const ty = r.top - cy * sy;
-  if (Math.abs(sx - 1) < 0.004 && Math.abs(sy - 1) < 0.004 && Math.abs(tx) < 1 && Math.abs(ty) < 1) return null;
+  const tx = r.left - box.x - (cx - box.x) * sx;
+  const ty = r.top - box.y - (cy - box.y) * sy;
   return `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
 }
 const POSTER_HOLD_MS = 700;
@@ -124,11 +163,18 @@ export default function IntroVideo({ ready, enabled }) {
   readyRef.current = ready;
 
   const [morph, setMorph] = useState(null);
+  const [box, setBox] = useState(() => (p ? frameBox(p.kind) : null));
+  useEffect(() => {
+    if (!p) return undefined;
+    const onResize = () => setBox(frameBox(p.kind));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const leave = () => setPhase((ph) => (ph === 'out' || ph === 'done' ? ph : 'out'));
   // Kết tự nhiên (hết video / hết vòng lặp / ảnh thẻ): co khung về thẻ thật rồi mờ.
   // Khách chạm bỏ qua giữa chừng thì chỉ mờ (`leave`).
   const settle = () => {
-    if (p) setMorph(settleTransform(p.kind));
+    if (p) setMorph(settleTransform(p.kind, frameBox(p.kind)));
     leave();
   };
 
@@ -218,7 +264,10 @@ export default function IntroVideo({ ready, enabled }) {
       onTouchMove={(e) => e.preventDefault()}
       aria-hidden="true"
     >
-      <div className="intro-stage" style={morph ? { transform: morph } : undefined}>
+      <div
+        className="intro-frame"
+        style={{ left: box.x, top: box.y, width: box.w, height: box.h, ...(morph ? { transform: morph } : null) }}
+      >
       {mode.current === 'none' ? null : still ? (
         <img className="intro-media" src={p.card} alt="" decoding="async" />
       ) : (

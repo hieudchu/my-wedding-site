@@ -795,28 +795,54 @@ a:hover {
 }
 
 /* ===== Video mở đầu (IntroVideo.jsx, 11/2026) =====
-   Phủ kín màn hình trên mọi thứ (lightbox 950). Nền = màu hero để mép thừa khi tỉ lệ
-   màn hình khác video trông như một phần trang. Video "cover", căn giữa — ba bản dựng
-   sẵn khớp ba bố cục, nên thẻ đỏ cuối video rơi gần đúng chỗ thẻ hero. */
+   Phủ kín màn hình trên mọi thứ (lightbox 950). Nền = nền hero (đỏ #32000C + vân hoa, trộn
+   overlay) để lúc mờ đi trang lộ ra liền mạch. Video nằm trong `.intro-frame` — JS tính vị
+   trí/cỡ khung (frameBox), video "cover" bên trong. Viền vàng mảnh hai lớp như thẻ thiệp. */
 .intro-video {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #32000C;
+  background:
+    url('/assets/background/floral-relief.jpg?v=20261101i') center / cover,
+    #32000C;
+  background-blend-mode: overlay, normal;
   opacity: 1;
   transition: opacity var(--intro-fade, 650ms) var(--ease-soft);
   touch-action: none;
   overscroll-behavior: contain;
   cursor: pointer;
 }
+.intro-video.intro-desktop {
+  background:
+    url('/assets/background/paper-floral-desktop.jpg?v=20261111b') center top / 900px 1600px repeat,
+    #32000C;
+  background-blend-mode: overlay, normal;
+}
 .intro-video.out { opacity: 0; }
 /* Kết tự nhiên: khung co cho thẻ đỏ trùng thẻ hero thật (JS tính transform), mờ trễ một nhịp */
 .intro-video.settle { transition-delay: var(--intro-settle, 250ms); }
-.intro-stage {
+.intro-frame {
   position: absolute;
-  inset: 0;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #32000C;
   transform-origin: 0 0;
   transition: transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft);
+  /* viền trong sát ảnh + viền ngoài cách 9px + bóng đổ */
+  box-shadow:
+    0 0 0 1px rgba(216, 183, 120, 0.55),
+    0 0 0 9px rgba(50, 0, 12, 0.35),
+    0 0 0 10px rgba(216, 183, 120, 0.32),
+    0 34px 70px -24px rgba(0, 0, 0, 0.75);
+}
+/* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
+.intro-landscape .intro-frame {
+  border-radius: 0;
+  box-shadow:
+    -1px 0 0 rgba(216, 183, 120, 0.6),
+    1px 0 0 rgba(216, 183, 120, 0.6),
+    -22px 0 36px -16px rgba(0, 0, 0, 0.6),
+    22px 0 36px -16px rgba(0, 0, 0, 0.6);
 }
 .intro-media {
   position: absolute;

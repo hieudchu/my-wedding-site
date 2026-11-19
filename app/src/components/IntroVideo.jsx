@@ -109,6 +109,11 @@ const VOL_HI = 0.55; // to dần tới mức vừa ở cuối video
 const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi
 const MUSIC_GAP_MS = 3000; // chủ thiệp (11/2026): nhạc nền KHÔNG vào ngay — nghỉ một nhịp rồi mới vào nhẹ
 const DUR = { full: 16.6, short: 2.5 };
+// Khung "mở" ra toàn màn hình trước khi cảnh cuối thu vào thẻ đỏ (giây của bản đầy đủ). Không mở
+// thì thẻ trong video nằm lọt thỏm trong khung rồi bị phóng ra thẻ thật — hai khung đè nhau.
+// Thẻ bắt đầu thu ở 13,9 s; khung mở trong 1 s từ 12,6 s. Bản ngắn / ảnh thẻ: mở sẵn từ đầu.
+const OPEN_AT = 12.6;
+const fullBox = () => ({ x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
 
 /**
  * Thẻ audio + (nếu có) Web Audio GainNode để chỉnh âm lượng — iOS bỏ qua `audio.volume`,
@@ -284,18 +289,23 @@ export default function IntroVideo({ ready, enabled, music }) {
   readyRef.current = ready;
 
   const [morph, setMorph] = useState(null);
-  const [box, setBox] = useState(() => (p ? frameBox(p.kind) : null));
+  const [open, setOpen] = useState(() => !!p && p.dur === DUR.short);
+  const openRef = useRef(open);
+  openRef.current = open;
+  const boxNow = () => (openRef.current ? fullBox() : frameBox(p.kind));
+  const [box, setBox] = useState(() => (p ? (p.dur === DUR.short ? fullBox() : frameBox(p.kind)) : null));
   useEffect(() => {
     if (!p) return undefined;
-    const onResize = () => setBox(frameBox(p.kind));
+    const onResize = () => setBox(boxNow());
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+  useEffect(() => { if (p && open) setBox(fullBox()); }, [open]);
   const leave = () => setPhase((ph) => (ph === 'out' || ph === 'done' ? ph : 'out'));
   // Kết tự nhiên (hết video / hết vòng lặp / ảnh thẻ): co khung về thẻ thật rồi mờ.
   // Khách chạm bỏ qua giữa chừng thì chỉ mờ (`leave`).
   const settle = () => {
-    if (p) setMorph(settleTransform(p.kind, frameBox(p.kind)));
+    if (p) setMorph(settleTransform(p.kind, boxNow()));
     leave();
   };
 
@@ -469,6 +479,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   // Đang hiện gì: chưa gì (chờ cài đặt / bị tắt), video, hay ảnh thẻ. Giữ nguyên lúc mờ ra.
   if (phase === 'play' || phase === 'loop') mode.current = 'video';
   else if (phase === 'still') mode.current = 'still';
+  if (phase === 'still' && !open) setTimeout(() => setOpen(true), 0);
   const still = mode.current === 'still';
   return (
     <div
@@ -479,7 +490,7 @@ export default function IntroVideo({ ready, enabled, music }) {
     >
       <div
         // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
-        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''}`}
+        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''} ${open ? 'open' : ''}`}
         style={{ left: box.x, top: box.y, width: box.w, height: box.h, ...(morph ? { transform: morph } : null) }}
       >
       {mode.current === 'none' ? null : still ? (
@@ -505,6 +516,9 @@ export default function IntroVideo({ ready, enabled, music }) {
             autoPlay
             preload="auto"
             disablePictureInPicture
+            onTimeUpdate={(e) => {
+              if (!openRef.current && e.currentTarget.currentTime >= OPEN_AT) setOpen(true);
+            }}
             onPlaying={(e) => {
               started.current = true;
               if (musicOn.current) musicRef.current?.follow((music?.start || 0) + e.currentTarget.currentTime);

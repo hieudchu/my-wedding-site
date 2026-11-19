@@ -836,7 +836,9 @@ a:hover {
   transform-origin: 0 0;
   transition:
     transform calc(var(--intro-fade, 650ms) + var(--intro-settle, 250ms)) var(--ease-soft),
-    opacity 0.35s ease;
+    opacity 0.35s ease,
+    left 1s var(--ease-soft), top 1s var(--ease-soft), width 1s var(--ease-soft), height 1s var(--ease-soft),
+    box-shadow 0.8s ease, border-radius 1s ease;
   /* viền trong sát ảnh + viền ngoài cách 9px + bóng đổ */
   box-shadow:
     0 0 0 1px rgba(216, 183, 120, 0.55),
@@ -846,6 +848,23 @@ a:hover {
 }
 /* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
 .intro-frame.empty { opacity: 0; }
+/* Trước cảnh thẻ đỏ: khung mở ra toàn màn hình, viền vàng tan (IntroVideo OPEN_AT) — để thẻ
+   trong video trùng thẻ hero thật thay vì nằm lọt trong khung rồi bị phóng ra */
+.intro-video .intro-frame.open {
+  border-radius: 0;
+  box-shadow:
+    0 0 0 1px rgba(216, 183, 120, 0),
+    0 0 0 9px rgba(50, 0, 12, 0),
+    0 0 0 10px rgba(216, 183, 120, 0),
+    0 34px 70px -24px rgba(0, 0, 0, 0);
+}
+.intro-video.intro-landscape .intro-frame.open {
+  box-shadow:
+    -1px 0 0 rgba(216, 183, 120, 0),
+    1px 0 0 rgba(216, 183, 120, 0),
+    -22px 0 36px -16px rgba(0, 0, 0, 0),
+    22px 0 36px -16px rgba(0, 0, 0, 0);
+}
 .intro-landscape .intro-frame {
   border-radius: 0;
   box-shadow:

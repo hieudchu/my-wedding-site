@@ -129,10 +129,29 @@ export default function Nav({ config, siteText = {}, visible }) {
         return;
       }
       a.play()
-        .then(() => { done = true; off(); setPlaying(true); setBlocked(false); })
-        .catch(() => setBlocked(true));
+        .then(() => { done = true; off(); setPlaying(true); setBlocked(false); if (soft) fadeIn(a); })
+        .catch(() => { if (soft) { a.volume = soft; soft = 0; } setBlocked(true); });
     }
-    const onIntroEnd = () => start();
+    // Sau nhạc mở đầu: nhạc nền vào nhẹ — to dần 0 → âm lượng đang đặt trong 2,5 s.
+    // (iOS bỏ qua audio.volume nên ở iPhone nhạc vào ở mức thường, không to dần.)
+    let soft = 0; // > 0: âm lượng đích khi cho nhạc nền to dần
+    const fadeIn = (a) => {
+      const target = soft;
+      soft = 0;
+      const t0 = performance.now();
+      const step = () => {
+        const k = Math.min(1, (performance.now() - t0) / 2500);
+        a.volume = target * k;
+        if (k < 1 && !a.paused) requestAnimationFrame(step);
+        else a.volume = target;
+      };
+      requestAnimationFrame(step);
+    };
+    const onIntroEnd = (ev) => {
+      const a = audioRef.current;
+      if (ev?.detail?.soft && a) { soft = a.volume || 0.6; a.volume = 0; } // vào từ 0, không giật
+      start();
+    };
     EVTS.forEach((t) => document.addEventListener(t, start, true));
     window.addEventListener('hm-intro-end', onIntroEnd);
     start();

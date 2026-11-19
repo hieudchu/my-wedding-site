@@ -105,7 +105,8 @@ const POSTER_HOLD_MS = 700;
 const MUSIC_DEFAULT = '/assets/intro/intro-music.m4a?v=20261120';
 const VOL_LO = 0.16; // vào nhỏ, nhẹ
 const VOL_HI = 0.55; // to dần tới mức vừa ở cuối video
-const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi, rồi nhạc nền của trang mới vào
+const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi
+const MUSIC_GAP_MS = 3000; // chủ thiệp (11/2026): nhạc nền KHÔNG vào ngay — nghỉ một nhịp rồi mới vào nhẹ
 const DUR = { full: 16.6, short: 2.5 };
 
 /**
@@ -321,8 +322,9 @@ export default function IntroVideo({ ready, enabled, music }) {
     const t = setTimeout(() => {
       m?.destroy();
       delete document.documentElement.dataset.intro;
-      window.dispatchEvent(new Event('hm-intro-end'));
-    }, musicOn.current ? MUSIC_FADE_S * 1000 - FADE_MS + 100 : 0);
+      window.dispatchEvent(new CustomEvent('hm-intro-end', { detail: { soft: musicOn.current } }));
+      // detail.soft: Nav cho nhạc nền to dần thay vì vào đột ngột
+    }, musicOn.current ? MUSIC_FADE_S * 1000 - FADE_MS + MUSIC_GAP_MS : 0);
     return () => clearTimeout(t);
   }, [phase]);
 

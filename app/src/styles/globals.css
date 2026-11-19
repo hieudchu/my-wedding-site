@@ -811,6 +811,9 @@ a:hover {
   touch-action: none;
   overscroll-behavior: contain;
   cursor: pointer;
+  /* lớp phủ phủ kín màn, không vẽ gì ra ngoài: khung trượt thành thẻ (đổi left/top/width/height)
+     chỉ tính lại bố cục bên trong lớp này, không đụng tới cả trang → giữ 60 khung/giây */
+  contain: layout paint style;
 }
 .intro-video.intro-desktop {
   background:

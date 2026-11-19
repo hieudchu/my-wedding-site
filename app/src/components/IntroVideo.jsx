@@ -178,7 +178,15 @@ function createMusic(url) {
   };
   const destroy = () => { a.pause(); a.removeAttribute('src'); try { ctx?.close(); } catch { /* đã đóng */ } };
   const state = () => ({ ctx: ctx ? ctx.state : 'none', paused: a.paused, t: a.currentTime, vol: level() });
-  return { el: a, play, fadeOut, destroy, state };
+  // Video dừng (Safari tự dừng video câm khi cửa sổ/ứng dụng bị che, hoặc đang tải) → nhạc dừng
+  // theo; video chạy lại → tua nhạc đúng chỗ rồi phát tiếp, không thì nhạc chạy trước video.
+  const hold = () => { if (!a.paused) a.pause(); };
+  const follow = (at) => {
+    try { if (Math.abs(a.currentTime - at) > 0.25) a.currentTime = at; } catch { /* chưa tua được */ }
+    if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+    if (a.paused) a.play().catch(() => {});
+  };
+  return { el: a, play, fadeOut, destroy, state, hold, follow };
 }
 
 function pickKind() {
@@ -218,7 +226,7 @@ function makePlan() {
   const kind = pickKind();
   const base = `/assets/intro/${kind}/`;
   const V = `?v=${VER[kind]}`;
-  const seen = readSeen();
+  const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search));
   const still = mqMatches('(prefers-reduced-motion: reduce)') || slowNetwork();
   const c = navigator.connection;
   const lite = kind !== 'desktop' && /3g/.test(c?.effectiveType || '');
@@ -241,7 +249,7 @@ function makePlan() {
 const DEBUG = typeof window !== 'undefined' && /introdebug=1/.test(window.location.search);
 
 /** ?introdebug=1 — vài dòng trạng thái góc trên trái, để thử trên điện thoại thật (Safari). */
-function DebugPanel({ phase, needTap, musicRef, mainRef }) {
+function DebugPanel({ phase, musicRef, mainRef }) {
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((n) => n + 1), 250); return () => clearInterval(id); }, []);
   const m = musicRef.current?.state();
@@ -249,8 +257,8 @@ function DebugPanel({ phase, needTap, musicRef, mainRef }) {
   const site = document.querySelector('nav audio, .nav audio, audio');
   return (
     <pre className="intro-debug">
-      {`phase ${phase} · tap ${needTap ? 'CẦN' : 'không'}
-video ${v ? v.currentTime.toFixed(1) : '-'}
+      {`phase ${phase} · ${document.visibilityState}
+video ${v ? `${v.currentTime.toFixed(1)}${v.paused ? ' (dừng)' : ''}` : '-'}
 nhạc ${m ? `${m.paused ? 'dừng' : 'phát'} ${m.t.toFixed(1)}s vol ${m.vol.toFixed(2)} ctx ${m.ctx}` : '-'}
 audioSession ${navigator.audioSession?.type || 'không có'}
 nhạc nền ${site ? (site.paused ? 'dừng' : `phát ${site.currentTime.toFixed(1)}s`) : '-'}`}
@@ -268,9 +276,6 @@ export default function IntroVideo({ ready, enabled, music }) {
   const mode = useRef('none');
   const musicRef = useRef(null);
   const musicOn = useRef(false);
-  const [needTap, setNeedTap] = useState(false);
-  const needTapRef = useRef(false);
-  needTapRef.current = needTap;
   const readyRef = useRef(ready);
   readyRef.current = ready;
 
@@ -303,7 +308,7 @@ export default function IntroVideo({ ready, enabled, music }) {
     setPhase(p.still ? 'still' : 'play');
   }, [phase, enabled]);
 
-  /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */
+  /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát thì thôi (intro không tiếng). */
   const startMusic = async () => {
     const m = musicRef.current;
     const v = mainRef.current;
@@ -311,7 +316,6 @@ export default function IntroVideo({ ready, enabled, music }) {
     const at = (music?.start || 0) + (v.currentTime || 0);
     const ok = await m.play(at, Math.max(0.6, p.dur - (v.currentTime || 0)));
     musicOn.current = ok;
-    setNeedTap(!ok);
   };
 
   // Khi lớp phủ bắt đầu mờ: nhạc lắng xuống. Khi xong hẳn: báo Nav phát nhạc nền.
@@ -319,12 +323,13 @@ export default function IntroVideo({ ready, enabled, music }) {
     if (phase === 'out') musicRef.current?.fadeOut();
     if (phase !== 'done' || !p) return undefined;
     const m = musicRef.current;
+    const shown = mode.current !== 'none'; // intro đã thực sự chiếu (không phải bị tắt ở admin)
     const t = setTimeout(() => {
       m?.destroy();
       delete document.documentElement.dataset.intro;
-      window.dispatchEvent(new CustomEvent('hm-intro-end', { detail: { soft: musicOn.current } }));
       // detail.soft: Nav cho nhạc nền to dần thay vì vào đột ngột
-    }, musicOn.current ? MUSIC_FADE_S * 1000 - FADE_MS + MUSIC_GAP_MS : 0);
+      window.dispatchEvent(new CustomEvent('hm-intro-end', { detail: { soft: shown } }));
+    }, shown ? Math.max(0, (musicOn.current ? MUSIC_FADE_S * 1000 : 0) - FADE_MS) + MUSIC_GAP_MS : 0);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -337,37 +342,15 @@ export default function IntroVideo({ ready, enabled, music }) {
     return unlockScroll;
   }, [showing]);
 
-  // Chạm / bấm / phím. Không chặn lan truyền — Nav cần cử chỉ này để mở khoá nhạc nền.
-  // - Nhạc đang bị trình duyệt chặn: lần chạm này BẬT NHẠC (không bỏ qua video). Phải bắt ở
-  //   touchend / click / keydown: iOS Safari KHÔNG tính pointerup là cử chỉ cho phép phát tiếng.
-  // - Còn lại: chạm / lăn chuột / phím → bỏ qua. Nút "Bỏ qua" và phím Esc luôn bỏ qua.
+  // Chạm / bấm / phím / lăn chuột → bỏ qua (chủ thiệp 11/2026: không có nút nào, chạm là bỏ qua).
+  // Không chặn lan truyền — Nav cần chính cử chỉ này để mở khoá nhạc nền (iOS).
+  // Nhạc mở đầu thử tự phát khi video chạy; trình duyệt chặn tự phát tiếng (iPhone luôn chặn,
+  // máy tính thường chặn lần đầu) thì intro chạy không tiếng — không có cách nào khác.
   useEffect(() => {
     if (phase === 'done' || phase === 'out') return undefined;
-    const onSkipButton = (e) => !!e.target?.closest?.('.intro-skip');
-    const onDown = (e) => { if (!onSkipButton(e) && !needTapRef.current) leave(); };
-    const onActivate = (e) => {
-      if (!needTapRef.current || onSkipButton(e)) return;
-      needTapRef.current = false; // một lần chạm bắn cả pointerup, touchend, click — chỉ bật một lần
-      setNeedTap(false);
-      startMusic();
-    };
-    const onKey = (e) => {
-      if (e.key === 'Escape' || !needTapRef.current) { leave(); return; }
-      needTapRef.current = false;
-      setNeedTap(false);
-      startMusic();
-    };
-    const ACT = ['touchend', 'click'];
-    window.addEventListener('pointerdown', onDown, { passive: true });
-    window.addEventListener('wheel', leave, { passive: true });
-    window.addEventListener('keydown', onKey);
-    ACT.forEach((t) => window.addEventListener(t, onActivate, { passive: true }));
-    return () => {
-      window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('wheel', leave);
-      window.removeEventListener('keydown', onKey);
-      ACT.forEach((t) => window.removeEventListener(t, onActivate));
-    };
+    const EVTS = ['pointerdown', 'keydown', 'wheel'];
+    EVTS.forEach((t) => window.addEventListener(t, leave, { passive: true }));
+    return () => EVTS.forEach((t) => window.removeEventListener(t, leave));
   }, [phase]);
 
   // Phát video chính; không chạy được trong START_GRACE_MS → chuyển sang ảnh thẻ.
@@ -380,6 +363,20 @@ export default function IntroVideo({ ready, enabled, music }) {
     if (pr && pr.catch) pr.catch(() => { if (!started.current) setPhase('still'); });
     const t = setTimeout(() => { if (!started.current) setPhase('still'); }, START_GRACE_MS);
     return () => clearTimeout(t);
+  }, [phase]);
+
+  // Quay lại trang (chuyển tab / ứng dụng / cửa sổ bị che rồi hiện lại): Safari có thể đã tự
+  // dừng video câm và không tự chạy lại → gọi phát lại, kẻo lớp phủ kẹt giữa chừng.
+  useEffect(() => {
+    if (phase !== 'play' && phase !== 'loop') return undefined;
+    const onVis = () => {
+      if (document.hidden) return;
+      const v = phase === 'loop' ? loopRef.current : mainRef.current;
+      if (v && v.paused && !v.ended) v.play().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onVis); };
   }, [phase]);
 
   // Hết video chính: trang sẵn sàng thì vào, chưa thì chuyển sang vòng lặp (liền khung).
@@ -459,20 +456,21 @@ export default function IntroVideo({ ready, enabled, music }) {
             autoPlay
             preload="auto"
             disablePictureInPicture
-            onPlaying={() => { started.current = true; startMusic(); }}
+            onPlaying={(e) => {
+              started.current = true;
+              if (musicOn.current) musicRef.current?.follow((music?.start || 0) + e.currentTarget.currentTime);
+              else startMusic();
+            }}
+            // 'pause' cũng bắn khi video hết — lúc đó nhạc phải chạy tiếp (lắng xuống ở bước mờ)
+            onPause={(e) => { if (!e.currentTarget.ended) musicRef.current?.hold(); }}
+            onWaiting={() => musicRef.current?.hold()}
             onEnded={onMainEnded}
             onError={() => { if (!started.current) setPhase('still'); else leave(); }}
           />
         </>
       )}
       </div>
-      {DEBUG && <DebugPanel phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
-      {(phase === 'play' || phase === 'loop') && (
-        <>
-          {needTap && <div className="intro-hint">♪ Chạm để bật nhạc</div>}
-          <button type="button" className="intro-skip" onClick={leave}>Bỏ qua</button>
-        </>
-      )}
+      {DEBUG && <DebugPanel phase={phase} musicRef={musicRef} mainRef={mainRef} />}
     </div>
   );
 }

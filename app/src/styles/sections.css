@@ -465,7 +465,8 @@
   opacity: 0.45;
 }
 
-/* Chữ trên thiệp chạy vào theo 4 nhịp, chỉ sau khi mở cổng */
+/* Chữ trên thiệp chạy vào theo 4 nhịp, chỉ sau khi mở cổng (video / phong bì mở đầu mờ đi) */
+.hero-stage:not(.ready) :is(.hero-kicker, .hero-names, .hero-tagline, .hero-meta) { opacity: 0; }
 .hero-stage.ready .hero-kicker { animation: rise 1.6s var(--ease-rise) 0.55s both; }
 .hero-stage.ready .hero-names { animation: rise 1.6s var(--ease-rise) 0.75s both; }
 .hero-stage.ready .hero-tagline { animation: rise 1.6s var(--ease-rise) 1s both; }
@@ -1818,6 +1819,8 @@
     letter-spacing: 0.2em;
   }
 
+  /* Chưa "vào" trang (đang có video / phong bì mở đầu): chữ thẻ ẩn sẵn, để lúc vào thì trồi lên từ đầu */
+  .hm-track:not(.ready) :is(.hero-kicker, .hero-names, .hero-tagline, .hero-meta) { opacity: 0; }
   .hm-track.ready .hero-kicker { animation: rise 1.6s var(--ease-rise) 0.55s both; }
   .hm-track.ready .hero-names { animation: rise 1.6s var(--ease-rise) 0.75s both; }
   .hm-track.ready .hero-tagline { animation: rise 1.6s var(--ease-rise) 1s both; }

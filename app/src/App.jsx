@@ -56,6 +56,15 @@ export default function App() {
   }, [config]);
 
   useEffect(() => {
+    // Có video / phong bì mở đầu (IntroVideo đặt html[data-intro]): trang "vào" — chữ thẻ hero trồi lên,
+    // nav hiện — đúng lúc lớp phủ bắt đầu mờ, để khách thấy y như lần mở trang đầu tiên (chủ thiệp).
+    // Trước đó animation chạy ngầm dưới lớp phủ, mờ xong thì chữ đã đứng yên.
+    if (document.documentElement.dataset.intro === 'on') {
+      const on = () => setEntered(true);
+      window.addEventListener('hm-intro-leave', on);
+      window.addEventListener('hm-intro-end', on);
+      return () => { window.removeEventListener('hm-intro-leave', on); window.removeEventListener('hm-intro-end', on); };
+    }
     // setTimeout thay requestAnimationFrame: rAF đứng yên khi tab nằm ở nền,
     // trang sẽ kẹt ở trạng thái chưa hiện cho tới khi khách quay lại tab.
     const id = setTimeout(() => setEntered(true), 30);

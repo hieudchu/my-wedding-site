@@ -51,7 +51,7 @@ const TEXT_FIELDS = [
 ];
 
 function AdultTextCard({ adminConfig, toast }) {
-  const { configs, saveMultiple, saving } = adminConfig;
+  const { configs, getValue, saveMultiple, saving } = adminConfig;
   const [values, setValues] = useConfigForm(adminConfig, TEXT_FIELDS.map((f) => f.key));
 
   const errors = {};

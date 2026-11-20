@@ -12,7 +12,7 @@ import IntroGate, { GATE_LEAD_S } from './IntroGate';
  * khách thấy chữ hiện dần trên chính tấm thẻ đó.
  *
  * - Khổ dọc mở đầu bằng PHONG BÌ (IntroGate, 11/2026): phong bì đỏ rượu vang, dấu sáp vàng logo HM; khách
- *   chạm thì nhạc vào, phong bì mở ra thấy khung video (viền vàng, như main) nằm sẵn bên dưới, vạt tan
+ *   chạm thì nhạc vào, phong bì (khít thẻ hero) mở ra thấy khung đầu video trong thẻ, vạt tan
  *   đi thì video chạy. Khổ ngang / máy tính chưa có phong bì. Lần nào vào cũng có cổng (chủ thiệp chọn): cú chạm
  *   mở cổng chính là cử chỉ trình duyệt cần để cho phát tiếng.
  * - Lần nào cũng một video (12,9 s; chủ thiệp bỏ bản ngắn và cảnh cô dâu đi một mình qua đám hoa).
@@ -120,7 +120,7 @@ const DUR = { full: 12.9 };
 // ngay khi phong bì mở tới thiệp kem (GATE_LEAD_S sau cú chạm), hoà vào dưới clip mở.
 const JOIN = { full: 1.2 };
 
-const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261121k';
+const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122a';
 // Kết (chủ thiệp 11/2026): CHÍNH KHUNG video trượt + co giãn thành thẻ thiệp thật ở đúng chỗ của
 // nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
 // thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì
@@ -265,7 +265,7 @@ function makePlan() {
   // Phong bì mở thiệp: mới có khổ dọc (chủ thiệp: "làm dọc trước")
   const gate = !still && kind === 'portrait';
   // Lần tải lại (chủ thiệp: chỉ một video → không chiếu lại): có phong bì thì phong bì mở thẳng vào trang
-  // hero thật (clip trong suốt phần bên trong); chưa có phong bì (ngang / máy tính) thì vào thẳng trang.
+  // hero thật (clip mở ra đúng tấm thẻ trống); chưa có phong bì (ngang / máy tính) thì vào thẳng trang.
   const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search));
   if (seen && !gate) return null;
   // Nhạc nền của trang (Nav) chờ intro xong — xem Nav.jsx. Đặt ngay lúc quyết định, trước mọi effect.
@@ -350,19 +350,32 @@ function IntroVideoMain({ ready, enabled, music }) {
   const [card, setCard] = useState(null); // đang thành thẻ: { x, y, w, h, inset }
   const cardRef = useRef(null);
   cardRef.current = card;
-  // Khung video luôn như main (viền vàng trên nền hoa đỏ — chủ thiệp giữ khung). Có phong bì thì khung đã
-  // nằm sẵn dưới phong bì (lòng phong bì trong suốt), không trượt hay đổi cỡ.
-  const baseBox = () => frameBox(p.kind);
+  // Khung video như main (viền vàng trên nền hoa đỏ). Có phong bì (khổ dọc, bản 2): khung CHÍNH LÀ thẻ hero
+  // (đo thẻ thật) ngay từ đầu — phong bì đặt khít thẻ, mở ra thấy video trong thẻ, video chạy ở đó, hết thì
+  // hình tan thành đỏ tại chỗ. Chưa đo được thẻ thì chưa có khung (chỉ nền hoa của lớp phủ).
+  const baseBox = () => (p.gate ? cardRect() : frameBox(p.kind));
   const boxNow = () => cardRef.current || baseBox();
   const [box, setBox] = useState(() => (p ? baseBox() : null));
   useEffect(() => {
     if (!p) return undefined;
     const onResize = () => {
       if (cardRef.current) { const r = cardRect(); if (r) { setCard(r); setBox(r); } return; }
-      setBox(baseBox());
+      const b = baseBox();
+      if (b) setBox(b);
     };
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    // Có phong bì: thẻ hero còn xê dịch lúc trang đang dựng (đo sớm thì lệch ~46 px) → đo lại liên tục cho tới khi
+    // lớp phủ rời đi, để phong bì / khung video luôn nằm khít thẻ thật
+    let t = 0;
+    if (p.gate) {
+      t = setInterval(() => {
+        const r = cardRect();
+        if (!r) return;
+        setBox((b) => (b && Math.abs(b.x - r.x) < 0.5 && Math.abs(b.y - r.y) < 0.5 && Math.abs(b.w - r.w) < 0.5 && Math.abs(b.h - r.h) < 0.5 ? b : r));
+        if (cardRef.current) cardRef.current = r;
+      }, 100);
+    }
+    return () => { window.removeEventListener('resize', onResize); clearInterval(t); };
   }, []);
   /** Khung → thẻ thật. false nếu chưa đo được thẻ (khi đó để video tự thu vào thẻ như cũ). */
   const toCard = () => {
@@ -504,17 +517,14 @@ function IntroVideoMain({ ready, enabled, music }) {
     m.sfx();
     m.play(music?.start || 0, GATE_LEAD_S + p.dur - p.join).then((ok) => { musicOn.current = ok; });
   };
-  // Phong bì đã mở tới thiệp kem: khung (kín màn) hiện dưới phong bì và video chạy; phong bì mờ dần
+  // Phong bì đã mở hết. Lần đầu: video chạy trong thẻ dưới phong bì (khung cuối clip = đúng ảnh chờ ở đúng
+  // chỗ), phong bì mờ dần → chỉ có các vạt tan đi. Tải lại: clip đứng ở khung cuối (thẻ trống đúng chỗ thẻ thật)
+  // → rời lớp phủ ngay: View Transition hoà các vạt + nền vào trang, chữ thẻ trồi lên sau đó.
   const onGateCut = () => {
-    if (p.pageReveal) return; // tải lại: đợi vạt tan hết (onGateDone) rồi mới vào trang
+    if (p.pageReveal) { setTimeout(leave, 350); return; } // vạt nằm yên một nhịp rồi mới tan
     setPhase((ph) => (ph === 'gate' ? 'play' : ph));
   };
-  // Vạt đã tan hết. Tải lại: lớp phủ giờ chỉ còn nền + thẻ đỏ trống (khung tĩnh, không còn clip trong suốt
-  // đang chạy) → chuyển cảnh vào trang (View Transition chụp khung tĩnh này — sạch, không chụp sai video).
-  const onGateDone = () => {
-    setGateGone(true);
-    if (p.pageReveal) leave();
-  };
+  const onGateDone = () => setGateGone(true);
 
   /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */
   const startMusic = async () => {
@@ -691,9 +701,10 @@ function IntroVideoMain({ ready, enabled, music }) {
     >
       <div
         // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
-        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''}  ${card ? 'card' : ''}`}
+        className={`intro-frame ${mode.current === 'none' || !box || phase === 'gate' ? 'empty' : ''} ${p.gate ? 'in-card' : ''} ${card ? 'card' : ''}`}
         style={{
-          left: box.x, top: box.y, width: box.w, height: box.h,
+          ...(box ? { left: box.x, top: box.y, width: box.w, height: box.h } : null),
+          ...(p.gate && box ? { '--card-inset': `${box.inset}px` } : null),
           ...(card ? { '--card-inset': `${card.inset}px`, '--card-move': `${CARD_MOVE_MS}ms` } : null),
           ...(morph ? { transform: morph } : null),
         }}
@@ -749,7 +760,7 @@ function IntroVideoMain({ ready, enabled, music }) {
       </div>
       {DEBUG && <DebugPanel phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
       {p.gate && !gateGone && phase !== 'wait' && (
-        <IntroGate onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
+        <IntroGate rect={box} reveal={p.pageReveal} onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
       )}
       {(phase === 'play' || phase === 'loop') && (!p.gate || gateGone) && (
         <>

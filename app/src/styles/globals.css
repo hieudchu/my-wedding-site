@@ -903,6 +903,24 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   transition: opacity 0.7s ease 0.9s;
 }
 .intro-frame.card::after { opacity: 1; }
+/* Có phong bì (khổ dọc, bản 2): khung là thẻ hero ngay từ đầu — video chạy trong thẻ, viền vàng mảnh như khung
+   cuối của clip mở; hết video thì hình tan thành đỏ TẠI CHỖ (không trượt), bóng + viền thành đúng .hm-title. */
+.intro-video .intro-frame.in-card {
+  border-radius: 4px;
+  transition: opacity 0.35s ease, box-shadow 0.9s ease;
+  box-shadow:
+    0 0 0 1px rgba(216, 183, 120, 0.55),
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 8px 16px -4px rgba(0, 0, 0, 0.8);
+}
+.intro-video .intro-frame.in-card.card {
+  box-shadow:
+    0 0 0 1px rgba(216, 183, 120, 0.22),
+    0 2px 4px rgba(0, 0, 0, 0.55),
+    0 8px 16px -4px rgba(0, 0, 0, 0.8);
+}
+.intro-frame.in-card.card .intro-media { transition: opacity 0.9s ease; }
+.intro-frame.in-card::after { transition: opacity 0.7s ease 0.4s; }
 .intro-landscape .intro-frame {
   border-radius: 0;
   box-shadow:
@@ -977,11 +995,13 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.65s ease;
 }
+/* Bản 2: ảnh chờ + clip đặt theo khung thẻ hero thật (IntroGate clipBox → left/top/width/height nội tuyến) */
 .ig-idle,
-.ig-clip { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-clip { position: absolute; display: block; max-width: none; object-fit: fill; }
+.intro-gate:not(.ready) .ig-clip { visibility: hidden; }
 .ig-clip { visibility: hidden; }
-.intro-gate:is(.step-vid, .step-fade) .ig-clip { visibility: visible; }
-.intro-gate:is(.step-vid, .step-fade) .ig-idle { visibility: hidden; }
+.intro-gate:is(.step-vid, .step-fade, .step-hold) .ig-clip { visibility: visible; }
+.intro-gate:is(.step-vid, .step-fade, .step-hold) .ig-idle { visibility: hidden; }
 /* chưa đủ ảnh + clip: chỉ nền đỏ của lớp phủ */
 .intro-gate:not(.ready) :is(.ig-idle, .ig-cta) { opacity: 0; }
 .ig-idle { transition: opacity 0.5s ease; }

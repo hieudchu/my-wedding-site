@@ -39,17 +39,20 @@ export function useLandscapeFullscreen(isPhone) {
       EVTS.forEach((t) => document.addEventListener(t, enter, true));
       de.setAttribute('data-fs-ask', '');
     };
+    // html[data-fs-pending]: vừa xin toàn màn, màn sắp đổi cỡ. Phong bì mở thiệp (IntroGate) thấy cờ này thì chờ màn
+    // đổi cỡ xong mới mở (chủ thiệp 21/11: cú chạm mở phong bì phải vào toàn màn như trước, phong bì không nhảy chỗ).
+    let pendT = 0;
+    const settle = () => { clearTimeout(pendT); delete de.dataset.fsPending; };
     function enter() {
-      // Đang mở phong bì / chiếu intro: chưa vào toàn màn (màn đổi cỡ giữa chừng → phong bì nhảy chỗ theo thẻ).
-      // Vẫn chờ sẵn: lần chạm đầu tiên sau intro mới vào.
-      if (de.dataset.intro) return;
       disarm();
       if (!mqMatches(LAND) || fsEl() || optOut) return;
       ours = true;
+      de.dataset.fsPending = '';
+      pendT = setTimeout(settle, 1500); // trình duyệt không báo gì → thôi chờ
       try {
         const p = req.call(de, { navigationUI: 'hide' });
-        if (p && p.catch) p.catch(() => { ours = false; });
-      } catch { ours = false; }
+        if (p && p.catch) p.catch(() => { ours = false; settle(); });
+      } catch { ours = false; settle(); }
     }
     const onOrient = () => {
       if (mqMatches(LAND)) { optOut = false; arm(); return; }
@@ -60,6 +63,7 @@ export function useLandscapeFullscreen(isPhone) {
       }
     };
     const onFsChange = () => {
+      settle();
       if (fsEl()) { de.setAttribute('data-fs', ''); disarm(); return; }
       de.removeAttribute('data-fs');
       if (ours && mqMatches(LAND)) optOut = true; // khách tự thoát

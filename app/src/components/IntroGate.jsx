@@ -118,7 +118,24 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
 
   const open = () => {
     if (step !== 'idle' || !ready) return;
-    onOpen?.(); // đồng bộ, trong cú chạm
+    // Điện thoại ngang (Android): cú chạm này vừa xin toàn màn (useLandscapeFullscreen, chạy trước ở pha capture) → màn
+    // sắp cao lên, thẻ hero đổi chỗ. Chờ màn đổi cỡ xong + IntroVideo đo lại thẻ (~100 ms) rồi mới mở, để phong bì mở
+    // đúng chỗ thẻ mới (nhạc + tiếng giấy cũng vào lúc đó cho khớp vạt; trang đã được chạm nên vẫn phát được).
+    const de = document.documentElement;
+    if (de.dataset.fsPending !== undefined) {
+      setStep('fs');
+      const t0 = Date.now();
+      const wait = () => {
+        if (de.dataset.fsPending !== undefined && Date.now() - t0 < 1500) { later(wait, 50); return; }
+        later(start, 350);
+      };
+      wait();
+      return;
+    }
+    start();
+  };
+  const start = () => {
+    onOpen?.(); // đồng bộ, trong cú chạm (trừ khi vừa chờ toàn màn ở trên)
     const v = clipRef.current;
     if (!v) { toVideo(); return; }
     let shown = false;

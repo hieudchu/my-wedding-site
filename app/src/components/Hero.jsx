@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, startTransition } from 'react
 import { formatDateParts } from '../lib/config';
 import { useMediaList } from '../hooks/useMedia';
 import { fitProps } from '../lib/fit';
+import { useFrameSizes } from '../hooks/useFrameSizes';
 import { useViewport, TABLET_MAX, mqMatches } from '../hooks/useViewport';
 import { useLightbox } from './Lightbox';
 import ScriptName from './ScriptName';
@@ -145,15 +146,8 @@ function PhoneHero({ config, siteText = {}, visible }) {
                 aria-label={`Phóng to ảnh ${i} trên ${photos.length}`}
               >
                 {near && (
-                  <img
-                    src={p.url}
-                    srcSet={p.srcSet}
-                    sizes={p.srcSet ? '(orientation: landscape) 40vw, 92vw' : undefined}
-                    alt="Ảnh cưới Hiếu và Minh"
-                    {...fitProps(p.fit)}
-                    decoding="async"
-                    fetchpriority={i === slide ? 'high' : 'low'}
-                  />
+                  // Thẻ 0 là thiệp chữ: lúc mới vào, ảnh 1 là ảnh khách vuốt tới đầu tiên
+                  <HeroPhoto p={p} high={i === slide || (slide === 0 && i === 1)} />
                 )}
               </button>
             </div>
@@ -446,16 +440,9 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
             >
               <div className="hero-card-inner">
                 {mounted.has(i) && (
-                  <img
-                    src={p.url}
-                    srcSet={p.srcSet}
-                    sizes={p.srcSet ? '(max-width: 1080px) 42vw, 420px' : undefined}
-                    alt="Ảnh cưới Hiếu và Minh"
-                    {...fitProps(p.fit)}
-                    onLoad={onImgLoad(i)}
-                    decoding="async"
-                    fetchpriority={i === slide ? 'high' : 'low'}
-                  />
+                  // Thẻ giữa và hai thẻ kề đang hiện rõ: tải trước. Thẻ xa (±2, ±3) chỉ là
+                  // tải sẵn cho lúc trượt tới, nhường đường truyền.
+                  <HeroPhoto p={p} high={Math.abs(offset(i)) <= 1} onLoad={onImgLoad(i)} />
                 )}
                 <div className="fade" />
                 <span className="hero-dim" style={{ opacity: dimOf(i) }} aria-hidden="true" />
@@ -488,5 +475,27 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Ảnh trong thẻ hero (cả hai carousel). `sizes` đo từ khung thẻ thật — xem useFrameSizes;
+ * chưa đo xong thì chưa gắn src. `high`: ảnh khách đang/sắp nhìn thấy, tải trước các ảnh khác.
+ */
+function HeroPhoto({ p, high, onLoad }) {
+  const [ref, sizes] = useFrameSizes(p.aspect, Boolean(p.srcSet));
+  const wait = Boolean(p.srcSet) && !sizes;
+  return (
+    <img
+      ref={ref}
+      sizes={wait || !p.srcSet ? undefined : sizes}
+      srcSet={wait ? undefined : p.srcSet}
+      src={wait ? undefined : p.url}
+      alt="Ảnh cưới Hiếu và Minh"
+      {...fitProps(p.fit)}
+      onLoad={onLoad}
+      decoding="async"
+      fetchpriority={high ? 'high' : 'low'}
+    />
   );
 }

@@ -245,16 +245,37 @@ admin "Quét lại kho" (rescan) never picks them up as photos.
 - Admin uploads shrink the stored original to **3000px** long edge (`compressImage`,
   `rotateFile`). It was 1600px until 11/2026: a portrait became 1067px wide, and a frame
   zoomed 1.6–1.7× in the framer then had too few pixels → guests saw blurry photos.
-  `sourcesFor()` divides each srcset `w` by the fit zoom so the browser fetches a variant
-  big enough for the zoomed frame.
 - Folder uploads rename files with `storageSafeName()` (`lib/safeName.js`): Supabase Storage
   rejects keys with Vietnamese letters or `[ ] # %` ("InvalidKey"). Music keeps the original
   title in the entry's `caption`, which the player (`Nav.jsx` `trackName`) reads first.
 - All three admin upload paths call `uploadVariants()` (`lib/imageVariants.js`), which
   builds the variants in the browser (JPEG fallback on Safari, which cannot encode WebP).
-- `MediaImage` takes a `sizes` prop; set it to the slot's real width or the browser
-  over-fetches. If a variant fails to load it retries the original once.
-- Measured: one phone visit loads ~1 MB of photos (was ~42 MB). Load test against
+- **`sizes` is measured, never hand-written** (11/2026, `hooks/useFrameSizes.js`, used by
+  `MediaImage` and `HeroPhoto` in `Hero.jsx`): the `<img>` renders without `src` first, a layout
+  effect reads its box, the photo aspect (`sources.aspect`), `object-fit` and the applied `--fz`
+  (so desktop and phone each use their own zoom), then sets `sizes` = needed CSS px × `HEADROOM`
+  1.25 and only then `srcset`/`src` (in that order). srcset carries the **real** file widths.
+  A zero-width box (display:none) loads nothing until a ResizeObserver sees it. The hand-written
+  `sizes` were off by 1.5–2× (phone landscape) and the old "divide srcset by the larger of the
+  two zooms" over-fetched on desktop. Headroom 1.25 because a file that just fits renders softer
+  than a larger one downscaled: measured against renders from the 3000px original, AVIF at 1.25×
+  is as sharp or sharper than the old WebP picks in every case; 1.0× was not (bride, landscape).
+  If a variant fails to load `MediaImage` retries the original once.
+- **AVIF** (11/2026): `opt.avif: true` = every width in `opt.w` also exists as
+  `_opt/<folder>/<name>-<w>.avif` (same `?v=`). Browsers cannot encode AVIF, so admin uploads
+  still make WebP only (a new upload builds a fresh `opt` without the flag → WebP, never a stale
+  AVIF); `app/scripts/make-avif.mjs` (sharp, q60 4:2:0 effort 6, from the stored original) makes
+  them and sets the flag — re-run it after uploading new photos. q60 AVIF is closer to the original
+  than the WebP q78 variants (≈ WebP q85–90) at the same or smaller size. `storage.js` probes AVIF
+  support once with a 2×2 data URI (in parallel with `site_config`) and `sourcesFor()` picks
+  `.avif` paths only when both the flag and the probe say yes. `normalizeOpt()` keeps `avif`;
+  `variantStoragePaths()` deletes the `.avif` files too.
+- Hero priority: phone — the photo on screen (or photo 1 while the title card shows) gets
+  `fetchpriority="high"`; desktop — the centre and the two adjacent cards; the rest `low`.
+- Measured: one phone visit loads ~1 MB of photos (was ~42 MB). 11/2026 with AVIF + measured
+  sizes (full scroll, 4G emulation): portrait 1440 → 1403 KB, landscape 1484 → 1095 KB, desktop
+  2404 → 2295 KB, every photo as sharp or sharper than before. Without the AVIF files (code
+  deployed alone) WebP at 1.25× is heavier on portrait (+14%): upload AVIF first. Load test against
   production, 600 visitors in 60 s: 0 errors, p95 ≤ 121 ms for every request type.
 
 - `index.html` starts the `site_config` fetch itself (plain `fetch`, `apikey` in the

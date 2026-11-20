@@ -61,7 +61,8 @@ export function variantStoragePaths(folder, entry) {
   const opt = entry?.opt;
   if (!opt?.w?.length) return [];
   const base = entry.file.replace(/\.[^.]+$/, '');
-  return opt.w.map((w) => `${OPT_DIR}/${folder}/${base}-${w}.${opt.fmt}`);
+  const exts = opt.avif ? [opt.fmt, 'avif'] : [opt.fmt];
+  return exts.flatMap((ext) => opt.w.map((w) => `${OPT_DIR}/${folder}/${base}-${w}.${ext}`));
 }
 
 /** Câu trạng thái dưới ô ảnh. */

@@ -25,15 +25,20 @@ export const OPT_DIR = '_opt';
 const OPT_FORMATS = ['webp', 'jpg'];
 
 /**
- * `opt` = { v, fmt, w: [480, 960, 1600] }: ảnh này có những bản nén nào.
+ * `opt` = { v, fmt, w: [480, 960, 1600], avif?: true }: ảnh này có những bản nén nào.
  * `v` là phiên bản của ẢNH GỐC lúc sinh bản nén — xem variantPaths.
+ * `avif: true` — mỗi cỡ trong `w` còn có thêm bản `.avif` (cùng tên, cùng `?v=`), sinh ngoài
+ * trình duyệt bằng `app/scripts/make-avif.mjs` (trình duyệt không xuất được AVIF). Admin
+ * upload ảnh mới thì dựng `opt` mới không có cờ này → trang khách dùng WebP, không bao giờ
+ * hiện AVIF của ảnh cũ.
  * Hỏng thì trả null: mất bản nén chỉ làm ảnh tải chậm, không làm mất ảnh.
  */
 function normalizeOpt(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (!Number.isFinite(raw.v) || !OPT_FORMATS.includes(raw.fmt) || !Array.isArray(raw.w)) return null;
   const w = [...new Set(raw.w.filter((x) => Number.isInteger(x) && x > 0))].sort((a, b) => a - b);
-  return w.length ? { v: raw.v, fmt: raw.fmt, w } : null;
+  if (!w.length) return null;
+  return raw.avif === true ? { v: raw.v, fmt: raw.fmt, w, avif: true } : { v: raw.v, fmt: raw.fmt, w };
 }
 
 /**
@@ -98,11 +103,12 @@ function normalizeEntry(raw) {
  * Chủ nhà thay ảnh mà bản nén chưa kịp sinh lại thì trả rỗng → trang dùng ảnh gốc:
  * chậm hơn, nhưng không bao giờ hiện ảnh cũ.
  */
-export function variantPaths(folder, entry) {
+export function variantPaths(folder, entry, { avif = false } = {}) {
   const opt = entry?.opt;
   if (!opt || opt.v !== entry.v) return [];
   const base = entry.file.replace(/\.[^.]+$/, '');
-  return opt.w.map((w) => ({ w, path: `${OPT_DIR}/${folder}/${base}-${w}.${opt.fmt}` }));
+  const ext = avif && opt.avif ? 'avif' : opt.fmt;
+  return opt.w.map((w) => ({ w, path: `${OPT_DIR}/${folder}/${base}-${w}.${ext}` }));
 }
 
 /** Bản kê đọc về nhưng nội dung hỏng — không phải lỗi mạng, nên phải phân biệt. */

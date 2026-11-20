@@ -66,7 +66,6 @@ export default function Family({ side, config, siteText = {} }) {
               storagePath={storagePath}
               label={photoLabel}
               alt={photoLabel}
-              sizes="(max-width: 759.98px) 86vw, 45vw"
             />
           </div>
           {/* <b> bên trong: chuyển động viết tay clip phần tử con (clip chính nó thì IntersectionObserver không thấy) */}

@@ -19,6 +19,21 @@ const manifestReady = new Promise((resolve) => { openGate = resolve; });
 // theo đường cũ, chứ không treo vĩnh viễn ở cổng.
 const gateTimer = setTimeout(() => openGate(), GATE_FALLBACK_MS);
 
+// Trình duyệt có đọc được AVIF không: giải mã thử một ảnh 2×2 nhúng sẵn. Chạy ngay lúc nạp
+// module, song song với lượt hỏi site_config, nên xong từ lâu trước khi bản kê về. Không trả
+// lời trong 800 ms (máy rất cũ) thì coi như không: dùng WebP như trước.
+const AVIF_PROBE = 'data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAAImlsb2MAAAAAREAAAQABAAAAAAD6AAEAAAAAAAAAHQAAACNpaW5mAAAAAAABAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAAlbWRhdBIACgc4AD5QENBpMhAYAAAAQEADUu3nI8otdnhQ';
+let avifOk = false;
+const avifReady = typeof Image === 'undefined' ? Promise.resolve() : new Promise((resolve) => {
+  const img = new Image();
+  const done = (ok) => { avifOk = ok; resolve(); };
+  const t = setTimeout(() => done(false), 800);
+  img.onload = () => { clearTimeout(t); done(img.width === 2); };
+  img.onerror = () => { clearTimeout(t); done(false); };
+  img.src = AVIF_PROBE;
+});
+const sourcesReady = () => Promise.all([manifestReady, avifReady]);
+
 /** App nạp bản kê vào đây khi nội dung chữ về. Gọi bao nhiêu lần cũng vô hại. */
 export function setManifest(next) {
   manifest = next || emptyManifest();
@@ -103,27 +118,32 @@ function buildPublicUrl(path, version) {
  * URL bản nén gắn `?v=` của CHÍNH bản nén. Tên file bản nén không đổi khi chủ nhà
  * thay ảnh, mà cache để một năm — thiếu `?v=` là khách thấy ảnh cũ suốt một năm.
  *
+ * Bản nén là AVIF khi ảnh có (`opt.avif`) và trình duyệt đọc được; còn lại WebP/JPEG.
+ * `srcSet` khai bề rộng THẬT của từng file. Phần "khung phóng z× cần z lần điểm ảnh"
+ * nằm ở `sizes`, do `useFrameSizes` đo từ khung thật (đúng bố cục đang hiện) — trước
+ * 11/2026 nó nằm ở đây (chia `w` cho z lớn nhất của hai bố cục) nên máy tính tải thừa
+ * khi khung điện thoại phóng to hơn. `aspect` (rộng/cao) cho phép tính phần ảnh bị
+ * `object-fit: cover` cắt.
+ *
  * Chưa có bản nén thì cả bốn đều là ảnh gốc: chậm hơn nhưng vẫn đúng ảnh.
  */
 function sourcesFor(folder, entry) {
   const original = buildPublicUrl(`${folder}/${entry.file}`, entry.v);
-  const variants = variantPaths(folder, entry)
+  const variants = variantPaths(folder, entry, { avif: avifOk })
     .map(({ w, path }) => ({ w, url: buildPublicUrl(path, entry.opt.v) }))
     .filter((x) => x.url);
   const fit = fitFor(entry);
-  if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original, fit };
+  const aspect = entry.w > 0 && entry.h > 0 ? entry.w / entry.h : null;
+  if (!variants.length) return { url: original, srcSet: undefined, small: original, full: original, original, fit, aspect };
   const mid = [...variants].reverse().find((x) => x.w <= 960) || variants[0];
-  // Khung phóng z× (fit) thì ô cần z lần số điểm ảnh, nhưng `sizes` chỉ biết bề rộng ô.
-  // Khai bề rộng mỗi bản nén chia cho z → trình duyệt tự chọn bản lớn hơn đúng z lần.
-  // Lấy z lớn nhất của máy tính/điện thoại: một srcset dùng chung cho cả hai bố cục.
-  const zoom = Math.max(1, fit?.d?.z || 1, fit?.m?.z || 1);
   return {
     url: mid.url,
-    srcSet: variants.map((x) => `${x.url} ${Math.max(1, Math.round(x.w / zoom))}w`).join(', '),
+    srcSet: variants.map((x) => `${x.url} ${x.w}w`).join(', '),
     small: variants[0].url,
     full: variants[variants.length - 1].url,
     original,
     fit,
+    aspect,
   };
 }
 
@@ -140,7 +160,7 @@ function splitPath(path) {
  */
 export async function getMediaSourcesAsync(path) {
   if (!path || !supabaseConfigured) return null;
-  await manifestReady;
+  await sourcesReady();
   const known = findEntry(manifest, path);
   if (known) return sourcesFor(splitPath(path).folder, known);
   const url = await getMediaUrlAsync(path);
@@ -175,7 +195,7 @@ export function getMediaUrl(path) {
  * Trả về mảng { name, url }, kèm { srcSet, small, full, w, h, caption } khi bản kê có sẵn.
  */
 export async function listMedia(folder) {
-  await manifestReady;
+  await sourcesReady();
   const fromManifest = listFolder(manifest, folder);
   if (fromManifest.length) {
     return fromManifest.map((e) => ({

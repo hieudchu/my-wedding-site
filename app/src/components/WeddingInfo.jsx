@@ -35,7 +35,7 @@ function DeskInfo({ config, siteText = {} }) {
   return (
     <section className="d-info" id="details">
       <figure className="d-info-photo d-info-photo--l rv" data-rv>
-        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" sizes="(min-width: 1560px) 340px, 22vw" />
+        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" />
       </figure>
 
       <div className="d-info-card rv" data-rv data-dv="">
@@ -88,7 +88,7 @@ function DeskInfo({ config, siteText = {} }) {
       </div>
 
       <figure className="d-info-photo d-info-photo--r rv" data-rv>
-        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" sizes="(min-width: 1560px) 340px, 22vw" />
+        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" />
       </figure>
     </section>
   );
@@ -104,10 +104,10 @@ export default function WeddingInfo({ config, siteText = {} }) {
   return (
     <section className="info" id="details">
       <div className="info-blob info-blob-1" data-rv data-sp="">
-        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
+        <MediaImage storagePath="background/right.jpg" label="Ảnh cưới" alt="" />
       </div>
       <div className="info-blob info-blob-2" data-rv data-sp="">
-        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" sizes="(max-width: 759.98px) 80vw, 30vw" />
+        <MediaImage storagePath="background/left.jpg" label="Ảnh cưới" alt="" />
       </div>
 
       {/* data-dv: bốn góc tự vẽ nét, vạch ❖ mọc ra, tên viết tay (mobile.css + DeskMotion) */}

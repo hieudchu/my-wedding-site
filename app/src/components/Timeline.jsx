@@ -124,11 +124,11 @@ function DeskTimeline({ items, cd, siteText = {} }) {
           MediaImage hiện ô chờ ảnh). Điện thoại không có hai ảnh này. */}
       <div className="d-tl-wrap">
         <figure className="d-tl-side d-tl-side--l rv" data-rv>
-          <MediaImage storagePath="background/timeline-left.jpg" label="Ảnh lịch trình · trái" alt="Hiếu và Minh" sizes="(min-width: 1400px) 340px, 22vw" />
+          <MediaImage storagePath="background/timeline-left.jpg" label="Ảnh lịch trình · trái" alt="Hiếu và Minh" />
         </figure>
         <TimelineWave items={items} />
         <figure className="d-tl-side d-tl-side--r rv" data-rv>
-          <MediaImage storagePath="background/timeline-right.jpg" label="Ảnh lịch trình · phải" alt="Hiếu và Minh" sizes="(min-width: 1400px) 340px, 22vw" />
+          <MediaImage storagePath="background/timeline-right.jpg" label="Ảnh lịch trình · phải" alt="Hiếu và Minh" />
         </figure>
       </div>
 
@@ -138,7 +138,6 @@ function DeskTimeline({ items, cd, siteText = {} }) {
             storagePath="background/moment-2.jpg"
             label="Hiếu và Minh"
             alt="Hiếu và Minh"
-            sizes="(min-width: 1400px) 420px, 30vw"
           />
         </figure>
         <div className="d-cd-card rv" data-rv>
@@ -256,7 +255,6 @@ export default function Timeline({ config, siteText = {} }) {
             storagePath="background/moment-2.jpg"
             label="Hiếu và Minh"
             alt="Hiếu và Minh"
-            sizes="(max-width: 860px) 100vw, 820px"
           />
         </div>
         <div className="countdown-card" data-sp="">

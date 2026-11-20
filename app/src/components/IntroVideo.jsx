@@ -113,10 +113,10 @@ const VOL_LO = 0.16; // vào nhỏ, nhẹ
 const VOL_HI = 0.55; // to dần tới mức vừa ở cuối video
 const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi
 const MUSIC_GAP_MS = 3000; // chủ thiệp (11/2026): nhạc nền KHÔNG vào ngay — nghỉ một nhịp rồi mới vào nhẹ
-const DUR = { full: 16.6, short: 2.5 };
+const DUR = { full: 16.6 };
 // Sau cổng: video bắt đầu từ giây JOIN (bản đầy đủ mở bằng 1,2 s tối — bỏ đi, cổng đã thay nó) và chạy
 // ngay khi lòng thiệp nở đúng bằng khung (GATE_LEAD_S sau cú chạm).
-const JOIN = { full: 1.2, short: 0 };
+const JOIN = { full: 1.2 };
 // Lần vào sau (chủ thiệp: bản ngắn 2,5 s "ngắn quá"): chiếu CHÍNH bản đầy đủ từ cảnh cô dâu tà voan
 // (8,75 s — sau vệt sáng chuyển cảnh) → ôm nhau → thu về thẻ ở CARD_AT.full: ~5 s phim, không tải thêm file.
 const LATER_AT = 8.75;
@@ -125,7 +125,7 @@ const SFX_URL = '/assets/intro/gate/sfx.mp3?v=20261120g';
 // nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
 // thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì
 // thành phóng to rồi thu lại — cả hai đều bị chê. Video dừng ở khung hình ngay trước đoạn đó.
-const CARD_AT = { full: 13.85, short: 0.45 }; // giây video bắt đầu thu vào thẻ (13,9 s / 17,1−16,6 s)
+const CARD_AT = { full: 13.85 }; // giây video bắt đầu thu vào thẻ (lần đầu lẫn lần sau: cùng file full)
 const CARD_MOVE_MS = 1300; // khung → thẻ
 const CARD_HOLD_MS = 900; // thẻ đỏ đứng một nhịp rồi mới mờ vào trang
 /** Khung thẻ thiệp thật trên trang (+ khoảng lùi của viền vàng bên trong). */
@@ -405,7 +405,7 @@ function IntroVideoMain({ ready, enabled, music }) {
   // Canh đúng lúc video bắt đầu thu vào thẻ (rAF chính xác hơn timeupdate ~4 lần/giây)
   useEffect(() => {
     if (phase !== 'play' || !p) return undefined;
-    const at = p.dur === DUR.short ? CARD_AT.short : CARD_AT.full;
+    const at = CARD_AT.full;
     let raf = 0;
     const tick = () => {
       const v = mainRef.current;

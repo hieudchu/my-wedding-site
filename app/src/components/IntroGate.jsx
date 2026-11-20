@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Phong bì mở thiệp (11/2026) — màn đầu của IntroVideo, khổ dọc.
+ * Phong bì mở thiệp (11/2026) — màn đầu của IntroVideo; khổ dọc, từ 20/11 cả khổ ngang + máy tính (`wide`).
  *
  * Bản 2 (chủ thiệp 20/11: "đặt khung cho tấm thiệp, cố định 1 size, mở ra phần bên trong khít với trang"):
  * phong bì là một hình chữ nhật 2:3 ĐÚNG BẰNG thẻ hero, nằm trên nền hoa đỏ y như trang. Clip được đặt theo
@@ -19,28 +19,45 @@ const A = '/assets/intro/envelope/';
 const GV = '?v=20261122d';
 // Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip) — đo ở khung cuối của clip (v2/measure).
 export const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
+// Bản ngang (khổ ngang + máy tính, 20/11 — chủ thiệp: "chính thiệp bản dọc xoay ngang ra, huy hiệu sáp đúng hướng"):
+// clip dọc đã duyệt xoay 90° theo kim đồng hồ (vạt mang dấu sáp mở lên trên), dấu sáp vẽ lại đứng thẳng
+// (envelope/v2/rot_clip.py + seal_fix.py). Phong bì 3:2 đặt giữa thẻ hero (thẻ giữ cỡ cũ, rộng hơn — IntroVideo fit32).
+export const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };
 // Clip đã cắt 9 khung đứng yên đầu và đoạn lắng cuối, chiếu 60 khung/giây (đủ mọi khung Kling, nhanh 2,5× —
 // chủ thiệp: "mở hơi chậm", "lên 40", rồi "lên 60"; envelope/v2/finish_clip.py): vạt nằm yên ở ~1,77 s → giao cho IntroVideo.
 export const GATE_CUT_S = 1.77;
 export const GATE_FADE_MS = 650;
 export const GATE_LEAD_S = GATE_CUT_S; // chạm → video chạy (IntroVideo canh nhạc)
 
+// Phong bì ngang có nền TRONG SUỐT (chủ thiệp: "background đỏ của thiệp lệch với background hero") — envelope/v2/alpha_w.py.
+// iPhone / iPad / Safari: HEVC có kênh trong suốt; trình duyệt khác: WebM VP9 có kênh trong suốt.
+const APPLE = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(navigator.userAgent)));
+
 /** Khung clip (toạ độ màn hình) sao cho thẻ trong clip trùng `rect` của thẻ thật. */
-export function clipBox(rect) {
+export function clipBox(rect, wide) {
   if (!rect) return null;
-  const w = rect.w / CLIP_CARD.w;
-  const h = rect.h / CLIP_CARD.h;
-  return { left: rect.x - CLIP_CARD.x * w, top: rect.y - CLIP_CARD.y * h, width: w, height: h };
+  const C = wide ? CLIP_CARD_W : CLIP_CARD;
+  const w = rect.w / C.w;
+  const h = rect.h / C.h;
+  return { left: rect.x - C.x * w, top: rect.y - C.y * h, width: w, height: h };
 }
 
 /** Nút "Chạm để mở thiệp" nằm giữa khoảng trống dưới phong bì (không đè lên mép phong bì); chật quá thì để CSS. */
 const CTA_H = 64;
-function ctaPlace(rect) {
+const PILL_H = 38;
+function ctaPlace(rect, wide) {
   if (!rect || typeof window === 'undefined') return undefined;
   const bottom = rect.y + rect.h;
   const below = window.innerHeight - bottom;
-  if (below < CTA_H + 16) return undefined;
-  return { top: Math.round(bottom + Math.min(48, (below - CTA_H) / 2)), bottom: 'auto' };
+  if (below >= CTA_H + 16) return { top: Math.round(bottom + Math.min(48, (below - CTA_H) / 2)), bottom: 'auto' };
+  // Phong bì ngang mà dưới không còn chỗ (điện thoại ngang, nhất là iPhone có thanh Safari): nút nằm giữa dải từ
+  // mép dưới dấu sáp (dấu sáp cao ~36% thẻ, ở giữa) tới mép dưới phong bì — không đè lên dấu sáp.
+  if (wide) {
+    const band = rect.h * 0.31;
+    return { top: Math.round(rect.y + rect.h * 0.69 + Math.max(0, (band - PILL_H) / 2)), bottom: 'auto', left: Math.round(rect.x + rect.w / 2) };
+  }
+  return undefined;
 }
 
 /**
@@ -49,8 +66,12 @@ function ctaPlace(rect) {
  * @param onOpen  gọi NGAY trong cú chạm (đồng bộ) — nhạc + tiếng giấy/sáp, làm nóng video
  * @param onCut   tới GATE_CUT_S: lần đầu thì IntroVideo chạy video dưới phong bì; tải lại thì rời lớp phủ
  * @param onDone  clip đã mờ hết (lần đầu): gỡ phong bì
+ * @param wide    khổ ngang / máy tính: phong bì xoay ngang (clip *-w, thẻ 3:2)
  */
-export default function IntroGate({ rect, reveal, onOpen, onCut, onDone }) {
+export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone }) {
+  // Khổ ngang tải lại: thẻ trong phong bì là 3:2, thẻ trang rộng hơn → phong bì cũng mờ đi (như lần đầu) để
+  // IntroVideo giãn thẻ đỏ ra đúng thẻ trang; khổ dọc giữ khung cuối rồi rời lớp phủ.
+  const hold = reveal && !wide;
   const [step, setStep] = useState('idle'); // idle → vid → fade (lần đầu) / hold (tải lại)
   const [imgReady, setImgReady] = useState(false);
   const [clipReady, setClipReady] = useState(false);
@@ -84,7 +105,7 @@ export default function IntroGate({ rect, reveal, onOpen, onCut, onDone }) {
     if (cut.current) return;
     cut.current = true;
     cancelAnimationFrame(raf.current);
-    if (reveal) {
+    if (hold) {
       clipRef.current?.pause();
       setStep('hold');
       onCut?.();
@@ -111,7 +132,10 @@ export default function IntroGate({ rect, reveal, onOpen, onCut, onDone }) {
     v.play().then(() => { raf.current = requestAnimationFrame(watch); }, toVideo); // không phát được → vào luôn
   };
 
-  const box = clipBox(rect);
+  const box = clipBox(rect, wide);
+  const name = reveal ? 'card' : 'video';
+  const idleSrc = wide ? `${A}idle-${name}-w.webp${GV}` : `${A}idle-${name}.jpg${GV}`;
+  const clipSrc = wide ? `${A}open-${name}-${APPLE ? 'wa.mp4' : 'w.webm'}${GV}` : `${A}open-${name}.mp4${GV}`;
   const place = box ? { left: box.left, top: box.top, width: box.width, height: box.height } : undefined;
   return (
     <div
@@ -122,12 +146,12 @@ export default function IntroGate({ rect, reveal, onOpen, onCut, onDone }) {
       onClick={open}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
     >
-      <img className="ig-idle" style={place} src={`${A}${reveal ? 'idle-card.jpg' : 'idle-video.jpg'}${GV}`} alt="" decoding="async" onLoad={onImg} onError={onImg} />
+      <img className="ig-idle" style={place} src={idleSrc} alt="" decoding="async" onLoad={onImg} onError={onImg} />
       <video
         className="ig-clip"
         style={place}
         ref={clipRef}
-        src={`${A}${reveal ? 'open-card.mp4' : 'open-video.mp4'}${GV}`}
+        src={clipSrc}
         muted
         playsInline
         preload="auto"
@@ -135,7 +159,7 @@ export default function IntroGate({ rect, reveal, onOpen, onCut, onDone }) {
         onEnded={toVideo}
         onError={() => { if (step !== 'idle') toVideo(); }}
       />
-      <div className="ig-cta" style={ctaPlace(rect)}>
+      <div className={`ig-cta ${wide && rect && window.innerHeight - rect.y - rect.h < CTA_H + 16 ? 'on-flap' : ''}`} style={ctaPlace(rect, wide)}>
         <span>Chạm để mở thiệp</span>
         <small>Trân trọng kính mời</small>
       </div>

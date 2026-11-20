@@ -919,7 +919,17 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
     0 2px 4px rgba(0, 0, 0, 0.55),
     0 8px 16px -4px rgba(0, 0, 0, 0.8);
 }
+/* Máy tính: bóng của .hero-card-inner.hero-title-card (desktop.css) */
+.intro-video.intro-desktop .intro-frame.in-card.card {
+  box-shadow:
+    0 0 0 1px rgba(216, 183, 120, 0.22),
+    0 54px 96px -38px rgba(0, 0, 0, 0.85);
+}
 .intro-frame.in-card.card .intro-media { transition: opacity 0.9s ease; }
+/* Tải lại khổ ngang: thẻ đỏ 3:2 của phong bì giãn ra đúng thẻ hero (IntroVideo WIDEN_MS) */
+.intro-video.page-reveal .intro-frame.card.widen {
+  transition: left 0.9s var(--ease-soft), top 0.9s var(--ease-soft), width 0.9s var(--ease-soft), height 0.9s var(--ease-soft);
+}
 .intro-frame.in-card::after { transition: opacity 0.7s ease 0.4s; }
 .intro-landscape .intro-frame {
   border-radius: 0;
@@ -1033,6 +1043,8 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
 }
 .ig-cta small { font: italic 500 15px/1 'Cormorant Garamond', serif; color: #E2C68A; letter-spacing: 0.04em; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
 @keyframes igPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(216, 180, 106, 0.35); } 50% { box-shadow: 0 0 0 9px rgba(216, 180, 106, 0); } }
+.ig-cta.on-flap small { display: none; } /* nút nằm trên vạt dưới (phong bì ngang thấp): chỉ còn nút */
+.ig-cta.on-flap span { padding: 10px 16px; font-size: 12px; }
 .intro-gate:not(.step-idle) .ig-cta { opacity: 0; }
 .intro-gate:focus-visible .ig-cta span { outline: 2px solid #D8B46A; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .ig-cta span { animation: none; } }

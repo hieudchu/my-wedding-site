@@ -128,6 +128,7 @@ const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122d';
 const CARD_AT = { full: 10.15 }; // giây video bắt đầu thu vào thẻ (bản dựng v6: thu ở 10,2 s)
 const CARD_MOVE_MS = 1300; // khung → thẻ
 const CARD_HOLD_MS = 900; // thẻ đỏ đứng một nhịp rồi mới mờ vào trang
+const WIDEN_MS = 900; // tải lại khổ ngang: thẻ đỏ 3:2 giãn ra thẻ hero thật (= .intro-frame.widen)
 /** Khung thẻ thiệp thật trên trang (+ khoảng lùi của viền vàng bên trong). */
 function cardRect() {
   const el = document.querySelector('.hm-title, .hero-title-card');
@@ -136,6 +137,15 @@ function cardRect() {
   if (!r.width || !r.height) return null;
   const f = el.querySelector('.frame')?.getBoundingClientRect();
   return { x: r.left, y: r.top, w: r.width, h: r.height, inset: f ? Math.max(0, f.left - r.left) : 12 };
+}
+
+/** Phong bì ngang (3:2) đặt giữa thẻ hero: hình chữ nhật 3:2 lớn nhất nằm trong thẻ (thẻ ngang / máy tính giữ cỡ
+ *  cũ, rộng hơn 3:2 — chủ thiệp 20/11: "video phóng to rồi thì về lại size cũ"). */
+function fit32(r) {
+  if (!r) return r;
+  if (r.w / r.h > 1.5) { const w = r.h * 1.5; return { ...r, x: r.x + (r.w - w) / 2, w }; }
+  const h = r.w / 1.5;
+  return { ...r, y: r.y + (r.h - h) / 2, h };
 }
 
 /**
@@ -261,11 +271,13 @@ function makePlan() {
 
   const kind = pickKind();
   const still = mqMatches('(prefers-reduced-motion: reduce)') || slowNetwork();
-  const media = kind;
-  // Phong bì mở thiệp: mới có khổ dọc (chủ thiệp: "làm dọc trước")
-  const gate = !still && kind === 'portrait';
-  // Lần tải lại (chủ thiệp: chỉ một video → không chiếu lại): có phong bì thì phong bì mở thẳng vào trang
-  // hero thật (clip mở ra đúng tấm thẻ trống); chưa có phong bì (ngang / máy tính) thì vào thẳng trang.
+  // Phong bì mở thiệp: khổ dọc, và từ 20/11 cả khổ ngang + máy tính (phong bì dọc xoay ngang, thẻ hero 3:2).
+  const gate = !still;
+  // Có phong bì thì video chạy TRONG thẻ 3:2 (như khổ dọc). Khổ ngang dùng video máy tính (16:9): cắt 3:2 vẫn đủ hai
+  // người, và lòng phong bì (open-video-w.mp4) là khung đầu của đúng video đó → một bộ clip cho cả hai khổ.
+  const media = gate && kind === 'landscape' ? 'desktop' : kind;
+  // Lần tải lại (chủ thiệp: chỉ một video → không chiếu lại): phong bì mở thẳng vào trang hero thật (clip mở ra
+  // đúng tấm thẻ trống); không có phong bì (giảm chuyển động / mạng rất chậm) thì vào thẳng trang.
   const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search));
   if (seen && !gate) return null;
   // Nhạc nền của trang (Nav) chờ intro xong — xem Nav.jsx. Đặt ngay lúc quyết định, trước mọi effect.
@@ -281,7 +293,7 @@ function makePlan() {
     still,
     gate,
     pageReveal: gate && seen, // phong bì mở thẳng vào trang, không có video
-    // Chưa có phong bì (ngang / máy tính), lần đầu: chiếu từ 0 như trước
+    // Không có phong bì (giảm chuyển động…): chiếu từ 0
     join: gate ? JOIN.full : 0,
     dur: DUR.full,
     // Có cổng: bản đầy đủ bắt đầu ở JOIN.full — ghi thẳng vào URL (#t=): Safari iPhone bỏ qua lệnh
@@ -353,7 +365,16 @@ function IntroVideoMain({ ready, enabled, music }) {
   // Khung video như main (viền vàng trên nền hoa đỏ). Có phong bì (khổ dọc, bản 2): khung CHÍNH LÀ thẻ hero
   // (đo thẻ thật) ngay từ đầu — phong bì đặt khít thẻ, mở ra thấy video trong thẻ, video chạy ở đó, hết thì
   // hình tan thành đỏ tại chỗ. Chưa đo được thẻ thì chưa có khung (chỉ nền hoa của lớp phủ).
-  const baseBox = () => (p.gate ? cardRect() : frameBox(p.kind));
+  // Khổ ngang / máy tính (20/11, chủ thiệp: "khung của video đâu"): phong bì mở ra video trong thẻ, rồi khung NỞ RA
+  // thành khung video cũ (to, viền vàng hai lớp — frameBox); cuối video khung thu về thẻ như trước (toCard).
+  const [grown, setGrown] = useState(false);
+  const wide = !!p && p.kind !== 'portrait';
+  // Tải lại, khổ ngang: phong bì mở ra thẻ đỏ 3:2, vạt tan đi, rồi thẻ đỏ giãn ra đúng thẻ hero thật
+  const [widen, setWiden] = useState(false);
+  const [revealCut, setRevealCut] = useState(false); // vạt đã mở hết: hiện thẻ đỏ 3:2 dưới phong bì đang mờ
+  const grownRef = useRef(false);
+  grownRef.current = grown;
+  const baseBox = () => (p.gate && !grownRef.current ? cardRect() : frameBox(p.kind));
   const boxNow = () => cardRef.current || baseBox();
   const [box, setBox] = useState(() => (p ? baseBox() : null));
   useEffect(() => {
@@ -369,6 +390,7 @@ function IntroVideoMain({ ready, enabled, music }) {
     let t = 0;
     if (p.gate) {
       t = setInterval(() => {
+        if (grownRef.current) return; // khung đã nở ra khung video: thôi bám thẻ
         const r = cardRect();
         if (!r) return;
         setBox((b) => (b && Math.abs(b.x - r.x) < 0.5 && Math.abs(b.y - r.y) < 0.5 && Math.abs(b.w - r.w) < 0.5 && Math.abs(b.h - r.h) < 0.5 ? b : r));
@@ -521,10 +543,23 @@ function IntroVideoMain({ ready, enabled, music }) {
   // chỗ), phong bì mờ dần → chỉ có các vạt tan đi. Tải lại: clip đứng ở khung cuối (thẻ trống đúng chỗ thẻ thật)
   // → rời lớp phủ ngay: View Transition hoà các vạt + nền vào trang, chữ thẻ trồi lên sau đó.
   const onGateCut = () => {
+    if (p.pageReveal && wide) { setRevealCut(true); return; } // khổ ngang: chờ vạt tan hết (onGateDone) rồi thẻ đỏ giãn ra
     if (p.pageReveal) { setTimeout(leave, 200); return; } // vạt nằm yên một nhịp ngắn rồi mới tan
     setPhase((ph) => (ph === 'gate' ? 'play' : ph));
   };
-  const onGateDone = () => setGateGone(true);
+  const onGateDone = () => {
+    setGateGone(true);
+    if (p.pageReveal && wide) {
+      setWiden(true);
+      setTimeout(leave, WIDEN_MS + 250);
+      return;
+    }
+    if (p.kind !== 'portrait' && !p.pageReveal && !cardRef.current) {
+      grownRef.current = true;
+      setGrown(true);
+      setBox(frameBox(p.kind));
+    }
+  };
 
   /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */
   const startMusic = async () => {
@@ -692,6 +727,8 @@ function IntroVideoMain({ ready, enabled, music }) {
   else if (phase === 'still') mode.current = 'still';
   if (phase === 'still' && !card) setTimeout(toCard, 0);
   const still = mode.current === 'still';
+  // Khổ ngang: lúc còn phong bì (và video trong thẻ trước khi khung nở ra) khung là phần 3:2 giữa thẻ
+  const fbox = wide && p.gate && !grown && !widen ? fit32(box) : box;
   return (
     <div
       className={`intro-video intro-${p.kind} ${phase === 'out' ? 'out' : ''} ${morph ? 'settle' : ''} ${p.pageReveal ? 'page-reveal' : ''} ${p.pageReveal && !card ? 'no-card' : ''}`}
@@ -701,10 +738,10 @@ function IntroVideoMain({ ready, enabled, music }) {
     >
       <div
         // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
-        className={`intro-frame ${mode.current === 'none' || !box || phase === 'gate' ? 'empty' : ''} ${p.gate ? 'in-card' : ''} ${card ? 'card' : ''}`}
+        className={`intro-frame ${mode.current === 'none' || !box || (phase === 'gate' && !revealCut) ? 'empty' : ''} ${p.gate && !grown ? 'in-card' : ''} ${card ? 'card' : ''} ${widen ? 'widen' : ''}`}
         style={{
-          ...(box ? { left: box.x, top: box.y, width: box.w, height: box.h } : null),
-          ...(p.gate && box ? { '--card-inset': `${box.inset}px` } : null),
+          ...(fbox ? { left: fbox.x, top: fbox.y, width: fbox.w, height: fbox.h } : null),
+          ...(p.gate && !grown && box ? { '--card-inset': `${box.inset}px` } : null),
           ...(card ? { '--card-inset': `${card.inset}px`, '--card-move': `${CARD_MOVE_MS}ms` } : null),
           ...(morph ? { transform: morph } : null),
         }}
@@ -760,7 +797,7 @@ function IntroVideoMain({ ready, enabled, music }) {
       </div>
       {DEBUG && <DebugPanel phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
       {p.gate && !gateGone && phase !== 'wait' && (
-        <IntroGate rect={box} reveal={p.pageReveal} onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
+        <IntroGate rect={wide ? fit32(box) : box} reveal={p.pageReveal} wide={wide} onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
       )}
       {(phase === 'play' || phase === 'loop') && (!p.gate || gateGone) && (
         <>

@@ -40,6 +40,9 @@ export function useLandscapeFullscreen(isPhone) {
       de.setAttribute('data-fs-ask', '');
     };
     function enter() {
+      // Đang mở phong bì / chiếu intro: chưa vào toàn màn (màn đổi cỡ giữa chừng → phong bì nhảy chỗ theo thẻ).
+      // Vẫn chờ sẵn: lần chạm đầu tiên sau intro mới vào.
+      if (de.dataset.intro) return;
       disarm();
       if (!mqMatches(LAND) || fsEl() || optOut) return;
       ours = true;

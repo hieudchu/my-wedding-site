@@ -851,6 +851,10 @@ a:hover {
 }
 /* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
 .intro-frame.empty { opacity: 0; }
+/* Đang ở cổng thiệp: khung (đã nạp video) ẩn hẳn; lòng thiệp nở đúng bằng khung rồi khung hiện NGAY
+   (không mờ dần — nó thế chỗ lớp nở giống hệt) */
+.intro-frame.gated { opacity: 0; transition: none; }
+.intro-frame.ungated { transition-property: transform, left, top, width, height, box-shadow, border-radius; }
 /* Kết: CHÍNH khung trượt + co giãn thành thẻ thiệp thật (IntroVideo toCard), hình tan thành đỏ
    #4A000B, viền vàng bên trong hiện ra — giống hệt thẻ hero (.hm-title / .hero-title-card) */
 .intro-video .intro-frame.card {
@@ -949,6 +953,159 @@ a:hover {
 }
 .intro-skip:hover { background: rgba(50, 0, 12, 0.7); }
 @media (prefers-reduced-motion: reduce) { .intro-hint { animation: none; } }
+
+/* ── Cổng mở thiệp (IntroGate.jsx) ──────────────────────────────────────────────────────────
+   Lớp tiền tố ig-: sections.css còn CSS của cổng sơn mài cũ (.gate-door …) — trùng tên là vỡ.
+   Số đo trong "thế giới" (px) y hệt bản demo chủ thiệp duyệt (wedding-video/card-gate/s1-web).
+   Đổi bất cứ số nào ở đây thì phải xuất lại khung A/M và làm lại clip Kling (khớp từng điểm ảnh). */
+.intro-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* tối bốn góc như nền trong thế giới, để mép thế giới tan vào lớp phủ */
+.intro-gate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(75% 55% at 50% 50%, transparent 40%, rgba(15, 0, 4, 0.55) 100%);
+  transition: opacity 0.6s ease 0.3s;
+}
+.ig-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--gw);
+  height: var(--gh);
+  transform: var(--fit);
+  transform-origin: 0 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(180deg, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(180deg, transparent, #000 5%, #000 95%, transparent);
+  mask-composite: intersect;
+}
+.ig-world.front { z-index: 2; }
+/* Nền trong thế giới = nền lớp phủ (vân hoa đỏ), để clip Kling (chứa cả nền) khớp từng điểm ảnh */
+.ig-bg {
+  position: absolute;
+  inset: 0;
+  background: url('/assets/background/floral-relief-tile.jpg?v=20261120') center / auto 1920px repeat, #32000C;
+  background-blend-mode: overlay, normal;
+}
+.ig-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(75% 55% at 50% 50%, transparent 40%, rgba(15, 0, 4, 0.55) 100%);
+}
+/* Clip xong, code đẩy hai cánh đi nốt: nền thế giới + góc tối tan dần vào nền lớp phủ của IntroVideo,
+   ảnh đầu của bản sẽ chiếu hiện dần trong lòng thiệp → lúc gỡ cổng không lộ gì đổi */
+.ig-bg { transition: opacity 0.6s ease 0.3s; }
+.intro-gate.step-code .ig-bg,
+.intro-gate.step-code::before { opacity: 0; }
+.intro-gate.step-code { pointer-events: none; }
+.ig-inner,
+.ig-shadow {
+  position: absolute;
+  left: var(--cx);
+  top: var(--cy);
+  width: var(--cw);
+  height: var(--ch);
+}
+.ig-inner { overflow: hidden; background: #32000C; }
+.ig-inner img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Thiệp đóng: một lớp bóng chung dưới cả thiệp (giữa hai cánh không có bóng → không lộ vạch khe);
+   cánh tách ra mới có bóng riêng */
+.ig-shadow { box-shadow: 0 30px 70px rgba(10, 0, 2, 0.55), 0 4px 10px rgba(10, 0, 2, 0.3); transition: opacity 0.4s ease; }
+.intro-gate.moving .ig-shadow { opacity: 0; }
+/* Thiệp đóng: khe giữa hai cánh rơi vào nửa điểm ảnh khi thu nhỏ → lót đỏ phía sau, giấu lòng thiệp
+   (sáng) cho tới khi clip mở cánh đã phủ lên — không lộ vạch sáng ở khe */
+.intro-gate.step-idle:not(.ig-render) .ig-shadow { background: #A8161F; }
+.intro-gate.step-idle:not(.ig-render) .ig-inner { visibility: hidden; }
+.ig-door {
+  position: absolute;
+  top: var(--cy);
+  height: var(--ch);
+  overflow: visible;
+  will-change: transform;
+  backface-visibility: hidden;
+  transition: box-shadow 0.4s ease;
+}
+.ig-door img { display: block; width: 100%; height: 100%; }
+.ig-door.l { left: var(--cx); width: var(--dl); }
+.ig-door.r { left: calc(var(--cx) + var(--dl)); width: var(--dr); z-index: 1; /* ô 囍 (con của cánh phải) nằm trên cánh trái */ }
+.intro-gate.moving .ig-door.l { box-shadow: -6px 26px 50px rgba(10, 0, 2, 0.5), 0 4px 10px rgba(10, 0, 2, 0.3); }
+.intro-gate.moving .ig-door.r { box-shadow: 6px 26px 50px rgba(10, 0, 2, 0.5), 0 4px 10px rgba(10, 0, 2, 0.3); }
+/* Ô 囍 nguyên khối, gắn cánh phải, đè lên khe */
+.ig-tag {
+  position: absolute;
+  left: var(--tx);
+  top: var(--ty);
+  width: var(--tw);
+  height: var(--th);
+  filter: drop-shadow(3px 6px 6px rgba(40, 10, 0, 0.45));
+}
+.ig-tag img { display: block; width: 100%; height: 100%; }
+/* Clip Kling (A → M) phủ cả thế giới; chỉ hiện khi đã có khung hình đầu */
+.ig-clip { position: absolute; left: 0; top: 0; width: var(--gw); height: var(--gh); visibility: hidden; z-index: 2; }
+.intro-gate.step-vid .ig-clip { visibility: visible; }
+/* Hai cánh code vẫn chạy (đúng đồng hồ) dưới clip; clip mờ dần vào chúng trước lúc hết (IntroGate run) */
+/* Thiệp chưa đủ ảnh + clip: chưa hiện (kẻo một cánh còn trống) */
+.intro-gate:not(.ready) :is(.ig-world, .ig-cta) { opacity: 0; }
+.ig-world { transition: opacity 0.5s ease; }
+/* Viền vàng của khung video (vẽ vào trong mép, như .intro-frame khi có cổng), hiện dần khi hai cánh đi nốt */
+.ig-edge {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.6s ease 0.2s;
+  box-shadow:
+    inset 0 0 0 1px rgba(216, 183, 120, 0.55),
+    inset 0 0 0 9px rgba(50, 0, 12, 0.35),
+    inset 0 0 0 10px rgba(216, 183, 120, 0.32),
+    0 34px 70px -24px rgba(0, 0, 0, 0.75);
+}
+.intro-gate.step-code .ig-edge { opacity: 1; }
+.ig-cta {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.ig-cta span {
+  padding: 11px 18px;
+  border: 1px solid rgba(216, 183, 120, 0.42);
+  border-radius: 999px;
+  background: rgba(30, 0, 8, 0.6);
+  color: #F6E9D2;
+  font: 500 13px/1 var(--sans);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  animation: gatePulse 2.4s ease-in-out infinite;
+}
+.ig-cta small { font: italic 500 15px/1 'Cormorant Garamond', serif; color: #D8B46A; letter-spacing: 0.04em; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
+@keyframes gatePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(216, 180, 106, 0.35); } 50% { box-shadow: 0 0 0 9px rgba(216, 180, 106, 0); } }
+.intro-gate:not(.step-idle) .ig-cta { opacity: 0; }
+.intro-gate:focus-visible .ig-cta span { outline: 2px solid #D8B46A; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .ig-cta span { animation: none; } }
+/* Xuất khung then chốt (?gaterender=A|M): thế giới đúng 1:1, không mờ mép, không chữ */
+.intro-gate.ig-render { background: #000; }
+.intro-gate.ig-render .ig-world { transform: none; -webkit-mask-image: none; mask-image: none; transition: none; }
+.intro-gate.ig-render :is(.ig-shadow, .ig-door) { transition: none; }
 .intro-debug {
   position: absolute;
   top: 8px;

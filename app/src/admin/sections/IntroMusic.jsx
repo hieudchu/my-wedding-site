@@ -43,7 +43,7 @@ export default function IntroMusic({ adminConfig, toast }) {
     clearTimeout(stopRef.current);
     a.currentTime = startNum;
     a.play().catch(() => toast('Trình duyệt không phát được file này'));
-    stopRef.current = setTimeout(() => a.pause(), 17000); // dài bằng video đầy đủ
+    stopRef.current = setTimeout(() => a.pause(), 20000); // dài bằng cổng thiệp + video đầy đủ
   };
 
   const pick = async (e) => {
@@ -89,9 +89,9 @@ export default function IntroMusic({ adminConfig, toast }) {
     <div className="im-block">
       <h4>Nhạc mở đầu</h4>
       <p>
-        Phát cùng video, riêng với danh sách nhạc nền. Vào nhỏ rồi to dần tới mức vừa; hết video thì
-        lắng xuống và nhạc nền của trang bắt đầu. Trình duyệt chặn tự phát tiếng khi khách chưa chạm
-        trang — khi đó trang hiện “Chạm để bật nhạc”.
+        Bắt đầu đúng lúc khách chạm mở thiệp, riêng với danh sách nhạc nền. Vào nhỏ rồi to dần tới
+        mức vừa; hết video thì lắng xuống và nhạc nền của trang bắt đầu. “Phát từ giây” tính từ lúc
+        chạm mở thiệp (video chạy sau đó khoảng 1,5 giây).
       </p>
       <div className="im-now">
         <span className="im-label">Đang dùng</span>
@@ -110,7 +110,7 @@ export default function IntroMusic({ adminConfig, toast }) {
             onChange={(e) => setStart(e.target.value)}
           />
         </label>
-        <button type="button" className="admin-btn" onClick={preview} disabled={busy}>Nghe thử 17 giây</button>
+        <button type="button" className="admin-btn" onClick={preview} disabled={busy}>Nghe thử 20 giây</button>
         <button
           type="button"
           className="admin-btn"

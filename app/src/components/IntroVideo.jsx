@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
 import { lockScroll, unlockScroll } from '../lib/scrollLock';
+import IntroGate, { GATE_LEAD_S, gateBox } from './IntroGate';
 
 /**
  * Video mở đầu (11/2026) — lớp phủ toàn màn hình trên hero, chỉ ở trang khách `/`.
@@ -9,6 +10,9 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
  * Mỗi bản kết thúc bằng thẻ thiệp đỏ #4A000B đúng chỗ thẻ hero, nên lúc lớp phủ mờ đi
  * khách thấy chữ hiện dần trên chính tấm thẻ đó.
  *
+ * - Mở đầu bằng CỔNG THIỆP (IntroGate, 11/2026): thiệp đỏ hai cánh, khách chạm thì nhạc vào, hai cánh
+ *   trượt ra, lòng thiệp (cảnh đầu video) nở thành khung video rồi video chạy luôn. Lần nào vào cũng có cổng (chủ thiệp chọn): cú chạm
+ *   mở cổng chính là cử chỉ trình duyệt cần để cho phát tiếng.
  * - Lần đầu (chưa có cờ `hm-intro-seen`) → bản đầy đủ 16,6 s; lần sau → bản rút gọn 2,5 s.
  * - Hết video mà trang chưa sẵn sàng → vòng lặp viền vàng (tối đa 8 s) rồi vẫn vào trang.
  * - Chạm / bấm / phím bất kỳ → bỏ qua ngay. Sự kiện vẫn lan tới Nav (bắt ở `document`,
@@ -23,6 +27,7 @@ import { lockScroll, unlockScroll } from '../lib/scrollLock';
 const SEEN_KEY = 'hm-intro-seen';
 // Đổi số phiên bản của bản nào khi thay file của bản đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
 const VER = { portrait: '20261120b', landscape: '20261120c', desktop: '20261120c' };
+const VER_JOIN = '20261120g'; // ảnh chờ của bản có cổng (poster-join lần đầu / poster-later lần sau)
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 const LOOP_CAP_MS = 8000; // chờ trang tối đa bấy nhiêu sau khi hết video
 const START_GRACE_MS = 3500; // video chưa chạy sau chừng này → coi như không phát được
@@ -108,12 +113,19 @@ const VOL_LO = 0.16; // vào nhỏ, nhẹ
 const VOL_HI = 0.55; // to dần tới mức vừa ở cuối video
 const MUSIC_FADE_S = 1.2; // lắng xuống khi lớp phủ mờ đi
 const MUSIC_GAP_MS = 3000; // chủ thiệp (11/2026): nhạc nền KHÔNG vào ngay — nghỉ một nhịp rồi mới vào nhẹ
-const DUR = { full: 16.6, short: 2.5 };
+const DUR = { full: 16.6 };
+// Sau cổng: video bắt đầu từ giây JOIN (bản đầy đủ mở bằng 1,2 s tối — bỏ đi, cổng đã thay nó) và chạy
+// ngay khi lòng thiệp nở đúng bằng khung (GATE_LEAD_S sau cú chạm).
+const JOIN = { full: 1.2 };
+// Lần vào sau (chủ thiệp: bản ngắn 2,5 s "ngắn quá"): chiếu CHÍNH bản đầy đủ từ cảnh cô dâu tà voan
+// (8,75 s — sau vệt sáng chuyển cảnh) → ôm nhau → thu về thẻ ở CARD_AT.full: ~5 s phim, không tải thêm file.
+const LATER_AT = 8.75;
+const SFX_URL = '/assets/intro/gate/sfx.mp3?v=20261120g';
 // Kết (chủ thiệp 11/2026): CHÍNH KHUNG video trượt + co giãn thành thẻ thiệp thật ở đúng chỗ của
 // nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
 // thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì
 // thành phóng to rồi thu lại — cả hai đều bị chê. Video dừng ở khung hình ngay trước đoạn đó.
-const CARD_AT = { full: 13.85, short: 0.45 }; // giây video bắt đầu thu vào thẻ (13,9 s / 17,1−16,6 s)
+const CARD_AT = { full: 13.85 }; // giây video bắt đầu thu vào thẻ (lần đầu lẫn lần sau: cùng file full)
 const CARD_MOVE_MS = 1300; // khung → thẻ
 const CARD_HOLD_MS = 900; // thẻ đỏ đứng một nhịp rồi mới mờ vào trang
 /** Khung thẻ thiệp thật trên trang (+ khoảng lùi của viền vàng bên trong). */
@@ -130,7 +142,7 @@ function cardRect() {
  * Thẻ audio + (nếu có) Web Audio GainNode để chỉnh âm lượng — iOS bỏ qua `audio.volume`,
  * chỉ GainNode mới hạ/tăng được tiếng. File Supabase có CORS `*` nên dùng được crossOrigin.
  */
-function createMusic(url) {
+function createMusic(url, sfxUrl) {
   // iOS: Web Audio mặc định là loại "ambient" — bị tắt theo công tắc im lặng, trong khi thẻ
   // audio của nhạc nền vẫn kêu. Safari 16.4+ cho đặt loại "playback" để kêu như nhạc nền.
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* trình duyệt khác */ }
@@ -148,6 +160,15 @@ function createMusic(url) {
       ctx.createMediaElementSource(a).connect(gain).connect(ctx.destination);
     }
   } catch { ctx = null; gain = null; }
+  // Tiếng cánh cửa trượt (cổng thiệp) — chung AudioContext để iOS cho kêu cùng lúc với nhạc.
+  let fx = null;
+  if (sfxUrl) {
+    fx = new Audio();
+    fx.preload = 'auto';
+    fx.src = sfxUrl;
+    try { if (ctx) ctx.createMediaElementSource(fx).connect(ctx.destination); } catch { /* vẫn kêu bằng thẻ audio */ }
+  }
+  const sfx = () => { if (!fx) return; try { fx.currentTime = 0; } catch { /* chưa tải */ } fx.play().catch(() => {}); };
   let raf = 0;
   const level = () => (gain ? gain.gain.value : a.volume);
   const ramp = (to, secs) => {
@@ -193,7 +214,7 @@ function createMusic(url) {
     ramp(0, MUSIC_FADE_S);
     setTimeout(() => { a.pause(); }, MUSIC_FADE_S * 1000 + 50);
   };
-  const destroy = () => { a.pause(); a.removeAttribute('src'); try { ctx?.close(); } catch { /* đã đóng */ } };
+  const destroy = () => { a.pause(); a.removeAttribute('src'); fx?.pause(); try { ctx?.close(); } catch { /* đã đóng */ } };
   const state = () => ({ ctx: ctx ? ctx.state : 'none', paused: a.paused, t: a.currentTime, vol: level() });
   // Video dừng (Safari tự dừng video câm khi cửa sổ/ứng dụng bị che, hoặc đang tải) → nhạc dừng
   // theo; video chạy lại → tua nhạc đúng chỗ rồi phát tiếp, không thì nhạc chạy trước video.
@@ -203,7 +224,7 @@ function createMusic(url) {
     if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
     if (a.paused) a.play().catch(() => {});
   };
-  return { el: a, play, fadeOut, destroy, state, hold, follow };
+  return { el: a, play, sfx, fadeOut, destroy, state, hold, follow };
 }
 
 function pickKind() {
@@ -241,20 +262,30 @@ function makePlan() {
   // Nhạc nền của trang (Nav) chờ intro xong — xem Nav.jsx. Đặt ngay lúc quyết định, trước mọi effect.
   document.documentElement.dataset.intro = 'on';
   const kind = pickKind();
-  const base = `/assets/intro/${kind}/`;
-  const V = `?v=${VER[kind]}`;
   const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search));
   const still = mqMatches('(prefers-reduced-motion: reduce)') || slowNetwork();
+  // Có cổng thì khung video = tấm thiệp ngang (≈ 16:9) → điện thoại ngang chiếu bản 16:9 của máy tính,
+  // đúng hình clip mở cánh dùng (inner-w = poster-join máy tính) → lòng thiệp, clip, video là một hình.
+  const media = kind === 'landscape' && !still ? 'desktop' : kind;
+  const base = `/assets/intro/${media}/`;
+  const V = `?v=${VER[media]}`;
   const c = navigator.connection;
-  const lite = kind !== 'desktop' && /3g/.test(c?.effectiveType || '');
+  const lite = kind !== 'desktop' && media !== 'desktop' && /3g/.test(c?.effectiveType || '');
   return {
     kind,
+    media,
     still,
-    dur: seen ? DUR.short : DUR.full,
-    main: base + (seen ? 'short.mp4' : lite ? 'full-720.mp4' : 'full.mp4') + V,
+    gate: !still,
+    gateWorld: kind === 'portrait' ? 'portrait' : 'wide',
+    join: seen ? LATER_AT : JOIN.full,
+    dur: DUR.full,
+    // Có cổng: bản đầy đủ bắt đầu ở JOIN.full — ghi thẳng vào URL (#t=): Safari iPhone bỏ qua lệnh
+    // tua bằng code khi video chưa tải, video sẽ chạy từ 0 hoặc kẹt.
+    main: base + (lite ? 'full-720.mp4' : 'full.mp4') + V + (still ? '' : `#t=${seen ? LATER_AT : JOIN.full}`),
     loop: `${base}loop.mp4${V}`,
-    // ảnh chờ = khung ĐẦU của đúng bản sẽ phát (không phải thẻ đỏ cuối video)
-    poster: base + (seen ? 'poster-short.jpg' : 'poster-full.jpg') + V,
+    // ảnh chờ = khung ĐẦU của đúng bản sẽ phát (không phải thẻ đỏ cuối video). Có cổng thì bản đầy
+    // đủ bắt đầu ở JOIN.full — Safari iPhone không vẽ khung đã tua của video chưa chạy, chỉ hiện ảnh chờ.
+    poster: base + (still ? 'poster-full.jpg' : seen ? 'poster-later.jpg' : 'poster-join.jpg') + `?v=${VER_JOIN}`,
     card: `${base}poster-card.jpg${V}`,
   };
 }
@@ -278,14 +309,28 @@ function DebugPanel({ phase, needTap, musicRef, mainRef }) {
 video ${v ? `${v.currentTime.toFixed(1)}${v.paused ? ' (dừng)' : ''}` : '-'}
 nhạc ${m ? `${m.paused ? 'dừng' : 'phát'} ${m.t.toFixed(1)}s vol ${m.vol.toFixed(2)} ctx ${m.ctx}` : '-'}
 audioSession ${navigator.audioSession?.type || 'không có'}
-nhạc nền ${site ? (site.paused ? 'dừng' : `phát ${site.currentTime.toFixed(1)}s`) : '-'}`}
+nhạc nền ${site ? (site.paused ? 'dừng' : `phát ${site.currentTime.toFixed(1)}s`) : '-'}
+${window.__introErr || ''}`}
     </pre>
   );
 }
 
-export default function IntroVideo({ ready, enabled, music }) {
+// Chỉ khi phát triển: ?gaterender=A|M&gatekind=portrait|wide → vẽ đúng tư thế của cổng ở tỉ lệ 1:1
+// để xuất khung đầu/cuối cho clip Kling (wedding-video/card-gate/render-site-keys.cjs).
+const GATE_RENDER = import.meta.env.DEV && typeof window !== 'undefined'
+  ? new URLSearchParams(window.location.search).get('gaterender') : null;
+
+export default function IntroVideo(props) {
+  if (GATE_RENDER) {
+    const world = new URLSearchParams(window.location.search).get('gatekind') || 'portrait';
+    return <div className="intro-video"><IntroGate world={world} pose={GATE_RENDER} /></div>;
+  }
+  return <IntroVideoMain {...props} />;
+}
+
+function IntroVideoMain({ ready, enabled, music }) {
   const [p] = useState(plan);
-  // wait (chờ cài đặt) → play → (loop) → out → done; still: ảnh thẻ rồi out
+  // wait (chờ cài đặt) → gate (cổng thiệp) → play → (loop) → out → done; still: ảnh thẻ rồi out
   const [phase, setPhase] = useState(() => (p ? 'wait' : 'done'));
   const mainRef = useRef(null);
   const loopRef = useRef(null);
@@ -296,6 +341,12 @@ export default function IntroVideo({ ready, enabled, music }) {
   const [needTap, setNeedTap] = useState(false);
   const needTapRef = useRef(false);
   needTapRef.current = needTap;
+  // Nhạc vào từ lúc chạm mở cổng, trước video ~3 s → khớp theo độ lệch đo lúc video bắt đầu chạy.
+  const offsetRef = useRef(null); // giây nhạc − giây video
+  const [gateGone, setGateGone] = useState(false); // lòng thiệp đã nở thành khung, cổng đã gỡ
+  const [vidOn, setVidOn] = useState(false); // video chính đã thực sự chạy (bỏ ảnh chờ phủ trên)
+  const gateGoneRef = useRef(false);
+  gateGoneRef.current = gateGone;
   const readyRef = useRef(ready);
   readyRef.current = ready;
 
@@ -303,13 +354,15 @@ export default function IntroVideo({ ready, enabled, music }) {
   const [card, setCard] = useState(null); // đang thành thẻ: { x, y, w, h, inset }
   const cardRef = useRef(null);
   cardRef.current = card;
-  const boxNow = () => cardRef.current || frameBox(p.kind);
-  const [box, setBox] = useState(() => (p ? frameBox(p.kind) : null));
+  // Có cổng: khung video = đúng lòng thiệp (gateBox) — hai cánh mở ra là video nằm sẵn đó, không đổi cỡ
+  const baseBox = () => (p.gate ? gateBox(p.gateWorld) : frameBox(p.kind));
+  const boxNow = () => cardRef.current || baseBox();
+  const [box, setBox] = useState(() => (p ? baseBox() : null));
   useEffect(() => {
     if (!p) return undefined;
     const onResize = () => {
       if (cardRef.current) { const r = cardRect(); if (r) { setCard(r); setBox(r); } return; }
-      setBox(frameBox(p.kind));
+      setBox(baseBox());
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -329,7 +382,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   // Kết tự nhiên (hết video / hết vòng lặp / ảnh thẻ): co khung về thẻ thật rồi mờ.
   // Khách chạm bỏ qua giữa chừng thì chỉ mờ (`leave`).
   const settle = () => {
-    if (p && !cardRef.current) setMorph(settleTransform(p.kind, boxNow()));
+    if (p && !cardRef.current) setMorph(settleTransform(p.media, boxNow()));
     leave();
   };
   // Thành thẻ xong: giữ một nhịp, rồi vào trang (chờ trang sẵn sàng tối đa LOOP_CAP_MS).
@@ -352,11 +405,12 @@ export default function IntroVideo({ ready, enabled, music }) {
   // Canh đúng lúc video bắt đầu thu vào thẻ (rAF chính xác hơn timeupdate ~4 lần/giây)
   useEffect(() => {
     if (phase !== 'play' || !p) return undefined;
-    const at = p.dur === DUR.short ? CARD_AT.short : CARD_AT.full;
+    const at = CARD_AT.full;
     let raf = 0;
     const tick = () => {
       const v = mainRef.current;
-      if (v && v.currentTime >= at) { toCard(); return; }
+      // Sau cổng, bản rút gọn chỉ còn 0,45 s trước đoạn này: đợi cổng gỡ xong đã
+      if (v && v.currentTime >= at && (!p.gate || gateGoneRef.current)) { toCard(); return; }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -376,18 +430,49 @@ export default function IntroVideo({ ready, enabled, music }) {
     writeSeen();
     if (!p.still) {
       const url = music?.url || MUSIC_DEFAULT;
-      musicRef.current = createMusic(url);
+      musicRef.current = createMusic(url, p.gate ? SFX_URL : null);
       if (import.meta.env.DEV) window.__introMusic = musicRef.current; // chỉ để kiểm tra khi phát triển
     }
-    setPhase(p.still ? 'still' : 'play');
+    setPhase(p.still ? 'still' : 'gate');
   }, [phase, enabled, waitedOut]);
+
+  // Cổng thiệp. onGateOpen chạy ĐỒNG BỘ trong cú chạm — nhạc và tiếng cánh cửa phải gọi play() ngay.
+  // Làm nóng video chính ngay trong cú chạm: chạy (tắt tiếng) rồi dừng ngay, tua về đầu. Không thì lúc
+  // cánh mở xong trình duyệt mới khởi động bộ giải mã 1080p → đứng hình ~0,3 s (đo trong Chrome).
+  const warming = useRef(false);
+  const warmMain = () => {
+    const v = mainRef.current;
+    if (!v || started.current) return;
+    warming.current = true;
+    v.muted = true;
+    const done = () => {
+      v.pause();
+      try { v.currentTime = p.join; } catch { /* chưa có dữ liệu */ }
+      warming.current = false;
+    };
+    const pr = v.play();
+    if (pr && pr.then) pr.then(done, () => { warming.current = false; });
+    else done();
+  };
+  const onGateOpen = () => {
+    warmMain();
+    const m = musicRef.current;
+    if (!m) return;
+    m.sfx();
+    m.play(music?.start || 0, GATE_LEAD_S + p.dur - p.join).then((ok) => { musicOn.current = ok; });
+  };
+  // Hai cánh đã đi hết: khung (đúng chỗ lòng thiệp, cùng ảnh chờ) thế chỗ cổng, video chạy ngay
+  const onGateDone = () => {
+    setGateGone(true);
+    setPhase((ph) => (ph === 'gate' ? 'play' : ph));
+  };
 
   /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */
   const startMusic = async () => {
     const m = musicRef.current;
     const v = mainRef.current;
     if (!m || !v || musicOn.current) return;
-    const at = (music?.start || 0) + (v.currentTime || 0);
+    const at = (offsetRef.current ?? (music?.start || 0)) + (v.currentTime || 0);
     const ok = await m.play(at, Math.max(0.6, p.dur - (v.currentTime || 0)));
     musicOn.current = ok;
     setNeedTap(!ok);
@@ -425,6 +510,12 @@ export default function IntroVideo({ ready, enabled, music }) {
   // - Còn lại: chạm / lăn chuột / phím → bỏ qua. Nút "Bỏ qua" và phím Esc luôn bỏ qua.
   useEffect(() => {
     if (phase === 'done' || phase === 'out') return undefined;
+    if (phase === 'gate') {
+      // Cổng tự lo cú chạm (mở thiệp); chỉ Esc là bỏ qua cả màn mở đầu
+      const onEsc = (e) => { if (e.key === 'Escape') leave(); };
+      window.addEventListener('keydown', onEsc);
+      return () => window.removeEventListener('keydown', onEsc);
+    }
     const onSkipButton = (e) => !!e.target?.closest?.('.intro-skip');
     const onDown = (e) => { if (!onSkipButton(e) && !needTapRef.current) leave(); };
     const onActivate = (e) => {
@@ -458,8 +549,11 @@ export default function IntroVideo({ ready, enabled, music }) {
     const v = mainRef.current;
     if (!v) return undefined;
     v.muted = true;
-    const pr = v.play();
-    if (pr && pr.catch) pr.catch(() => { if (!started.current) setPhase('still'); });
+    const start = () => {
+      const pr = v.play();
+      if (pr && pr.catch) pr.catch((err) => { if (DEBUG) window.__introErr = `play: ${err?.name} ${err?.message || ''}`; if (!started.current) setPhase('still'); });
+    };
+    start();
     const t = setTimeout(() => { if (!started.current) setPhase('still'); }, START_GRACE_MS);
     return () => clearTimeout(t);
   }, [phase]);
@@ -472,7 +566,7 @@ export default function IntroVideo({ ready, enabled, music }) {
       const v = mainRef.current;
       const m = musicRef.current;
       if (!musicOn.current || !v || !m || v.paused || m.el.paused) return;
-      const want = (music?.start || 0) + v.currentTime;
+      const want = (offsetRef.current ?? (music?.start || 0)) + v.currentTime;
       if (Math.abs(m.el.currentTime - want) > 0.3) m.el.currentTime = want;
     }, 1000);
     return () => clearInterval(id);
@@ -532,7 +626,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   if (!p || phase === 'done') return null;
 
   // Đang hiện gì: chưa gì (chờ cài đặt / bị tắt), video, hay ảnh thẻ. Giữ nguyên lúc mờ ra.
-  if (phase === 'play' || phase === 'loop') mode.current = 'video';
+  if (phase === 'gate' || phase === 'play' || phase === 'loop') mode.current = 'video';
   else if (phase === 'still') mode.current = 'still';
   if (phase === 'still' && !card) setTimeout(toCard, 0);
   const still = mode.current === 'still';
@@ -541,11 +635,11 @@ export default function IntroVideo({ ready, enabled, music }) {
       className={`intro-video intro-${p.kind} ${phase === 'out' ? 'out' : ''} ${morph ? 'settle' : ''}`}
       style={{ '--intro-fade': `${FADE_MS}ms`, '--intro-settle': `${SETTLE_DELAY_MS}ms` }}
       onTouchMove={(e) => e.preventDefault()}
-      aria-hidden="true"
+      aria-hidden={phase === 'gate' ? undefined : 'true'}
     >
       <div
         // Chưa biết cài đặt (wait) thì khung ẩn: chỉ có nền hero, không chớp khung đỏ rỗng
-        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''} ${card ? 'card' : ''}`}
+        className={`intro-frame ${mode.current === 'none' ? 'empty' : ''} ${p.gate ? (gateGone ? 'ungated' : 'gated') : ''} ${card ? 'card' : ''}`}
         style={{
           left: box.x, top: box.y, width: box.w, height: box.h,
           ...(card ? { '--card-inset': `${card.inset}px`, '--card-move': `${CARD_MOVE_MS}ms` } : null),
@@ -572,25 +666,40 @@ export default function IntroVideo({ ready, enabled, music }) {
             poster={p.poster}
             muted
             playsInline
-            autoPlay
             preload="auto"
             disablePictureInPicture
             onPlaying={(e) => {
-              started.current = true;
-              if (musicOn.current) musicRef.current?.follow((music?.start || 0) + e.currentTarget.currentTime);
-              else startMusic();
+              if (warming.current) return; // đang làm nóng lúc mở cổng — chưa phải video chạy thật
+              const v = e.currentTarget;
+              setVidOn(true);
+              const go = () => {
+                started.current = true;
+                const m = musicRef.current;
+                if (musicOn.current && m) {
+                  // lần chạy đầu: đo độ lệch nhạc − video (nhạc đã chạy từ lúc chạm cổng)
+                  if (offsetRef.current == null) offsetRef.current = m.el.currentTime - v.currentTime;
+                  m.follow(offsetRef.current + v.currentTime);
+                } else startMusic();
+              };
+              go();
             }}
             // 'pause' cũng bắn khi video hết — lúc đó nhạc phải chạy tiếp (lắng xuống ở bước mờ)
-            onPause={(e) => { if (!e.currentTarget.ended && !cardRef.current) musicRef.current?.hold(); }}
-            onWaiting={() => musicRef.current?.hold()}
+            // Chỉ khi video đã chạy: lúc chờ sau cổng, tua tới p.join cũng có thể bắn waiting/pause
+            onPause={(e) => { if (started.current && !e.currentTarget.ended && !cardRef.current) musicRef.current?.hold(); }}
+            onWaiting={() => { if (started.current) musicRef.current?.hold(); }}
             onEnded={onMainEnded}
-            onError={() => { if (!started.current) setPhase('still'); else leave(); }}
+            onError={() => { if (DEBUG) window.__introErr = `video error ${mainRef.current?.error?.code}`; if (!started.current) setPhase('still'); else leave(); }}
           />
+          {/* Ảnh chờ thật (Safari iPhone không hiện poster sau khi đã gọi play/tua) — sau cổng */}
+          {p.gate && !vidOn && phase !== 'loop' && <img className="intro-media" src={p.poster} alt="" decoding="async" />}
         </>
       )}
       </div>
       {DEBUG && <DebugPanel phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
-      {(phase === 'play' || phase === 'loop') && (
+      {p.gate && !gateGone && phase !== 'wait' && (
+        <IntroGate world={p.gateWorld} poster={p.poster} onOpen={onGateOpen} onDone={onGateDone} />
+      )}
+      {(phase === 'play' || phase === 'loop') && (!p.gate || gateGone) && (
         <>
           {needTap && <div className="intro-hint">♪ Chạm để bật nhạc</div>}
           <button type="button" className="intro-skip" onClick={leave}>Bỏ qua</button>

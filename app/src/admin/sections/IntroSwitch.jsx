@@ -44,8 +44,9 @@ export default function IntroSwitch({ adminConfig, toast }) {
       <div className="is-text">
         <h3>Video mở đầu · Intro video</h3>
         <p>
-          Đoạn video phát khi khách mở trang thiệp (lần đầu bản đầy đủ ~17 giây, lần sau bản
-          ngắn ~3 giây). Tắt thì khách vào thẳng trang. Có hiệu lực từ lần tải trang kế tiếp.
+          Khách vào trang thấy tấm thiệp đỏ, chạm để mở: nhạc vào, hai cánh trượt ra rồi chiếu
+          video (lần đầu bản đầy đủ ~17 giây, lần sau đoạn cuối ~7 giây). Tắt thì tắt cả cổng thiệp lẫn
+          video — khách vào thẳng trang. Có hiệu lực từ lần tải trang kế tiếp.
         </p>
       </div>
       <button

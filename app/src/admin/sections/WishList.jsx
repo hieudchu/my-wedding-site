@@ -100,8 +100,9 @@ export default function WishList() {
 
   const remove = async (w) => {
     if (!window.confirm('Xoá hẳn lời chúc này? Không khôi phục được.')) return;
-    const { error } = await supabase.from('wishes').delete().eq('id', w.id);
-    if (error) { toast('Không xoá được'); return; }
+    // .select() để biết có thật sự xoá được: RLS chặn thì Supabase không báo lỗi
+    const { data, error } = await supabase.from('wishes').delete().eq('id', w.id).select('id');
+    if (error || !data?.length) { toast('Không xoá được'); return; }
     setRows((prev) => prev.filter((x) => x.id !== w.id));
     toast('Đã xoá');
   };

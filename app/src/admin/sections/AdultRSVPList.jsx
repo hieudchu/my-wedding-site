@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/Toast';
+import { useConfigForm } from '../components/useAdminConfig';
 import './AdultRSVPList.css';
 
 /**
@@ -8,8 +9,9 @@ import './AdultRSVPList.css';
  * tách khỏi "Khách xác nhận" của trang chính (2026-11-18, ADMIN.md của bản thiết kế /adult).
  *
  * Dòng `rsvps` có audience = 'adult': chỉ họ tên + tham dự / không + lời nhắn. Trang ghi cả lời
- * từ chối. "Sửa lại xác nhận" trên trang tạo THÊM một dòng → gộp theo tên chuẩn hoá, hiện lần
- * gửi mới nhất, xem được lịch sử. Bên dưới là bốn khoá chữ riêng của thiệp (site_config `adult_…`).
+ * từ chối. Sửa lại trên cùng máy thì CẬP NHẬT dòng cũ (`updated_at`); gửi từ máy khác thì thêm một dòng →
+ * gộp theo tên chuẩn hoá, hiện câu trả lời mới nhất (theo lúc gửi HOẶC lúc sửa), xem được lịch sử.
+ * Bên dưới là bốn khoá chữ riêng của thiệp (site_config `adult_…`).
  */
 
 const SITE_URL = 'https://hieu-minh-wedding.vercel.app/adult';
@@ -19,6 +21,9 @@ const STATUS_TABS = [
   { key: 'yes', label: 'Tham dự' },
   { key: 'no', label: 'Không đến' },
 ];
+
+/** Lúc khách trả lời lần cuối (gửi hoặc sửa), ms */
+const lastAt = (r) => Date.parse(r.updated_at || r.created_at) || 0;
 
 /** Giờ Việt Nam, dd/MM HH:mm */
 function timeVN(iso) {
@@ -46,13 +51,8 @@ const TEXT_FIELDS = [
 ];
 
 function AdultTextCard({ adminConfig, toast }) {
-  const { configs, getValue, saveMultiple, saving } = adminConfig;
-  const [values, setValues] = useState({});
-  useEffect(() => {
-    const v = {};
-    TEXT_FIELDS.forEach((f) => { v[f.key] = getValue(f.key) || ''; });
-    setValues(v);
-  }, [configs]);
+  const { configs, saveMultiple, saving } = adminConfig;
+  const [values, setValues] = useConfigForm(adminConfig, TEXT_FIELDS.map((f) => f.key));
 
   const errors = {};
   TEXT_FIELDS.forEach((f) => {
@@ -170,11 +170,13 @@ export default function AdultRSVPList({ adminConfig }) {
     return next;
   });
 
-  // Gộp theo tên: mỗi khách một dòng (lần gửi mới nhất), kèm các lần trước
-  const pool = useMemo(() => rows.filter((r) => showHidden || !r.hidden), [rows, showHidden]);
+  // Câu trả lời mới nhất = lần gửi HOẶC lần sửa gần nhất (sửa ở máy 1 sau khi gửi ở máy 2 thì lấy bản sửa)
+  const latestFirst = useMemo(() => [...rows].sort((a, b) => lastAt(b) - lastAt(a)), [rows]);
+  // Gộp theo tên: mỗi khách một dòng (câu trả lời mới nhất), kèm các lần trước
+  const pool = useMemo(() => latestFirst.filter((r) => showHidden || !r.hidden), [latestFirst, showHidden]);
   const guests = useMemo(() => {
     const by = new Map();
-    pool.forEach((r) => { // rows đã xếp mới → cũ
+    pool.forEach((r) => { // đã xếp mới → cũ
       const k = fold(r.name);
       if (by.has(k)) by.get(k).history.push(r);
       else by.set(k, { ...r, history: [] });
@@ -185,10 +187,10 @@ export default function AdultRSVPList({ adminConfig }) {
   // Bộ đếm luôn theo khách đã gộp, không tính dòng đã ẩn
   const counts = useMemo(() => {
     const seen = new Map();
-    rows.forEach((r) => { if (!r.hidden && !seen.has(fold(r.name))) seen.set(fold(r.name), r); });
+    latestFirst.forEach((r) => { if (!r.hidden && !seen.has(fold(r.name))) seen.set(fold(r.name), r); });
     const list = [...seen.values()];
     return { all: list.length, yes: list.filter((r) => r.attending).length, no: list.filter((r) => !r.attending).length };
-  }, [rows]);
+  }, [latestFirst]);
 
   const needle = fold(q);
   const visible = (everySend ? pool.map((r) => ({ ...r, history: [] })) : guests).filter((r) => {

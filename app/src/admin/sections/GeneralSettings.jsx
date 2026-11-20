@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useConfigForm } from '../components/useAdminConfig';
 import { useToast } from '../components/Toast';
 import IntroSwitch from './IntroSwitch';
 
 export default function GeneralSettings({ adminConfig }) {
-  const { getValue, saveMultiple, saving } = adminConfig;
+  const { saveMultiple, saving, loaded } = adminConfig;
   const { toast, ToastEl } = useToast();
 
   const fields = [
@@ -19,13 +19,7 @@ export default function GeneralSettings({ adminConfig }) {
     { key: 'map_url', label: 'Link bản đồ · Map URL' },
   ];
 
-  const [values, setValues] = useState({});
-
-  useEffect(() => {
-    const v = {};
-    fields.forEach((f) => { v[f.key] = getValue(f.key); });
-    setValues(v);
-  }, [adminConfig.configs]);
+  const [values, setValues] = useConfigForm(adminConfig, fields.map((f) => f.key));
 
   const handleSave = async () => {
     const ok = await saveMultiple(values);
@@ -94,7 +88,7 @@ export default function GeneralSettings({ adminConfig }) {
       </div>
 
       <div className="admin-actions">
-        <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={saving}>
+        <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={saving || !loaded}>
           {saving ? 'Saving…' : 'Lưu thay đổi · Save'}
         </button>
       </div>

@@ -154,7 +154,15 @@ export default function AdminApp() {
         {adminConfig.loading ? (
           <div style={{ color: '#A89996', padding: 40 }}>Loading config…</div>
         ) : (
-          renderPage()
+          <>
+            {adminConfig.loadError && (
+              <div className="admin-card" role="alert" style={{ borderColor: '#C9772F', background: '#FFF6EC', color: '#7A3F0C' }}>
+                Không tải được cài đặt từ máy chủ (mạng chập?). Các nút lưu cài đặt đã khoá để không ghi đè dữ liệu thật —
+                hãy tải lại trang.
+              </div>
+            )}
+            {renderPage()}
+          </>
         )}
       </main>
     </div>

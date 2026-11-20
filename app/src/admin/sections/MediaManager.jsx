@@ -18,6 +18,19 @@ import {
   variantStoragePaths,
 } from '../framing';
 
+/**
+ * Tên chưa có trong thư mục: thêm -2, -3… (`used` = tên đã có trong kho + tên đã dành cho mẻ đang tải).
+ * Tải lên dùng upsert, nên trùng tên với ảnh đã có (IMG_1234.jpg từ hai điện thoại, a.png và a.jpg sau khi nén
+ * thành .jpg) là đè mất ảnh cũ.
+ */
+function freeName(name, used) {
+  const [, base, ext = ''] = name.match(/^(.*?)(\.[^.]+)?$/);
+  let n = name;
+  for (let i = 2; used.has(n); i++) n = `${base}-${i}${ext}`;
+  used.add(n);
+  return n;
+}
+
 // Thư mục duy nhất có ô chú thích. Caption nằm ở hai chỗ nên chỗ nào cũng phải
 // gọi đúng tên thư mục này.
 const CAPTION_FOLDER = 'carousel';
@@ -366,9 +379,11 @@ function SlotUploader({ slot, onToast, reloadKey, manifest, onManifest, framer }
   };
 
   const handleDelete = async () => {
+    if (!window.confirm(`Xoá hẳn ảnh "${slot.label}"? Ảnh gốc và các bản nén bị xoá khỏi kho, không khôi phục được.`)) return;
     // Ô cố định chỉ từng có đúng một đường dẫn — xoá nó cùng các bản nén trong _opt/,
     // nếu không bản nén nằm lại trong kho mãi mà không ai đọc tới.
-    await supabase.storage.from(BUCKET).remove([slot.storagePath, ...variantStoragePaths(folder, entry)]);
+    const { error } = await supabase.storage.from(BUCKET).remove([slot.storagePath, ...variantStoragePaths(folder, entry)]);
+    if (error) { onToast('Không xoá được ảnh · ' + error.message); return; }
     setUrl(null);
     try {
       onManifest(await applyToManifest((m) => withoutEntry(m, folder, fileName)));
@@ -688,7 +703,7 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
         onSave: async (result, report) => {
           const { manifest: next, name } = await uploadFramed({
             folder: config.folder,
-            fileName: (file) => storageSafeName(file.name),
+            fileName: (file) => freeName(storageSafeName(file.name), new Set(files.map((f) => f.name))),
             picked,
             result,
             report,
@@ -714,12 +729,22 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
     setPending(previews);
 
     let savedBytes = 0;
+    // Tên đã có trong kho lúc bắt đầu mẻ (đọc lại, không tin lưới: máy khác có thể vừa tải thêm)
+    const used = new Set(files.map((f) => f.name));
+    try {
+      const { data } = await supabase.storage.from(BUCKET).list(config.folder, { limit: 1000 });
+      (data || []).forEach((f) => used.add(f.name));
+    } catch { /* không đọc được thì dùng tên trong lưới */ }
 
     try {
       const results = await runQueue(
         selected,
         async (picked) => {
-          const file = await compressImage(picked);
+          const compressed = await compressImage(picked);
+          // Chọn tên SAU khi nén (nén đổi .png/.heic thành .jpg) và giữ chỗ ngay (đồng bộ) — ba luồng chạy song song
+          const name = freeName(compressed.name, used);
+          const file = name === compressed.name ? compressed : renamed(compressed, name);
+          if (name !== picked.name && originals[picked.name]) originals[name] = originals[picked.name];
           savedBytes += Math.max(0, picked.size - file.size);
           const { w, h } = await measure(file);
           const path = `${config.folder}/${file.name}`;
@@ -797,6 +822,7 @@ function MultiFileManager({ config, onToast, reloadKey, manifest, onManifest, fr
   };
 
   const handleDelete = async (fileName) => {
+    if (!window.confirm(`Xoá hẳn "${fileName}"? Ảnh gốc và các bản nén bị xoá khỏi kho, không khôi phục được.`)) return;
     const entry = findEntry(manifest, `${config.folder}/${fileName}`);
     const { error } = await supabase.storage
       .from(BUCKET)

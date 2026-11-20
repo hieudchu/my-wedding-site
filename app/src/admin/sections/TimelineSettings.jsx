@@ -30,44 +30,45 @@ export default function TimelineSettings() {
     );
   };
 
+  // Sự kiện mới chỉ là bản nháp trong admin (khách chưa thấy) cho tới khi điền và bấm Lưu.
+  // Trước 21/11 "+ Thêm" ghi ngay "00:00 Sự kiện mới" lên trang khách.
   const saveEvent = async (event) => {
+    if (!event.time?.trim() || !event.label_vi?.trim()) { toast('Nhập giờ và tên sự kiện trước khi lưu'); return; }
+    const fields = {
+      time: event.time,
+      label_vi: event.label_vi,
+      label_en: event.label_en,
+      image_path: event.image_path,
+      sort_order: event.sort_order,
+    };
+    if (event.draft) {
+      const { data, error } = await supabase.from('timeline_events').insert(fields).select().single();
+      if (error || !data) { toast('Không lưu được'); return; }
+      setEvents((prev) => prev.map((e) => (e.id === event.id ? data : e)));
+      toast('Đã thêm');
+      return;
+    }
     const { error } = await supabase
       .from('timeline_events')
-      .update({
-        time: event.time,
-        label_vi: event.label_vi,
-        label_en: event.label_en,
-        image_path: event.image_path,
-        sort_order: event.sort_order,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ ...fields, updated_at: new Date().toISOString() })
       .eq('id', event.id);
     toast(error ? 'Error saving' : 'Saved!');
   };
 
-  const addEvent = async () => {
+  const addEvent = () => {
     const maxOrder = events.reduce((max, e) => Math.max(max, e.sort_order), 0);
-    const { data, error } = await supabase
-      .from('timeline_events')
-      .insert({
-        time: '00:00',
-        label_vi: 'Sự kiện mới',
-        label_en: 'New event',
-        image_path: '',
-        sort_order: maxOrder + 1,
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      setEvents((prev) => [...prev, data]);
-      toast('Added!');
-    }
+    setEvents((prev) => [...prev, {
+      id: `draft-${Date.now()}`, draft: true, time: '', label_vi: '', label_en: '', image_path: '', sort_order: maxOrder + 1,
+    }]);
   };
 
   const deleteEvent = async (id) => {
+    const ev = events.find((x) => x.id === id);
+    if (ev?.draft) { setEvents((prev) => prev.filter((x) => x.id !== id)); return; } // nháp: chỉ bỏ khỏi admin
+    if (!window.confirm(`Xoá sự kiện "${ev?.label_vi || ev?.time || 'này'}" khỏi lịch trình? Không khôi phục được.`)) return;
     const { error } = await supabase.from('timeline_events').delete().eq('id', id);
-    if (!error) {
+    if (error) { toast('Không xoá được'); return; }
+    {
       setEvents((prev) => prev.filter((e) => e.id !== id));
       toast('Deleted');
     }
@@ -121,9 +122,10 @@ export default function TimelineSettings() {
                 />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button className="admin-btn admin-btn-secondary" onClick={() => saveEvent(ev)}>Lưu · Save</button>
-              <button className="admin-btn admin-btn-danger" onClick={() => deleteEvent(ev.id)}>Xoá · Delete</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+              <button className="admin-btn admin-btn-secondary" onClick={() => saveEvent(ev)}>{ev.draft ? 'Lưu để hiện trên trang' : 'Lưu · Save'}</button>
+              <button className="admin-btn admin-btn-danger" onClick={() => deleteEvent(ev.id)}>{ev.draft ? 'Bỏ' : 'Xoá · Delete'}</button>
+              {ev.draft && <span style={{ fontSize: 12, color: '#A89996' }}>Chưa lưu — khách chưa thấy</span>}
             </div>
           </div>
         ))}

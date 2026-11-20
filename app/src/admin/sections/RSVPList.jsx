@@ -168,8 +168,9 @@ export default function RSVPList() {
   // Chỉ tính khách có SĐT — không có số thì không có gì để gọi
   const uncalledCount = base.filter((r) => r.phone && !r.called_at).length;
   const hiddenCount = rows.filter((r) => r.hidden).length;
-  const visGuests = visible.reduce((a, r) => a + (r.guest_count || 0), 0);
-  const visOver = visible.some((r) => r.guests_over_10);
+  // Số người đang hiện: không cộng dòng đã ẩn (bật "Hiện dòng đã ẩn" chỉ để xem, không để cộng lại cho đúng)
+  const visGuests = visible.reduce((a, r) => a + (r.hidden ? 0 : (r.guest_count || 0)), 0);
+  const visOver = visible.some((r) => !r.hidden && r.guests_over_10);
 
   // Số liệu theo bên lấy từ view rsvp_summary (chỉ tính dòng không ẩn)
   const stat = (key) => summary
@@ -196,6 +197,8 @@ export default function RSVPList() {
   // Số người là SỐ để cộng tổng được trong Excel. Khách chọn "Trên 10 người" vẫn là số 10,
   // chỉ đổi cách hiện thành "Trên 10" bằng định dạng số — một cột như trong app, SUM vẫn đúng.
   const exportExcel = async () => {
+    // Có dòng đã ẩn trong danh sách đang hiện → thêm cột "Đã ẩn" để lọc / không cộng nhầm trong Excel
+    const withHidden = visible.some((r) => r.hidden);
     try {
       await downloadExcel(datedName('khach-xac-nhan'), 'Khách xác nhận', [
         { header: 'Thời gian', width: 17 },
@@ -206,12 +209,14 @@ export default function RSVPList() {
         { header: 'Ghi chú', width: 40, wrap: true },
         { header: 'Đã gọi', width: 17 },
         { header: 'Sửa lúc', width: 17 },
+        ...(withHidden ? [{ header: 'Đã ẩn', width: 9 }] : []),
       ], visible.map((r) => [
         excelDateVN(r.created_at), r.name, SIDE_LABEL[r.side] || '',
         r.guests_over_10 ? { value: 10, format: '"Trên "0' } : (r.guest_count ?? null),
         r.phone || '', r.message || '',
         r.called_at ? excelDateVN(r.called_at) : null,
         r.updated_at ? excelDateVN(r.updated_at) : null,
+        ...(withHidden ? [r.hidden ? 'Đã ẩn' : ''] : []),
       ]));
       toast('Đã tải file Excel');
     } catch (err) {

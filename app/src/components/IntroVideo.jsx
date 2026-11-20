@@ -120,7 +120,7 @@ const DUR = { full: 12.9 };
 // ngay khi phong bì mở tới thiệp kem (GATE_LEAD_S sau cú chạm), hoà vào dưới clip mở.
 const JOIN = { full: 1.2 };
 
-const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122a';
+const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122c';
 // Kết (chủ thiệp 11/2026): CHÍNH KHUNG video trượt + co giãn thành thẻ thiệp thật ở đúng chỗ của
 // nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
 // thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì
@@ -521,7 +521,7 @@ function IntroVideoMain({ ready, enabled, music }) {
   // chỗ), phong bì mờ dần → chỉ có các vạt tan đi. Tải lại: clip đứng ở khung cuối (thẻ trống đúng chỗ thẻ thật)
   // → rời lớp phủ ngay: View Transition hoà các vạt + nền vào trang, chữ thẻ trồi lên sau đó.
   const onGateCut = () => {
-    if (p.pageReveal) { setTimeout(leave, 350); return; } // vạt nằm yên một nhịp rồi mới tan
+    if (p.pageReveal) { setTimeout(leave, 200); return; } // vạt nằm yên một nhịp ngắn rồi mới tan
     setPhase((ph) => (ph === 'gate' ? 'play' : ph));
   };
   const onGateDone = () => setGateGone(true);

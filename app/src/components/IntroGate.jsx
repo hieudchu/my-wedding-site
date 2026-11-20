@@ -16,11 +16,12 @@ import { useEffect, useRef, useState } from 'react';
  */
 
 const A = '/assets/intro/envelope/';
-const GV = '?v=20261122a';
+const GV = '?v=20261122c';
 // Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip) — đo ở khung cuối của clip (v2/measure).
-export const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5358 };
-// Clip đã cắt 9 khung đứng yên đầu (envelope/v2/finish_clip.py): vạt nằm yên ở 4,42 s → giao cho IntroVideo.
-export const GATE_CUT_S = 4.45;
+export const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
+// Clip đã cắt 9 khung đứng yên đầu và đoạn lắng cuối, chiếu 40 khung/giây (đủ mọi khung Kling, nhanh 1,67× —
+// chủ thiệp: "mở hơi chậm", rồi "lên 40"; envelope/v2/finish_clip.py): vạt nằm yên ở ~2,65 s → giao cho IntroVideo.
+export const GATE_CUT_S = 2.65;
 export const GATE_FADE_MS = 650;
 export const GATE_LEAD_S = GATE_CUT_S; // chạm → video chạy (IntroVideo canh nhạc)
 

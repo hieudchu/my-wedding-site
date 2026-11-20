@@ -120,7 +120,7 @@ const DUR = { full: 12.9 };
 // ngay khi phong bì mở tới thiệp kem (GATE_LEAD_S sau cú chạm), hoà vào dưới clip mở.
 const JOIN = { full: 1.2 };
 
-const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122c';
+const SFX_URL = '/assets/intro/envelope/sfx.mp3?v=20261122d';
 // Kết (chủ thiệp 11/2026): CHÍNH KHUNG video trượt + co giãn thành thẻ thiệp thật ở đúng chỗ của
 // nó, hình trong khung tan thành đỏ #4A000B rồi lớp phủ mờ vào trang. Không dùng đoạn "thu vào
 // thẻ" có sẵn trong video: trong khung nó thành khung lồng khung, còn mở khung ra toàn màn thì

@@ -13,7 +13,7 @@ import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
 import DeskMotion from './components/DeskMotion';
-import IntroVideo from './components/IntroVideo';
+import IntroVideo from './components/intro/IntroVideo';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
 import { supabase } from './lib/supabase';

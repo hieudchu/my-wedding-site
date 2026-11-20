@@ -12,7 +12,6 @@
   /* Nền tối */
   --ink-bg: #190A0B;
   --footer-bg: #240A0B;
-  --gate-bg: #160607;
 
   /* Đỏ sơn mài */
   --red: #7E1416;
@@ -135,14 +134,6 @@ a:hover {
   from { transform: translateY(32px); }
   to { transform: translateY(-32px); }
 }
-@keyframes draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
-}
-@keyframes ring {
-  0% { transform: scale(0.85); opacity: 0.65; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
 @keyframes appL {
   from { transform: translateX(-70px); opacity: 0.2; }
   to { transform: none; opacity: 1; }
@@ -162,14 +153,6 @@ a:hover {
 @keyframes glowP {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.7; }
-}
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.015); }
-}
-@keyframes sealFloat {
-  0%, 100% { transform: translateY(0) rotate(-0.3deg); }
-  50% { transform: translateY(-7px) rotate(0.3deg); }
 }
 @keyframes unveil {
   from { clip-path: inset(0 0 100% 0); }
@@ -794,7 +777,7 @@ a:hover {
   content: attr(data-label);
 }
 
-/* ===== Video mở đầu (IntroVideo.jsx, 11/2026) =====
+/* ===== Màn mở đầu (components/intro/IntroVideo.jsx, 11/2026) =====
    Phủ kín màn hình trên mọi thứ (lightbox 950). Nền = nền hero (đỏ #32000C + vân hoa, trộn
    overlay) để lúc mờ đi trang lộ ra liền mạch. Video nằm trong `.intro-frame` — JS tính vị
    trí/cỡ khung (frameBox), video "cover" bên trong. Viền vàng mảnh hai lớp như thẻ thiệp. */
@@ -859,7 +842,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
     0 0 0 10px rgba(216, 183, 120, 0.32),
     0 34px 70px -24px rgba(0, 0, 0, 0.75);
 }
-/* Điện thoại ngang: chỉ viền vàng hai bên trái/phải (khung cao hết màn) */
+/* Chưa có gì để hiện (chờ cài đặt, đang là phong bì) */
 .intro-frame.empty { opacity: 0; }
 /* Lần tải lại: khung là thẻ đỏ trống đúng chỗ thẻ hero ngay từ đầu (không trượt / co giãn) — phong bì mở ra
    thấy thẻ trống, lớp phủ mờ đi thì chữ thẻ thật hiện dần (như đoạn cuối video) */
@@ -903,8 +886,9 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   transition: opacity 0.7s ease 0.9s;
 }
 .intro-frame.card::after { opacity: 1; }
-/* Có phong bì (khổ dọc, bản 2): khung là thẻ hero ngay từ đầu — video chạy trong thẻ, viền vàng mảnh như khung
-   cuối của clip mở; hết video thì hình tan thành đỏ TẠI CHỖ (không trượt), bóng + viền thành đúng .hm-title. */
+/* Có phong bì: khung là thẻ hero (khổ ngang: phần 3:2 giữa thẻ) — video chạy trong thẻ, viền vàng mảnh như khung
+   cuối của clip mở; khổ dọc hết video thì hình tan thành đỏ TẠI CHỖ, bóng + viền thành đúng .hm-title.
+   Khổ ngang / máy tính: phong bì tan thì khung bỏ .in-card, nở ra khung video lớn (viền vàng hai lớp ở trên). */
 .intro-video .intro-frame.in-card {
   border-radius: 4px;
   transition: opacity 0.35s ease, box-shadow 0.9s ease;
@@ -992,8 +976,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
 }
 .intro-skip:hover { background: rgba(50, 0, 12, 0.7); }
 @media (prefers-reduced-motion: reduce) { .intro-hint { animation: none; } }
-/* ── Phong bì mở thiệp (IntroGate.jsx) — ảnh chờ + clip mở, kín màn (cover) ─────────────────────────
-   Tiền tố ig-: sections.css còn CSS của cổng sơn mài cũ (.gate-*). */
+/* ── Phong bì mở thiệp (components/intro/IntroGate.jsx) — ảnh chờ + clip mở ─────────────────────────── */
 .intro-gate {
   position: absolute;
   inset: 0;
@@ -1005,10 +988,9 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.65s ease;
 }
-/* Bản 2: ảnh chờ + clip đặt theo khung thẻ hero thật (IntroGate clipBox → left/top/width/height nội tuyến) */
+/* Ảnh chờ + clip đặt theo khung thẻ hero thật (IntroGate clipBox → left/top/width/height nội tuyến) */
 .ig-idle,
 .ig-clip { position: absolute; display: block; max-width: none; object-fit: fill; }
-.intro-gate:not(.ready) .ig-clip { visibility: hidden; }
 .ig-clip { visibility: hidden; }
 .intro-gate:is(.step-vid, .step-fade, .step-hold) .ig-clip { visibility: visible; }
 .intro-gate:is(.step-vid, .step-fade, .step-hold) .ig-idle { visibility: hidden; }

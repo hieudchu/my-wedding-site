@@ -1,41 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Phong bì mở thiệp (11/2026) — màn đầu của IntroVideo; khổ dọc, từ 20/11 cả khổ ngang + máy tính (`wide`).
- *
- * Bản 2 (chủ thiệp 20/11: "đặt khung cho tấm thiệp, cố định 1 size, mở ra phần bên trong khít với trang"):
- * phong bì là một hình chữ nhật 2:3 ĐÚNG BẰNG thẻ hero, nằm trên nền hoa đỏ y như trang. Clip được đặt theo
- * khung của thẻ thật (`rect`), không phủ kín màn kiểu cover nữa → máy dài / ngắn nào thẻ trong clip cũng trùng
- * thẻ trang. Mở ra: bốn vạt nằm phẳng ra ngoài, dấu sáp theo vạt trái ra khỏi khung hình, ở giữa là:
- * - lần đầu (`reveal` false): khung đầu của video cưới trong thẻ (open-video.mp4) → video chạy đúng chỗ đó;
- * - tải lại (`reveal` true): thẻ đỏ trống (open-card.mp4) → lớp phủ rời đi, chữ thẻ thật trồi lên.
- * Clip KHÔNG có kênh trong suốt (bản 1 tách nền lòng phong bì bị sót mảnh kem trên Android) — cả nền hoa lẫn
- * tấm thẻ đều nằm trong clip, ghép từ ảnh chụp thẻ thật (wedding-video/envelope/v2/).
- * Ảnh tĩnh: phong bì đóng (idle-p.jpg bản 1 cắt 2:3) trên nền; clip: Kling 3 Pro khoá khung đầu + khung cuối.
- * Ảnh chờ idle-card / idle-video = khung đầu của đúng clip sẽ phát → lúc chạm không nháy.
+ * Phong bì mở thiệp — màn đầu của IntroVideo. Phong bì đỏ rượu vang, ren đục lỗ, hoa dập nổi, dấu sáp vàng logo HM.
+ * Clip đặt theo khung thẻ hero thật (`rect`, clipBox) nên ở máy nào thẻ trong clip cũng trùng thẻ trang.
+ * Mở ra bốn vạt; ở giữa: lần đầu (`reveal` false) là khung đầu video cưới, tải lại (`reveal` true) là thẻ đỏ trống.
+ * - Khổ dọc: clip 2:3 khít thẻ, nền đục (nền hoa + thẻ ghép sẵn trong clip).
+ * - Khổ ngang / máy tính (`wide`): clip dọc xoay 90° (vạt mang dấu sáp mở lên trên, dấu sáp vẽ lại đứng thẳng),
+ *   phong bì 3:2 giữa thẻ (IntroVideo fit32), NỀN TRONG SUỐT để lộ đúng nền hoa của trang.
+ * Ảnh chờ = khung đầu của đúng clip sẽ phát → lúc chạm không nháy. Nguồn dựng: ~/Downloads/wedding-video/envelope/v2/.
  */
 
 const A = '/assets/intro/envelope/';
 const GV = '?v=20261122d';
-// Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip) — đo ở khung cuối của clip (v2/measure).
-export const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
-// Bản ngang (khổ ngang + máy tính, 20/11 — chủ thiệp: "chính thiệp bản dọc xoay ngang ra, huy hiệu sáp đúng hướng"):
-// clip dọc đã duyệt xoay 90° theo kim đồng hồ (vạt mang dấu sáp mở lên trên), dấu sáp vẽ lại đứng thẳng
-// (envelope/v2/rot_clip.py + seal_fix.py). Phong bì 3:2 đặt giữa thẻ hero (thẻ giữ cỡ cũ, rộng hơn — IntroVideo fit32).
-export const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };
-// Clip đã cắt 9 khung đứng yên đầu và đoạn lắng cuối, chiếu 60 khung/giây (đủ mọi khung Kling, nhanh 2,5× —
-// chủ thiệp: "mở hơi chậm", "lên 40", rồi "lên 60"; envelope/v2/finish_clip.py): vạt nằm yên ở ~1,77 s → giao cho IntroVideo.
-export const GATE_CUT_S = 1.77;
-export const GATE_FADE_MS = 650;
+// Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip), đo ở khung cuối: khổ dọc / xoay ngang
+const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
+const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };
+// Clip chiếu mọi khung Kling ở 60 khung/giây (chủ thiệp: "mở hơi chậm" → 2,5×): vạt nằm yên ở ~1,77 s
+const GATE_CUT_S = 1.77;
+const GATE_FADE_MS = 650;
 export const GATE_LEAD_S = GATE_CUT_S; // chạm → video chạy (IntroVideo canh nhạc)
-
-// Phong bì ngang có nền TRONG SUỐT (chủ thiệp: "background đỏ của thiệp lệch với background hero") — envelope/v2/alpha_w.py.
-// iPhone / iPad / Safari: HEVC có kênh trong suốt; trình duyệt khác: WebM VP9 có kênh trong suốt.
+// Clip nền trong suốt: Safari / iPhone / iPad đọc HEVC có alpha; trình duyệt khác WebM VP9 có alpha
 const APPLE = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent)
   || (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(navigator.userAgent)));
 
 /** Khung clip (toạ độ màn hình) sao cho thẻ trong clip trùng `rect` của thẻ thật. */
-export function clipBox(rect, wide) {
+function clipBox(rect, wide) {
   if (!rect) return null;
   const C = wide ? CLIP_CARD_W : CLIP_CARD;
   const w = rect.w / C.w;
@@ -43,7 +32,8 @@ export function clipBox(rect, wide) {
   return { left: rect.x - C.x * w, top: rect.y - C.y * h, width: w, height: h };
 }
 
-/** Nút "Chạm để mở thiệp" nằm giữa khoảng trống dưới phong bì (không đè lên mép phong bì); chật quá thì để CSS. */
+/** Nút "Chạm để mở thiệp": giữa khoảng trống dưới phong bì; phong bì ngang mà dưới không còn chỗ (điện thoại ngang)
+ *  thì nằm trên vạt dưới, giữa mép dưới dấu sáp (~69% cao thẻ) và mép phong bì; còn lại để CSS. */
 const CTA_H = 64;
 const PILL_H = 38;
 function ctaPlace(rect, wide) {
@@ -51,8 +41,6 @@ function ctaPlace(rect, wide) {
   const bottom = rect.y + rect.h;
   const below = window.innerHeight - bottom;
   if (below >= CTA_H + 16) return { top: Math.round(bottom + Math.min(48, (below - CTA_H) / 2)), bottom: 'auto' };
-  // Phong bì ngang mà dưới không còn chỗ (điện thoại ngang, nhất là iPhone có thanh Safari): nút nằm giữa dải từ
-  // mép dưới dấu sáp (dấu sáp cao ~36% thẻ, ở giữa) tới mép dưới phong bì — không đè lên dấu sáp.
   if (wide) {
     const band = rect.h * 0.31;
     return { top: Math.round(rect.y + rect.h * 0.69 + Math.max(0, (band - PILL_H) / 2)), bottom: 'auto', left: Math.round(rect.x + rect.w / 2) };
@@ -61,18 +49,18 @@ function ctaPlace(rect, wide) {
 }
 
 /**
- * @param rect    khung thẻ hero thật (x, y, w, h) — chưa đo được thì chưa hiện phong bì
- * @param reveal  tải lại: clip mở ra thẻ trống, mở xong giữ khung cuối (IntroVideo rời lớp phủ)
- * @param onOpen  gọi NGAY trong cú chạm (đồng bộ) — nhạc + tiếng giấy/sáp, làm nóng video
- * @param onCut   tới GATE_CUT_S: lần đầu thì IntroVideo chạy video dưới phong bì; tải lại thì rời lớp phủ
- * @param onDone  clip đã mờ hết (lần đầu): gỡ phong bì
- * @param wide    khổ ngang / máy tính: phong bì xoay ngang (clip *-w, thẻ 3:2)
+ * @param rect    khung phong bì (thẻ hero; khổ ngang: phần 3:2 giữa thẻ) — chưa đo được thì chưa hiện
+ * @param reveal  tải lại: clip mở ra thẻ đỏ trống
+ * @param wide    khổ ngang / máy tính: clip xoay ngang, nền trong suốt
+ * @param onOpen  gọi trong cú chạm (đồng bộ) — nhạc + tiếng giấy, làm nóng video
+ * @param onCut   vạt nằm yên (GATE_CUT_S)
+ * @param onDone  clip đã mờ hết: gỡ phong bì
  */
 export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone }) {
   // Khổ ngang tải lại: thẻ trong phong bì là 3:2, thẻ trang rộng hơn → phong bì cũng mờ đi (như lần đầu) để
   // IntroVideo giãn thẻ đỏ ra đúng thẻ trang; khổ dọc giữ khung cuối rồi rời lớp phủ.
   const hold = reveal && !wide;
-  const [step, setStep] = useState('idle'); // idle → vid → fade (lần đầu) / hold (tải lại)
+  const [step, setStep] = useState('idle'); // idle → (fs: chờ toàn màn) → vid → fade / hold (tải lại khổ dọc)
   const [imgReady, setImgReady] = useState(false);
   const [clipReady, setClipReady] = useState(false);
   const ready = imgReady && clipReady && !!rect;

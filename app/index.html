@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/assets/medallion-ink.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Webview Zalo Android (và app khác dùng WebView textZoom) nhân MỌI cỡ chữ theo cỡ chữ
+         hệ thống (Z Flip 3 đặt 1.5 → 16px thành 24px, chữ tràn thẻ hero; 2026-11-25). Chrome không
+         làm vậy. text-size-adjust 100%/none bị bỏ qua, nhưng phần trăm khác thì bị nhân cùng hệ số
+         → đo hệ số rồi đặt 100/hệ số %. Trình duyệt thường đo ra 1 → không đổi gì. -->
+    <script>
+      (function () {
+        try {
+          var d = document.documentElement, p = document.createElement('div');
+          p.style.cssText = 'position:absolute;visibility:hidden;font-size:100px';
+          d.appendChild(p);
+          var f = parseFloat(getComputedStyle(p).fontSize) / 100;
+          d.removeChild(p);
+          if (f > 1.01 || (f > 0 && f < 0.99)) {
+            var v = (100 / f).toFixed(2) + '%';
+            d.style.webkitTextSizeAdjust = v;
+            d.style.textSizeAdjust = v;
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>Hiếu & Minh — Thiệp cưới</title>
     <meta name="description" content="Trân trọng kính mời quý vị và các bạn đến chia vui cùng chúng em trong ngày trọng đại." />
     <meta name="theme-color" content="#160607" />

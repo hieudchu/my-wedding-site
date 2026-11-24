@@ -21,9 +21,10 @@ export function LightboxProvider({ children }) {
   const [zoom, setZoom] = useState(false);
   const closeTimer = useRef(null);
 
-  const open = useCallback((src, label) => {
+  // `fallback`: ảnh gốc JPEG, dùng khi bản nén (AVIF/WebP) không hiện được trên máy cũ
+  const open = useCallback((src, label, fallback) => {
     lockScroll();
-    setItem({ src: src || null, label: label || '' });
+    setItem({ src: src || null, label: label || '', fallback: fallback && fallback !== src ? fallback : null });
     setClosing(false);
     setZoom(false);
   }, []);
@@ -69,7 +70,13 @@ export function LightboxProvider({ children }) {
             <div className="lb-frame">
               <div className={`lb-zoom ${zoom ? 'zoomed' : ''}`}>
                 {item.src ? (
-                  <img src={item.src} alt={item.label || ''} className="lb-img" onClick={toggleZoom} />
+                  <img
+                    src={item.src}
+                    alt={item.label || ''}
+                    className="lb-img"
+                    onClick={toggleZoom}
+                    onError={() => item.fallback && setItem((it) => (it && it.fallback ? { ...it, src: it.fallback, fallback: null } : it))}
+                  />
                 ) : (
                   <div className="ph lb-placeholder" data-label={item.label} />
                 )}

@@ -142,7 +142,7 @@ function PhoneHero({ config, siteText = {}, visible }) {
               <button
                 type="button"
                 className="hm-card hm-photo"
-                onClick={() => openLightbox(p.full || p.url, p.caption || p.name)}
+                onClick={() => openLightbox(p.full || p.url, p.caption || p.name, p.original)}
                 aria-label={`Phóng to ảnh ${i} trên ${photos.length}`}
               >
                 {near && (
@@ -375,8 +375,9 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
 
   return (
     <section className="hero" id="hero">
-      {bg.prev && <img key={bg.prev} className="hero-bg" src={bg.prev} alt="" aria-hidden="true" />}
-      {bg.cur && <img key={bg.cur} className={`hero-bg ${bg.prev ? 'is-in' : ''}`} src={bg.cur} alt="" aria-hidden="true" />}
+      {/* Nền mờ chỉ để trang trí: máy không đọc được bản nén thì ẩn đi, không hiện ô ảnh hỏng */}
+      {bg.prev && <img key={bg.prev} className="hero-bg" src={bg.prev} alt="" aria-hidden="true" onError={hideBroken} />}
+      {bg.cur && <img key={bg.cur} className={`hero-bg ${bg.prev ? 'is-in' : ''}`} src={bg.cur} alt="" aria-hidden="true" onError={hideBroken} />}
       <div className="hero-veil" />
 
       <div
@@ -434,7 +435,7 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
               style={cardStyle(i)}
               onClick={() => {
                 if (wasDrag()) return;
-                if (i === slide) openLightbox(p.full || p.url, p.caption || p.name);
+                if (i === slide) openLightbox(p.full || p.url, p.caption || p.name, p.original);
                 else go(i);
               }}
             >
@@ -478,19 +479,29 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
   );
 }
 
+function hideBroken(e) {
+  e.currentTarget.style.visibility = 'hidden';
+}
+
 /**
  * Ảnh trong thẻ hero (cả hai carousel). `sizes` đo từ khung thẻ thật — xem useFrameSizes;
  * chưa đo xong thì chưa gắn src. `high`: ảnh khách đang/sắp nhìn thấy, tải trước các ảnh khác.
+ *
+ * Bản nén (AVIF/WebP) không hiện được — iPhone iOS 13 trở xuống không đọc WebP, hoặc file
+ * hỏng — thì lùi về ảnh gốc JPEG một lần, như MediaImage. Ảnh gốc cũng hỏng thì để trống.
  */
 function HeroPhoto({ p, high, onLoad }) {
-  const [ref, sizes] = useFrameSizes(p.aspect, Boolean(p.srcSet));
-  const wait = Boolean(p.srcSet) && !sizes;
+  const [useOriginal, setUseOriginal] = useState(false);
+  const variants = Boolean(p.srcSet) && !useOriginal;
+  const [ref, sizes] = useFrameSizes(p.aspect, variants);
+  const wait = variants && !sizes;
   return (
     <img
       ref={ref}
-      sizes={wait || !p.srcSet ? undefined : sizes}
-      srcSet={wait ? undefined : p.srcSet}
-      src={wait ? undefined : p.url}
+      sizes={wait || !variants ? undefined : sizes}
+      srcSet={wait || !variants ? undefined : p.srcSet}
+      src={wait ? undefined : (useOriginal ? p.original : p.url)}
+      onError={() => { if (!useOriginal && p.original && p.original !== p.url) setUseOriginal(true); }}
       alt="Ảnh cưới Hiếu và Minh"
       {...fitProps(p.fit)}
       onLoad={onLoad}

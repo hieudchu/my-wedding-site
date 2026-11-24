@@ -35,7 +35,7 @@ export default function MediaImage({
   // Bản nén: chờ đo khung xong mới gắn src/srcset (xem useFrameSizes). Ảnh gốc: gắn ngay.
   const [frameRef, sizes] = useFrameSizes(sources?.aspect, Boolean(src) && !useOriginal);
   const waiting = !useOriginal && !sizes;
-  const handleClick = clickable && openLightbox ? () => openLightbox(sources?.full || src, label) : undefined;
+  const handleClick = clickable && openLightbox ? () => openLightbox(sources?.full || src, label, sources?.original) : undefined;
   const interactive = handleClick
     ? { onClick: handleClick, role: 'button', tabIndex: 0 }
     : {};

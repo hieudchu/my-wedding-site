@@ -7,7 +7,7 @@ Tổng quan phần intro của trang khách `/` (cập nhật 21/11/2026). Code 
 
 | | Điện thoại dọc | Điện thoại ngang · máy tính |
 |---|---|---|
-| **Lần đầu vào** | Phong bì 2:3 nằm đúng chỗ thẻ đỏ. Chạm → nhạc + tiếng giấy, bốn vạt mở (~1,8 s) thấy khung đầu video trong thẻ → video chạy trong thẻ → cuối video hình tan thành thẻ đỏ tại chỗ → vào trang, chữ thẻ trồi lên. | Phong bì dọc xoay ngang (vạt có dấu sáp mở lên trên, dấu sáp vẫn đứng thẳng), 3:2, nằm giữa thẻ đỏ, nền trong suốt nên hoa văn liền với trang. Chạm → (Android: vào toàn màn hình, phong bì chờ màn đổi cỡ xong) → vạt mở thấy video → phong bì tan, khung nở ra khung video lớn viền vàng hai lớp → cuối video khung thu về đúng thẻ đỏ → vào trang. |
+| **Lần đầu vào** | Phong bì 2:3 nằm đúng chỗ thẻ đỏ. Chạm → nhạc + tiếng giấy, bốn vạt mở (~1,8 s) thấy khung đầu video trong thẻ → video chạy trong thẻ → cuối video hình tan thành thẻ đỏ tại chỗ → vào trang, chữ thẻ trồi lên. | Phong bì dọc xoay ngang (vạt có dấu sáp mở lên trên, dấu sáp vẫn đứng thẳng), 3:2, nằm giữa thẻ đỏ, nền trong suốt nên hoa văn liền với trang. Chạm → (Android: vào toàn màn hình, phong bì chờ màn đổi cỡ xong) → vạt mở thấy video → phong bì tan. Máy tính (25/11): khung 3:2 giãn ra đúng thẻ Hero, video chạy trong thẻ, cuối video tan thành thẻ đỏ tại chỗ. Điện thoại ngang: khung nở ra khung video lớn viền vàng hai lớp, cuối video thu về đúng thẻ đỏ. → vào trang. |
 | **Tải lại** (đã xem) | Phong bì mở ra thẻ đỏ trống rồi vào trang. Không chiếu lại video. | Phong bì mở ra thẻ đỏ 3:2, vạt tan, thẻ đỏ giãn ra đúng thẻ trang rồi vào trang. |
 | **Giảm chuyển động / tiết kiệm dữ liệu** | Không phong bì, không video: ảnh thẻ đỏ một nhịp rồi vào trang. Tải lại thì vào thẳng. | như bên trái |
 | **Link có neo** (`/#rsvp`, mã QR) | Không có intro, tới thẳng mục đó. | như bên trái |
@@ -27,7 +27,7 @@ chưa chạm trang, nhưng cú chạm mở phong bì chính là cử chỉ cho p
 |---|---|
 | 0 s | Chạm phong bì: nhạc mở đầu (to dần 0,16 → 0,55) + tiếng giấy / bóc sáp. Video chính được "làm nóng". |
 | 1,77 s | Vạt nằm yên: video chạy từ giây 1,2 dưới phong bì; phong bì mờ đi trong 0,9 s (ease-out, vạt tan dần). |
-| ~2,4 s | Khổ ngang / máy tính: khung nở ra khung video lớn (1 s). |
+| ~2,7 s | Máy tính: khung 3:2 giãn ra cả thẻ Hero (0,9 s). Điện thoại ngang: khung nở ra khung video lớn (1 s). |
 | video 10,15 s | Video dừng, hình tan thành thẻ đỏ (khổ dọc: tại chỗ trong 0,55 s; khổ ngang: khung trượt về thẻ trong 1,3 s). Không giữ thẻ trống (review 25/11: trước đây ~3 s thẻ trống, khách tưởng trang đơ). |
 | sau đó | Lớp phủ rời đi ngay bằng View Transition 0,5 s (nav hiện trong chuyển cảnh); xong thì chữ thẻ trồi lên từng dòng, nhanh hơn lần mở trang thường (`html[data-hero-quick]`: trễ 0–0,46 s, mỗi dòng 1,1 s); nhạc lắng xuống. |
 

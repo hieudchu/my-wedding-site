@@ -258,20 +258,22 @@ function StageHero({ config, siteText = {}, visible, vw, vh }) {
     });
   }, [slide, total]);
 
-  const stageH = Math.min(Math.max(vh * 0.62, 220), Math.max(vh - 150, 200), 760);
+  // Màn lớn (2K…, chủ thiệp 25/11): thẻ và ảnh to theo màn — trần cũ (thẻ 1180×760, ảnh ngang 1080, ảnh dọc 420) chỉ là
+  // mức tối thiểu; tới ~1440×900 mọi thứ y như trước. Video mở đầu chạy đúng trong thẻ này nên cũng to theo.
+  const stageH = Math.min(Math.max(vh * 0.62, 220), Math.max(vh - 150, 200), Math.max(760, vh * 0.62));
 
   const boxOf = (i) => {
     if (i === 0) {
-      const w = Math.min(1180, vw - Math.max(150, vw * 0.16));
+      const w = Math.min(Math.max(1180, vw * 0.65), vw - Math.max(150, vw * 0.16));
       return { w, h: stageH };
     }
     if (orient[i] === 'l') {
-      let w = Math.min(1080, vw - Math.max(150, vw * 0.18));
+      let w = Math.min(Math.max(1080, vw * 0.58), vw - Math.max(150, vw * 0.18));
       let h = w / 1.5;
       if (h > stageH) { h = stageH; w = stageH * 1.5; }
       return { w, h };
     }
-    let w = tablet ? Math.min(460, vw * 0.42) : Math.min(420, Math.max(250, vw * 0.32));
+    let w = tablet ? Math.min(460, vw * 0.42) : Math.min(Math.max(420, vw * 0.22), Math.max(250, vw * 0.32));
     let h = w * 1.34;
     if (h > stageH) { h = stageH; w = stageH / 1.34; }
     return { w, h };

@@ -69,7 +69,8 @@ export default function IntroVideo({ ready, enabled, music }) {
 
   // Khung (.intro-frame). Có phong bì: khung là thẻ hero (khổ ngang: phần 3:2 giữa thẻ — fit32) cho tới khi
   // - 'video': lần đầu khổ ngang / máy tính, phong bì tan → khung nở ra khung video lớn (frameBox);
-  // - 'widened': tải lại khổ ngang, phong bì tan → thẻ đỏ 3:2 giãn ra cả thẻ hero.
+  // - 'widened': phong bì tan → khung 3:2 giãn ra cả thẻ hero (tải lại khổ ngang / máy tính; lần đầu máy tính: video chạy
+  //   trong thẻ).
   const [frameMode, setFrameMode] = useState('card');
   const frameModeRef = useRef('card');
   frameModeRef.current = frameMode;
@@ -254,11 +255,17 @@ export default function IntroVideo({ ready, enabled, music }) {
       setTimeout(leave, WIDEN_MS + 250);
       return;
     }
-    if (!cardRef.current) {
-      frameModeRef.current = 'video';
-      setFrameMode('video');
-      setBox(frameBox(p.kind));
+    if (cardRef.current) return;
+    // Máy tính (chủ thiệp 25/11): video chạy đúng trong thẻ Hero đỏ, như bản điện thoại dọc — khung 3:2 của phong bì
+    // giãn ra cả thẻ (cùng nhịp .widen), không nở ra khung 16:9 rồi thu về (thẻ đỏ, khung video, thẻ trang lệch cỡ nhau).
+    // Điện thoại xoay ngang giữ khung video lớn (thẻ ngang thấp, video sẽ quá nhỏ).
+    if (p.kind === 'desktop') {
+      setFrameMode('widened');
+      return;
     }
+    frameModeRef.current = 'video';
+    setFrameMode('video');
+    setBox(frameBox(p.kind));
   };
 
   /** Bắt nhạc theo đúng chỗ video đang chạy. Bị chặn tự phát → hiện "Chạm để bật nhạc". */

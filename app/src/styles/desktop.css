@@ -1234,5 +1234,16 @@
     .nav-link { letter-spacing: 0.16em; }
   }
 
+  
+    /* Màn lớn (2K…, 25/11): thẻ Hero to theo màn (Hero.jsx: 65% bề ngang từ ~1820px) → chữ trong thẻ to theo cùng tỉ lệ.
+       Mỗi cỡ = cỡ đang có ở 1440 (thẻ 1180px) × bề rộng thẻ / 1180; dưới 1820px các cỡ cũ đã chạm trần nên y nguyên. */
+    @media (min-width: 1820px) {
+      .hero-title-card .hero-title-body { max-width: 49.5vw; }
+      .hero-title-card .hero-kicker span.txt { font-size: 0.72vw; }
+      .hero-title-card .hero-kicker span.rule { width: 3.2vw; }
+      .hero-title-card .hero-names--script { font-size: max(88px, 4.4vw); }
+      .hero-title-card .hero-tagline { font-size: 1.32vw; max-width: 33vw; }
+      .hero-title-card .hero-meta { font-size: 0.77vw; }
+    }
   }
 }

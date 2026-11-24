@@ -920,6 +920,12 @@ html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-meta { animation-d
 }
 .intro-frame.in-card.card .intro-media { transition: opacity 0.55s ease; } /* = CARD_RED_MS: tan xong là rời lớp phủ */
 /* Tải lại khổ ngang: thẻ đỏ 3:2 của phong bì giãn ra đúng thẻ hero (IntroVideo WIDEN_MS) */
+/* Lần đầu trên máy tính: phong bì tan → khung 3:2 (đang chiếu video) giãn ra đúng thẻ hero, video chạy trong thẻ */
+.intro-video:not(.page-reveal) .intro-frame.in-card.widen {
+  transition:
+    left 0.9s var(--ease-soft), top 0.9s var(--ease-soft), width 0.9s var(--ease-soft), height 0.9s var(--ease-soft),
+    opacity 0.35s ease, box-shadow 0.9s ease;
+}
 .intro-video.page-reveal .intro-frame.card.widen {
   transition: left 0.9s var(--ease-soft), top 0.9s var(--ease-soft), width 0.9s var(--ease-soft), height 0.9s var(--ease-soft);
 }

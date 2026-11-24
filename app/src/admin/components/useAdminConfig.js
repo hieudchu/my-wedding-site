@@ -50,29 +50,39 @@ export function useAdminConfig() {
     return !error;
   };
 
-  const saveMultiple = async (updates) => {
+  /**
+   * Lưu nhiều ô. Ô đã có hàng → update. Ô CHƯA có hàng (trang khách đang dùng chữ mặc định trong code): update
+   * không đụng hàng nào mà vẫn không báo lỗi — trước 25/11 admin báo "Saved!" mà không lưu gì. Giờ: có chữ thì
+   * thêm hàng (nhãn lấy từ `meta[key].label`), để trống thì bỏ qua — trang khách giữ nguyên chữ mặc định.
+   */
+  const saveMultiple = async (updates, meta = {}) => {
     if (!loadedRef.current) return false;
     setSaving(true);
     let success = true;
+    const written = {};
 
     for (const [key, value] of Object.entries(updates)) {
-      const { error } = await supabase
-        .from('site_config')
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq('key', key);
-
+      const now = new Date().toISOString();
+      let error;
+      if (configs[key]) {
+        ({ error } = await supabase.from('site_config').update({ value, updated_at: now }).eq('key', key));
+      } else {
+        if (!String(value ?? '').trim()) continue;
+        ({ error } = await supabase.from('site_config').insert({
+          key, value, section: meta[key]?.section || 'text', label: meta[key]?.label || key, updated_at: now,
+        }));
+      }
       if (error) success = false;
+      else written[key] = value;
     }
 
-    if (success) {
-      setConfigs((prev) => {
-        const next = { ...prev };
-        for (const [key, value] of Object.entries(updates)) {
-          next[key] = { ...next[key], value };
-        }
-        return next;
-      });
-    }
+    setConfigs((prev) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(written)) {
+        next[key] = { ...(next[key] || { key }), value };
+      }
+      return next;
+    });
 
     setSaving(false);
     return success;

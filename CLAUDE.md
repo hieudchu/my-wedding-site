@@ -331,6 +331,10 @@ Two traps found during the mobile port:
   rows/columns stay in the DB. When a design change hides or drops a text or photo, remove it
   from `TextSettings.jsx` / `MediaManager.jsx` SECTIONS too.
 - RSVP rows can be hidden (reversible) or deleted for good ("Xoá", confirm dialog), like wishes.
+- Many text keys have **no row** in `site_config`; the guest page then shows the fallback written in the component
+  (`siteText.x || '…'`). `TextSettings.jsx` mirrors those fallbacks in `DEFAULTS` (shown as placeholders) — update
+  both together. `saveMultiple(updates, meta)` updates existing rows and inserts a row only for a missing key with
+  non-empty text (before 2026-11-25 it only ran `update`, so edits to missing keys silently did nothing).
 - The image framer's styles are `admin/image-framer.css` (`if-` classes), not
   `admin.css`.
 - "Đã gọi" (BR-1, 11/2026) stores the call time in `rsvps.called_at` (null = not

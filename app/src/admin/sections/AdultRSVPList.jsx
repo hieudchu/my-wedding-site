@@ -14,7 +14,8 @@ import './AdultRSVPList.css';
  * Bên dưới là bốn khoá chữ riêng của thiệp (site_config `adult_…`).
  */
 
-const SITE_URL = 'https://hieu-minh-wedding.vercel.app/adult';
+// Link để gửi: /thiep-moi (cùng trang với /adult, nhưng có ảnh xem trước chọn ở "Ảnh xem trước khi gửi link" — Zalo)
+const SITE_URL = 'https://hieu-minh-wedding.vercel.app/thiep-moi';
 
 const STATUS_TABS = [
   { key: 'all', label: 'Tổng hồi âm' },
@@ -267,10 +268,10 @@ export default function AdultRSVPList({ adminConfig }) {
       <div className="rw-head">
         <div>
           <h1>Khách bố mẹ mời</h1>
-          <p className="page-desc">Hồi âm từ thiệp bố mẹ gửi đồng nghiệp, cấp trên (/adult) — có cả lời từ chối</p>
+          <p className="page-desc">Hồi âm từ thiệp bố mẹ gửi đồng nghiệp, cấp trên (/thiep-moi) — có cả lời từ chối</p>
         </div>
         <div className="rw-head-act">
-          <a className="admin-btn admin-btn-secondary" href="/adult" target="_blank" rel="noreferrer">Mở thiệp bố mẹ ↗</a>
+          <a className="admin-btn admin-btn-secondary" href="/thiep-moi" target="_blank" rel="noreferrer">Mở thiệp bố mẹ ↗</a>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={copyLink}>Sao chép link gửi Zalo</button>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={reload} disabled={refreshing}>
             {refreshing ? 'Đang tải…' : 'Tải lại'}
@@ -324,7 +325,7 @@ export default function AdultRSVPList({ adminConfig }) {
           {rows.length === 0 ? (
             <>
               <h3>Chưa có hồi âm nào</h3>
-              <p>Khi khách gửi xác nhận trên thiệp bố mẹ (/adult), tên sẽ hiện ở đây.</p>
+              <p>Khi khách gửi xác nhận trên thiệp bố mẹ (/thiep-moi), tên sẽ hiện ở đây.</p>
             </>
           ) : filtered ? (
             <>

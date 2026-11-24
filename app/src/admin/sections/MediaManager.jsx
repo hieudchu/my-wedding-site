@@ -54,7 +54,7 @@ const SECTIONS = [
     folder: 'music',
     label: 'Nhạc nền',
     where:
-      'Phát khi khách bấm nút nhạc ở góc phải thanh menu. Nhạc không tự chạy — trình duyệt chặn, mà khách cũng không nên bị giật mình.',
+      'Tự phát khi khách mở trang: có video mở đầu thì vào nhẹ khoảng 3 giây sau video; trình duyệt chặn tự phát thì phát ở lần chạm đầu tiên. Khách tắt / bật bằng nút nhạc — máy tính ở góc phải thanh menu, điện thoại là bong bóng đĩa than nổi (kéo vào dấu × để ẩn).',
     look:
       'Cả thư mục là một danh sách phát: khách bấm ⏮ ⏭ để chuyển bài. Kéo thả để đổi thứ tự phát. File MP3 128 kbps (khoảng 1 MB mỗi phút) là đủ nghe trên điện thoại — file càng nặng càng tốn băng thông của gói Supabase miễn phí.',
     accept: 'audio/*',
@@ -149,7 +149,7 @@ const SECTIONS = [
       {
         storagePath: 'background/moment-2.jpg',
         label: 'Ảnh phía trên đồng hồ đếm ngược',
-        where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, giữa trang.',
+        where: 'Nằm ngay trên khung đếm ngược tới ngày cưới, giữa trang. Cũng là ảnh duy nhất trên thiệp bố mẹ mời (/thiep-moi) — đổi ảnh này là đổi cả ở đó.',
         look:
           'Khung dọc 4:5 trên máy tính, khung đếm ngược đè lên khoảng 48px mép dưới — đừng để gì quan trọng ở đáy khung. Điện thoại: khung dọc 2:3, chỉnh riêng được.',
         thumb: '45',

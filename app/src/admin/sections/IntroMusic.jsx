@@ -43,7 +43,7 @@ export default function IntroMusic({ adminConfig, toast }) {
     clearTimeout(stopRef.current);
     a.currentTime = startNum;
     a.play().catch(() => toast('Trình duyệt không phát được file này'));
-    stopRef.current = setTimeout(() => a.pause(), 17000); // dài bằng video đầy đủ
+    stopRef.current = setTimeout(() => a.pause(), 13000); // dài bằng lúc khách nghe: phong bì + video tới thẻ đỏ (~13 s)
   };
 
   const pick = async (e) => {
@@ -110,7 +110,7 @@ export default function IntroMusic({ adminConfig, toast }) {
             onChange={(e) => setStart(e.target.value)}
           />
         </label>
-        <button type="button" className="admin-btn" onClick={preview} disabled={busy}>Nghe thử 17 giây</button>
+        <button type="button" className="admin-btn" onClick={preview} disabled={busy}>Nghe thử 13 giây</button>
         <button
           type="button"
           className="admin-btn"

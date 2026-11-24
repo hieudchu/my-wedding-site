@@ -22,3 +22,7 @@
 /* Khách sửa lại (2026-11-18, cột updated_at): "Sửa …" cạnh giờ gửi. Dùng cả trong WishList.jsx. */
 .rw-edited { color: #8A5A12; }
 .rw-wt-time .rw-edited { display: block; margin-top: 2px; font-size: 11.5px; }
+
+/* Tổng chung cả hai thiệp (trang chính + khách bố mẹ mời) — dưới các ô theo bên */
+.rw-grand { font-size: 13px; line-height: 1.5; color: #6B5E5B; margin: -4px 0 12px; }
+.rw-grand b { color: #7E1416; font-weight: 600; }

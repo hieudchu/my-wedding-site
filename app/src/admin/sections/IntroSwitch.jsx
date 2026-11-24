@@ -39,13 +39,21 @@ export default function IntroSwitch({ adminConfig, toast }) {
     toast(next ? 'Đã bật video mở đầu' : 'Đã tắt video mở đầu');
   };
 
+  // Xem lại như khách mới: trang nhớ "đã xem" ở localStorage (intro/plan.js, cùng tên miền với admin) → xoá rồi mở
+  // trang chính ở tab mới. Chỉ máy này; không đổi gì trên trang.
+  const replay = () => {
+    try { localStorage.removeItem('hm-intro-seen'); } catch { /* chế độ riêng tư */ }
+    window.open('/', '_blank', 'noopener');
+  };
+
   return (
     <div className="admin-card intro-switch">
       <div className="is-text">
         <h3>Video mở đầu · Intro video</h3>
         <p>
-          Đoạn video phát khi khách mở trang thiệp (lần đầu bản đầy đủ ~17 giây, lần sau bản
-          ngắn ~3 giây). Tắt thì khách vào thẳng trang. Có hiệu lực từ lần tải trang kế tiếp.
+          Khách mở trang thiệp thấy phong bì; chạm mở thì lần đầu xem video cưới (~13 giây), những lần
+          sau phong bì chỉ mở ra thẻ đỏ (~3 giây). Tắt thì không có cả phong bì lẫn video — khách vào thẳng
+          trang. Có hiệu lực từ lần tải trang kế tiếp.
         </p>
       </div>
       <button
@@ -60,6 +68,12 @@ export default function IntroSwitch({ adminConfig, toast }) {
         <span className="is-knob" />
       </button>
       <span className={`is-state ${on ? 'on' : ''}`}>{on ? 'Đang bật' : 'Đang tắt'}</span>
+      <div className="is-replay">
+        <button type="button" className="admin-btn admin-btn-secondary" onClick={replay} disabled={!on}>
+          Xem lại như khách mới ↗
+        </button>
+        <span>Mở trang thiệp ở tab mới với phong bì + video đầy đủ (máy này đã xem rồi thì bình thường chỉ thấy bản ngắn).</span>
+      </div>
       <IntroMusic adminConfig={adminConfig} toast={toast} />
     </div>
   );

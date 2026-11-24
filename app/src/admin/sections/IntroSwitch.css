@@ -2,12 +2,14 @@
 .intro-switch {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-areas: 'text toggle' 'text state' 'music music';
+  grid-template-areas: 'text toggle' 'text state' 'replay replay' 'music music';
   align-items: center;
   column-gap: 24px;
   row-gap: 6px;
 }
 .intro-switch .is-text { grid-area: text; }
+.is-replay { grid-area: replay; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+.is-replay span { font-size: 12px; line-height: 1.5; color: #A89996; max-width: 460px; }
 .intro-switch h3 { margin-bottom: 8px; }
 .intro-switch p {
   margin: 0;

@@ -183,6 +183,9 @@ export default function RSVPList() {
       none: a.none + Number(s.no_guests || 0),
     }), { responses: 0, guests: 0, over: 0, none: 0 });
   const total = stat('all');
+  // Khách bố mẹ mời (/thiep-moi): view tính mỗi dòng nhận lời = 1 khách → tổng chung để đặt bàn
+  const adult = summary.filter((s) => s.side === 'adult')
+    .reduce((a, s) => ({ guests: a.guests + Number(s.guests), responses: a.responses + Number(s.responses) }), { guests: 0, responses: 0 });
 
   const filtered = Boolean(q.trim()) || sideFilter !== 'all' || onlyDup || onlyNote || onlyUncalled;
   const clearFilters = () => { setQ(''); setSideFilter('all'); setOnlyDup(false); setOnlyNote(false); setOnlyUncalled(false); };
@@ -294,6 +297,11 @@ export default function RSVPList() {
           );
         })}
       </div>
+      <p className="rw-grand">
+        Tổng cộng cả hai thiệp: <b>{atLeast(total.guests + adult.guests, total.over > 0)} khách</b>
+        {' '}= {atLeast(total.guests, total.over > 0)} khách trang chính + {adult.guests} khách bố mẹ mời
+        {' '}(mục &ldquo;Khách bố mẹ mời&rdquo;).
+      </p>
       {(total.over > 0 || total.none > 0) && (
         <p className="rw-footnote">
           {total.over > 0 && <>&ldquo;≥&rdquo; là số tối thiểu: {total.over} lượt chọn &ldquo;Trên 10 người&rdquo; được tính là 10. </>}

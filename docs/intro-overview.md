@@ -88,7 +88,9 @@ tan ở giây 7,45 (review). Khổ ngang dùng video máy tính nên không cầ
 ## Cách thử
 
 - Bản build: `cd app && npx vite build && npx vite preview --port 4173` (dev server không phát video cho Safari của simulator).
-- Xem lại lần đầu: xoá `localStorage['hm-intro-seen']` (hoặc tab ẩn danh); dev có `?introtest=full`.
+- Xem lại lần đầu: xoá `localStorage['hm-intro-seen']` (hoặc tab ẩn danh); dev có `?introtest=full`. Bản build luôn như
+  khách mới (tải lại vẫn ra video, dùng cho simulator): `VITE_INTRO_ALWAYS=1 npx vite build --outDir <thư mục tạm>` rồi
+  `npx vite preview --outDir <thư mục tạm>`. Không bao giờ đặt biến này trên Vercel.
 - iPhone: simulator iOS, Safari, `http://localhost:4173/?introdebug=1`.
 - Android: AVD `hm_s24` (`emulator -avd hm_s24 -no-window -gpu host`), `adb reverse tcp:4173 tcp:4173`, xoay ngang
   bằng `settings put system user_rotation 1`.

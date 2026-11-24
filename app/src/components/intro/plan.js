@@ -52,7 +52,9 @@ function makePlan() {
   // Khổ ngang dùng video máy tính (16:9): một bộ clip phong bì cho cả hai khổ ngang
   const media = gate && kind === 'landscape' ? 'desktop' : kind;
   // Tải lại (chủ thiệp: chỉ một video): phong bì mở thẳng vào trang, không chiếu lại video
-  const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search));
+  // VITE_INTRO_ALWAYS=1 (chỉ bản build xem thử trên simulator, không bao giờ trên Vercel): tải lại vẫn như khách mới
+  const seen = readSeen() && !(import.meta.env.DEV && /introtest=full/.test(window.location.search))
+    && !import.meta.env.VITE_INTRO_ALWAYS;
   if (seen && !gate) return null;
   // Nhạc nền của trang (Nav) chờ intro xong. Đặt ngay lúc quyết định, trước mọi effect.
   document.documentElement.dataset.intro = 'on';

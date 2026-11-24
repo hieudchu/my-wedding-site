@@ -11,13 +11,13 @@ import { useEffect, useRef, useState } from 'react';
  */
 
 const A = '/assets/intro/envelope/';
-const GV = '?v=20261122d';
+const GV = '?v=20261125a'; // 25/11: open-video*.{mp4,webm} — vạt dưới hết bạc trắng (flap_fix.py)
 // Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip), đo ở khung cuối: khổ dọc / xoay ngang
 const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
 const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };
 // Clip chiếu mọi khung Kling ở 60 khung/giây (chủ thiệp: "mở hơi chậm" → 2,5×): vạt nằm yên ở ~1,77 s
 const GATE_CUT_S = 1.77;
-const GATE_FADE_MS = 650;
+const GATE_FADE_MS = 900; // = .intro-gate transition; review 25/11: 0,65 s nhìn như hai vạt bên "tắt phụt"
 export const GATE_LEAD_S = GATE_CUT_S; // chạm → video chạy (IntroVideo canh nhạc)
 // Clip nền trong suốt: Safari / iPhone / iPad đọc HEVC có alpha; trình duyệt khác WebM VP9 có alpha
 const APPLE = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -142,6 +142,21 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
   const idleSrc = wide ? `${A}idle-${name}-w.webp${GV}` : `${A}idle-${name}.jpg${GV}`;
   const clipSrc = wide ? `${A}open-${name}-${APPLE ? 'wa.mp4' : 'w.webm'}${GV}` : `${A}open-${name}.mp4${GV}`;
   const place = box ? { left: box.left, top: box.top, width: box.width, height: box.height } : undefined;
+  // Vệt ánh kim trên dấu sáp (gợi ý chạm): lớp tròn cắt đúng chỗ dấu trên ảnh chờ (tâm ~giữa clip, Ø ≈ 23% bề ngắn).
+  // Chỉ khi còn chờ chạm; chạm là gỡ (clip mở có dấu sáp riêng).
+  const seal = box ? (() => {
+    const d = Math.min(box.width, box.height) * 0.25;
+    const cx = box.left + box.width * (wide ? 0.5015 : 0.4995);
+    const cy = box.top + box.height * (wide ? 0.498 : 0.495);
+    return {
+      left: cx - d / 2, top: cy - d / 2, width: d, height: d,
+      backgroundImage: `url(${idleSrc})`,
+      backgroundSize: `${box.width}px ${box.height}px`,
+      backgroundPosition: `${box.left - (cx - d / 2)}px ${box.top - (cy - d / 2)}px`,
+    };
+  })() : null;
+  // "Trân trọng kính mời": trên phong bì nếu còn chỗ (dọc, máy tính); điện thoại ngang thì dưới nút như cũ
+  const inviteAbove = !!rect && rect.y >= 78;
   return (
     <div
       className={`intro-gate step-${step} ${ready ? 'ready' : ''}`}
@@ -164,9 +179,15 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
         onEnded={toVideo}
         onError={() => { if (step !== 'idle') toVideo(); }}
       />
+      {seal && <div className="ig-seal" style={seal} aria-hidden="true" />}
+      {inviteAbove && (
+        <div className="ig-invite" style={{ top: Math.round(rect.y - 34) }} aria-hidden="true">
+          <i /><b>Trân trọng kính mời</b><i />
+        </div>
+      )}
       <div className={`ig-cta ${wide && rect && window.innerHeight - rect.y - rect.h < CTA_H + 16 ? 'on-flap' : ''}`} style={ctaPlace(rect, wide)}>
         <span>Chạm để mở thiệp</span>
-        <small>Trân trọng kính mời</small>
+        {!inviteAbove && <small>Trân trọng kính mời</small>}
       </div>
     </div>
   );

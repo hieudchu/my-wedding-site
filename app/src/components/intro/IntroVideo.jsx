@@ -32,7 +32,11 @@ const MUSIC_GAP_MS = 3000; // chủ thiệp: nhạc nền của trang nghỉ m�
 // Video dừng ngay trước đoạn "thu vào thẻ" có sẵn trong video (khung lồng khung / phóng to rồi thu lại đều bị chê).
 const CARD_AT_S = 10.15;
 const CARD_MOVE_MS = 1300; // khung → thẻ
-const CARD_HOLD_MS = 900; // thẻ đỏ đứng một nhịp rồi mới vào trang
+// Thành thẻ xong là rời lớp phủ ngay, không giữ thẻ đỏ trống (review 25/11: ~3 s thẻ trống tưởng trang đơ).
+// Khổ dọc: khung đã là thẻ, chỉ chờ hình tan thành đỏ (.in-card.card .intro-media 0,55 s). Khổ ngang / máy tính:
+// chờ khung trượt về thẻ xong. Chữ thẻ trồi lên ngay sau chuyển cảnh, nhanh hơn lần mở trang thường (html[data-hero-quick]).
+const CARD_RED_MS = 550;
+const CARD_SETTLE_MS = CARD_MOVE_MS + 100;
 const WIDEN_MS = 900; // tải lại khổ ngang: thẻ đỏ 3:2 giãn ra thẻ hero (= .intro-frame.widen)
 
 /**
@@ -45,6 +49,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   const [phase, setPhase] = useState(() => (p ? 'wait' : 'done'));
   const wide = !!p && p.kind !== 'portrait';
   const mainRef = useRef(null);
+  const progRef = useRef(null); // vạch tiến trình (.intro-prog i): ghi transform thẳng trong vòng rAF, không render lại
   const loopRef = useRef(null);
   const started = useRef(false);
   const mode = useRef('none'); // đang hiện gì: none (chờ cài đặt / bị tắt) · video · still
@@ -116,6 +121,7 @@ export default function IntroVideo({ ready, enabled, music }) {
   const leave = () => {
     if (leavingRef.current) return;
     leavingRef.current = true;
+    document.documentElement.dataset.heroQuick = ''; // chữ thẻ hero trồi nhanh hơn (chưa .ready nên chưa đổi gì lúc chụp)
     if (document.startViewTransition && !mqMatches('(prefers-reduced-motion: reduce)')) {
       const vt = document.startViewTransition(() => {
         flushSync(() => {
@@ -152,8 +158,9 @@ export default function IntroVideo({ ready, enabled, music }) {
         cardRef.current = r; setBox(r);
       }
     }, 120);
-    const t = setTimeout(go, CARD_MOVE_MS + CARD_HOLD_MS);
-    const cap = setTimeout(leave, CARD_MOVE_MS + CARD_HOLD_MS + LOOP_CAP_MS);
+    const wait = p.gate && frameModeRef.current !== 'video' ? CARD_RED_MS : CARD_SETTLE_MS;
+    const t = setTimeout(go, wait);
+    const cap = setTimeout(leave, wait + LOOP_CAP_MS);
     return () => { clearTimeout(t); clearTimeout(cap); clearInterval(follow); };
   }, [card, ready]);
   // Canh đúng CARD_AT_S (rAF chính xác hơn timeupdate ~4 lần/giây); đợi phong bì gỡ xong đã
@@ -162,6 +169,10 @@ export default function IntroVideo({ ready, enabled, music }) {
     let raf = 0;
     const tick = () => {
       const v = mainRef.current;
+      if (v && progRef.current) {
+        const k = Math.min(1, Math.max(0, (v.currentTime - p.join) / (CARD_AT_S - p.join)));
+        progRef.current.style.transform = `scaleX(${k.toFixed(4)})`;
+      }
       if (v && v.currentTime >= CARD_AT_S && gateGoneRef.current) { toCard(); return; }
       raf = requestAnimationFrame(tick);
     };
@@ -407,6 +418,12 @@ export default function IntroVideo({ ready, enabled, music }) {
   const inCard = p.gate && frameMode !== 'video';
   const fbox = wide && inCard && frameMode === 'card' ? fit32(box) : box;
   const hidden = mode.current === 'none' || !box || (phase === 'gate' && !revealCut);
+  // Vạch tiến trình (review 25/11, chủ thiệp: nhỏ, gọn): giữa, ngay dưới khung video; khung cao hết màn (điện thoại
+  // ngang) thì nằm trong mép dưới khung. Cùng kiểu vạch "01 / 15" của thẻ hero.
+  const progPlace = fbox ? {
+    left: Math.round(fbox.x + fbox.w / 2),
+    top: Math.round(window.innerHeight - (fbox.y + fbox.h) >= 34 ? fbox.y + fbox.h + 16 : fbox.y + fbox.h - 18),
+  } : null;
   return (
     <div
       className={`intro-video intro-${p.kind} ${phase === 'out' ? 'out' : ''} ${morph ? 'settle' : ''} ${p.pageReveal ? 'page-reveal' : ''} ${p.pageReveal && !card ? 'no-card' : ''}`}
@@ -472,10 +489,14 @@ export default function IntroVideo({ ready, enabled, music }) {
       {p.gate && !gateGone && phase !== 'wait' && (
         <IntroGate rect={wide ? fit32(box) : box} reveal={p.pageReveal} wide={wide} onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
       )}
-      {(phase === 'play' || phase === 'loop') && gateGone && (
+      {/* Khung bắt đầu thành thẻ thì cất nút: không lọt vào ảnh chụp của chuyển cảnh, đè thanh tiêu đề */}
+      {(phase === 'play' || phase === 'loop') && gateGone && !card && (
         <>
           {needTap && <div className="intro-hint">♪ Chạm để bật nhạc</div>}
           <button type="button" className="intro-skip" onClick={leave}>Bỏ qua</button>
+          {!p.pageReveal && progPlace && (
+            <span className="intro-prog" style={progPlace} aria-hidden="true"><i ref={progRef} className={phase === 'loop' ? 'full' : ''} /></span>
+          )}
         </>
       )}
     </div>

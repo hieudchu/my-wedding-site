@@ -43,7 +43,9 @@ function readBubblePos() {
       return { side: v.side, ry: Math.min(0.95, Math.max(0, v.ry)) };
     }
   } catch { /* chế độ riêng tư */ }
-  return { side: 'r', ry: 0.7 };
+  // Mặc định: mép phải, dưới dòng ngày giờ của thẻ hero (0,7 đè chữ "SHERATON HANOI" ở máy rộng 360 điểm — review 25/11).
+  // Đo ở 360×780 … 430×932: dòng đó kết thúc ở 0,70–0,715 chiều cao màn; 0,735 chừa ≥ 15 px, vẫn trong thẻ.
+  return { side: 'r', ry: 0.735 };
 }
 
 function measureBubble() {

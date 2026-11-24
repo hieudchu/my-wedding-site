@@ -822,6 +822,15 @@ html[data-intro] .hm-track,
 html[data-intro] .hero-stage { opacity: 1; transform: none; transition: none; }
 /* Nav hiện ngay trong chuyển cảnh (cùng lúc thanh trạng thái đổi màu kem), không transition riêng */
 html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointer-events: auto; }
+/* Sau intro (IntroVideo leave): chữ thẻ vẫn trồi lên từng dòng như lần mở trang thường, nhưng ngay và nhanh hơn
+   (thường: trễ 0,55–1,2 s, mỗi dòng 1,6 s → khách nhìn thẻ đỏ trống thêm ~1 s nữa). */
+html[data-hero-quick] :is(.hm-track, .hero-stage).ready :is(.hero-kicker, .hero-names, .hero-tagline, .hero-meta) {
+  animation-duration: 1.1s;
+}
+html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-kicker { animation-delay: 0s; }
+html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-names { animation-delay: 0.14s; }
+html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-tagline { animation-delay: 0.32s; }
+html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-meta { animation-delay: 0.46s; }
 /* Kết tự nhiên: khung co cho thẻ đỏ trùng thẻ hero thật (JS tính transform), mờ trễ một nhịp */
 .intro-video.settle { transition-delay: var(--intro-settle, 250ms); }
 .intro-frame {
@@ -874,7 +883,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
 }
 .intro-frame.card .intro-media {
   opacity: 0;
-  transition: opacity 0.8s ease 0.6s; /* khung đi được nửa đường thì hình mới tan thành đỏ */
+  transition: opacity 0.7s ease 0.5s; /* khung đi được ~nửa đường thì hình tan thành đỏ, xong trước khi khung tới thẻ */
 }
 .intro-frame::after {
   content: '';
@@ -883,7 +892,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   border: 1px solid rgba(216, 183, 120, 0.35);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.7s ease 0.9s;
+  transition: opacity 0.6s ease 0.5s;
 }
 .intro-frame.card::after { opacity: 1; }
 /* Có phong bì: khung là thẻ hero (khổ ngang: phần 3:2 giữa thẻ) — video chạy trong thẻ, viền vàng mảnh như khung
@@ -909,7 +918,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
     0 0 0 1px rgba(216, 183, 120, 0.22),
     0 54px 96px -38px rgba(0, 0, 0, 0.85);
 }
-.intro-frame.in-card.card .intro-media { transition: opacity 0.9s ease; }
+.intro-frame.in-card.card .intro-media { transition: opacity 0.55s ease; } /* = CARD_RED_MS: tan xong là rời lớp phủ */
 /* Tải lại khổ ngang: thẻ đỏ 3:2 của phong bì giãn ra đúng thẻ hero (IntroVideo WIDEN_MS) */
 .intro-video.page-reveal .intro-frame.card.widen {
   transition: left 0.9s var(--ease-soft), top 0.9s var(--ease-soft), width 0.9s var(--ease-soft), height 0.9s var(--ease-soft);
@@ -975,6 +984,30 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   cursor: pointer;
 }
 .intro-skip:hover { background: rgba(50, 0, 12, 0.7); }
+/* Vạch tiến trình video (IntroVideo progPlace: giữa, dưới khung) — nhỏ, gọn, cùng kiểu vạch "01 / 15" của thẻ hero.
+   Đi theo khung khi khung nở ra khung video lớn (cùng 1 s). Rời đi cùng nút "Bỏ qua" lúc khung thành thẻ. */
+.intro-prog {
+  position: absolute;
+  width: 56px;
+  height: 1.5px;
+  margin-left: -28px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: rgba(216, 183, 120, 0.22);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition: left 1s var(--ease-soft), top 1s var(--ease-soft);
+  animation: introProgIn 0.6s ease both;
+}
+.intro-prog i {
+  position: absolute;
+  inset: 0;
+  background: #D8B778;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.intro-prog i.full { transform: scaleX(1) !important; }
+@keyframes introProgIn { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .intro-hint { animation: none; } }
 /* ── Phong bì mở thiệp (components/intro/IntroGate.jsx) — ảnh chờ + clip mở ─────────────────────────── */
 .intro-gate {
@@ -986,7 +1019,7 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   outline: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.65s ease;
+  transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1); /* = GATE_FADE_MS, ease-out: vạt tan dần */
 }
 /* Ảnh chờ + clip đặt theo khung thẻ hero thật (IntroGate clipBox → left/top/width/height nội tuyến) */
 .ig-idle,
@@ -1023,13 +1056,66 @@ html[data-intro-in] .nav { opacity: 1; transform: none; transition: none; pointe
   white-space: nowrap;
   animation: igPulse 2.4s ease-in-out infinite;
 }
-.ig-cta small { font: italic 500 15px/1 'Cormorant Garamond', serif; color: #E2C68A; letter-spacing: 0.04em; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
+/* "Trân trọng kính mời" (review 25/11: nhỏ + đẹp hơn): chữ hoa giãn cách giữa hai gạch vàng mảnh — cùng kiểu dòng
+   "— THIỆP CƯỚI —" trên thẻ hero. Nằm trên phong bì (.ig-invite, IntroGate đặt top); hết chỗ thì dưới nút (small). */
+.ig-invite {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 1.2vw, 18px);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.ig-invite i {
+  width: clamp(26px, 3vw, 48px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(216, 183, 120, 0), rgba(216, 183, 120, 0.75));
+}
+.ig-invite i:last-child { transform: scaleX(-1); }
+.ig-invite b,
+.ig-cta small {
+  font: 600 clamp(10.5px, 0.9vw, 13px)/1 var(--serif);
+  letter-spacing: 0.32em;
+  margin-right: -0.32em; /* bù khoảng giãn sau chữ cuối cho cân giữa */
+  text-transform: uppercase;
+  color: #D8B778;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
+.ig-cta small { font-size: 9.5px; opacity: 0.9; }
+.intro-gate:not(.ready) .ig-invite,
+.intro-gate:not(.step-idle) .ig-invite { opacity: 0; }
+/* Vệt ánh kim lướt qua dấu sáp (gợi ý chạm; chủ thiệp 25/11 bỏ nhịp "thở"). Lớp cắt tròn từ chính ảnh chờ, mép mềm. */
+.ig-seal {
+  position: absolute;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle, #000 64%, transparent 71%);
+  mask-image: radial-gradient(circle, #000 64%, transparent 71%);
+  transition: opacity 0.5s ease; /* hiện cùng nhịp với ảnh chờ (.ig-idle mờ vào 0,5 s), không hiện trước */
+}
+.ig-seal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 240, 205, 0.5) 50%, transparent 62%) no-repeat;
+  background-size: 260% 100%;
+  mix-blend-mode: soft-light;
+  animation: igSheen 4.8s ease-in-out infinite;
+}
+@keyframes igSheen { 0%, 55% { background-position: 130% 0; } 90%, 100% { background-position: -30% 0; } }
+.intro-gate:not(.ready) .ig-seal { opacity: 0; }
+.intro-gate:not(.step-idle) .ig-seal { display: none; }
 @keyframes igPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(216, 180, 106, 0.35); } 50% { box-shadow: 0 0 0 9px rgba(216, 180, 106, 0); } }
 .ig-cta.on-flap small { display: none; } /* nút nằm trên vạt dưới (phong bì ngang thấp): chỉ còn nút */
 .ig-cta.on-flap span { padding: 10px 16px; font-size: 12px; }
 .intro-gate:not(.step-idle) .ig-cta { opacity: 0; }
 .intro-gate:focus-visible .ig-cta span { outline: 2px solid #D8B46A; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .ig-cta span { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ig-cta span, .ig-seal::after { animation: none; } }
 .intro-debug {
   position: absolute;
   top: 8px;

@@ -13,6 +13,10 @@ Tổng quan phần intro của trang khách `/` (cập nhật 21/11/2026). Code 
 | **Link có neo** (`/#rsvp`, mã QR) | Không có intro, tới thẳng mục đó. | như bên trái |
 | **Admin tắt** (Admin › Thông tin chung) | Không có intro. Lúc chưa đọc được cài đặt, lớp phủ chỉ là nền đỏ, chưa tải video. | như bên trái |
 
+Màn chờ chạm: trên phong bì có dòng "— TRÂN TRỌNG KÍNH MỜI —" (chữ hoa vàng giãn cách, cùng kiểu "THIỆP CƯỚI" trên thẻ;
+điện thoại ngang không đủ chỗ thì bỏ), dấu sáp có vệt ánh kim lướt qua (4,8 s một lần) để gợi ý chạm (nhịp "thở" đã thử, chủ thiệp bỏ) —
+là lớp tròn cắt từ chính ảnh chờ (`.ig-seal`), gỡ ngay khi clip mở chạy. Cả màn hình là vùng chạm.
+
 Trong lúc video chạy: chạm / lăn chuột / phím = bỏ qua; nút "Bỏ qua" góc trên phải. Trình duyệt chặn nhạc khi khách
 chưa chạm trang, nhưng cú chạm mở phong bì chính là cử chỉ cho phép phát tiếng. Nếu nhạc vẫn bị chặn, lớp phủ hiện
 "♪ Chạm để bật nhạc" và lần chạm đó bật nhạc thay vì bỏ qua. Nhạc nền của trang chờ intro xong 3 giây rồi mới vào nhẹ.
@@ -22,10 +26,10 @@ chưa chạm trang, nhưng cú chạm mở phong bì chính là cử chỉ cho p
 | Lúc | Việc |
 |---|---|
 | 0 s | Chạm phong bì: nhạc mở đầu (to dần 0,16 → 0,55) + tiếng giấy / bóc sáp. Video chính được "làm nóng". |
-| 1,77 s | Vạt nằm yên: video chạy từ giây 1,2 dưới phong bì; phong bì mờ đi trong 0,65 s. |
+| 1,77 s | Vạt nằm yên: video chạy từ giây 1,2 dưới phong bì; phong bì mờ đi trong 0,9 s (ease-out, vạt tan dần). |
 | ~2,4 s | Khổ ngang / máy tính: khung nở ra khung video lớn (1 s). |
-| video 10,15 s | Video dừng, khung thành thẻ đỏ (khổ ngang: trượt về thẻ trong 1,3 s), giữ 0,9 s. |
-| sau đó | Lớp phủ rời đi bằng View Transition 0,5 s; chữ thẻ, nav trồi lên; nhạc lắng xuống. |
+| video 10,15 s | Video dừng, hình tan thành thẻ đỏ (khổ dọc: tại chỗ trong 0,55 s; khổ ngang: khung trượt về thẻ trong 1,3 s). Không giữ thẻ trống (review 25/11: trước đây ~3 s thẻ trống, khách tưởng trang đơ). |
+| sau đó | Lớp phủ rời đi ngay bằng View Transition 0,5 s (nav hiện trong chuyển cảnh); xong thì chữ thẻ trồi lên từng dòng, nhanh hơn lần mở trang thường (`html[data-hero-quick]`: trễ 0–0,46 s, mỗi dòng 1,1 s); nhạc lắng xuống. |
 
 ## Tệp
 
@@ -62,8 +66,9 @@ Nguồn ở `~/Downloads/wedding-video/envelope/v2/` (chạy bằng `~/Downloads
 
 1. `compose_base.py`, `compose_start.py`, `compose_end.py`: khung đầu / khung cuối (nền hoa + thẻ thật + phong bì).
 2. Kling 3 Pro khoá khung đầu + khung cuối (`tools/fal_i2v.py`) → `card1.mp4`, `video1.mp4`.
-3. Dọc: `finish_clip.py` (cắt, 60 khung/giây không bỏ khung, đo thẻ) và `bake_video2.py` (lòng thẻ = ảnh thật).
-4. Ngang: `rot_clip.py` (xoay 90°, `seal_fix.py` vẽ lại dấu sáp đứng thẳng) → `alpha_w.py` (nền trong suốt, WebM + HEVC).
+3. Dọc: `finish_clip.py` (cắt, 60 khung/giây không bỏ khung, đo thẻ) và `bake_video2.py` (lòng thẻ = ảnh thật). Clip lần đầu
+   dựng từ `video1f.mkv` (`flap_fix.py`: vạt dưới Kling vẽ gần trắng lúc lật ra → kéo về màu vạt của clip tải lại).
+4. Ngang: `rot_clip.py` (bản lần đầu cũng từ `video1f.mkv`) (xoay 90°, `seal_fix.py` vẽ lại dấu sáp đứng thẳng) → `alpha_w.py` (nền trong suốt, WebM + HEVC).
 5. Tiếng: Kling video-to-audio (`tools/fal_sfx.py`), tăng tốc theo clip.
 
 Video cưới: HyperFrames (`~/Downloads/wedding-video/intro-ai/`), mã hoá bằng `tools/encode_v6.sh`.

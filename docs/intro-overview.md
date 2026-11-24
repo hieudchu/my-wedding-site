@@ -71,7 +71,9 @@ Nguồn ở `~/Downloads/wedding-video/envelope/v2/` (chạy bằng `~/Downloads
 4. Ngang: `rot_clip.py` (bản lần đầu cũng từ `video1f.mkv`) (xoay 90°, `seal_fix.py` vẽ lại dấu sáp đứng thẳng) → `alpha_w.py` (nền trong suốt, WebM + HEVC).
 5. Tiếng: Kling video-to-audio (`tools/fal_sfx.py`), tăng tốc theo clip.
 
-Video cưới: HyperFrames (`~/Downloads/wedding-video/intro-ai/`), mã hoá bằng `tools/encode_v6.sh`.
+Video cưới: HyperFrames (`~/Downloads/wedding-video/intro-ai/`, dự án `final-portrait5`, `final-desktop-5`), mã hoá bằng
+`V=v7 tools/encode_v6.sh <khổ>`. Bản v7 (25/11): chớp trắng ở giây 3,8 hạ từ độ đậm 0,9 xuống 0,45 cho cùng kiểu lần hoà
+tan ở giây 7,45 (review). Khổ ngang dùng video máy tính nên không cần dựng `final-landscape-5`.
 
 ## Điểm cần nhớ
 

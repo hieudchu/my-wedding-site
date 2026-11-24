@@ -7,7 +7,7 @@ import { mqMatches, PHONE_QUERY } from '../../hooks/useViewport';
 
 const SEEN_KEY = 'hm-intro-seen';
 // Đổi số phiên bản của khổ nào khi thay file của khổ đó (mp4/jpg cache 1 ngày + 7 ngày SWR).
-const VER = { portrait: '20261121v6', landscape: '20261121v6', desktop: '20261121v6' };
+const VER = { portrait: '20261125v7', landscape: '20261121v6', desktop: '20261125v7' }; // v7: chớp trắng 3,8 s dịu hơn (full*.mp4)
 const VER_JOIN = '20261121v6'; // poster-join.jpg (khung JOIN của video = lòng phong bì lần đầu)
 const SECTIONS = ['groom', 'bride', 'details', 'timeline', 'rsvp'];
 /** Độ dài video và giây bắt đầu sau phong bì (1,2 s đầu là màn tối — phong bì thay nó). */

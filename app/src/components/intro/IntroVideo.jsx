@@ -259,7 +259,8 @@ export default function IntroVideo({ ready, enabled, music }) {
     // Máy tính (chủ thiệp 25/11): video chạy đúng trong thẻ Hero đỏ, như bản điện thoại dọc — khung 3:2 của phong bì
     // giãn ra cả thẻ (cùng nhịp .widen), không nở ra khung 16:9 rồi thu về (thẻ đỏ, khung video, thẻ trang lệch cỡ nhau).
     // Điện thoại xoay ngang giữ khung video lớn (thẻ ngang thấp, video sẽ quá nhỏ).
-    if (p.kind === 'desktop') {
+    // Máy gập / tablet xoay ngang (cao ≥ 521px, chủ thiệp 25/11 thử iPhone Duo mở): thẻ đủ lớn → cũng chiếu trong thẻ.
+    if (p.kind === 'desktop' || (p.kind === 'landscape' && window.innerHeight >= 521)) {
       setFrameMode('widened');
       return;
     }

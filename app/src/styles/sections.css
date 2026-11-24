@@ -2738,7 +2738,8 @@
    gộp thêm điều kiện này), rồi phóng đều nội dung theo chiều cao màn — giống cách làm
    ở tablet dọc. Máy tính (chuột) không bị ảnh hưởng. */
 @media (hover: none) and (pointer: coarse) and (max-width: 1439.98px) and (orientation: landscape) and (min-height: 521px) {
-  :root { --tabL-z: 1.35; } /* cao 521–759px: Galaxy Fold, Pixel Fold, Surface Duo, iPad mini */
+  :root { --tabL-z: 1.35; --hm-pad-y: 26px; } /* cao 521–759px: Galaxy Fold, Pixel Fold, Surface Duo, iPad mini.
+     pad-y 26 (không 18): số "01 / 15" phóng 1,25 lần cao ~21px, với 18px thì đè lên mép dưới thẻ (iPhone Duo) */
 
   .family,
   .info,
@@ -2754,6 +2755,14 @@
 
   /* Thẻ thiệp chữ ở hero: rộng và chữ to theo cùng mức phóng, không vượt hai nút ‹ › */
   .hm-title { width: min(calc(560px * var(--tabL-z)), calc(100vw - 2 * var(--hm-pad-x))); }
+  /* Máy gập / tablet ngang (chủ thiệp 25/11, iPhone Duo mở): thẻ rộng ra tới 3:2 theo chiều cao (= đúng cỡ phong bì
+     mở đầu, video chạy trong thẻ), chừa 80px mỗi bên cho nút ‹ ›; không hẹp hơn mức cũ */
+  .hm-title {
+    width: max(
+      min(calc(560px * var(--tabL-z)), calc(100vw - 2 * var(--hm-pad-x))),
+      min(calc((100svh - var(--nav-h) - var(--hm-bar-h) - 2 * var(--hm-pad-y)) * 1.5), calc(100vw - 160px))
+    );
+  }
   .hm-title .hero-title-body > * { zoom: var(--tabL-z); }
   .hm-bar .hm-btn,
   .hm-count { zoom: 1.25; } /* nút ‹ › và số trang to hơn cho màn lớn */

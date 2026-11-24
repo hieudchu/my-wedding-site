@@ -32,8 +32,9 @@ function clipBox(rect, wide) {
   return { left: rect.x - C.x * w, top: rect.y - C.y * h, width: w, height: h };
 }
 
-/** Nút "Chạm để mở thiệp": giữa khoảng trống dưới phong bì; phong bì ngang mà dưới không còn chỗ (điện thoại ngang)
- *  thì nằm trên vạt dưới, giữa mép dưới dấu sáp (~69% cao thẻ) và mép phong bì; còn lại để CSS. */
+/** Nút "Chạm để mở thiệp": giữa khoảng trống dưới phong bì; phong bì ngang mà dưới không còn chỗ (điện thoại ngang,
+ *  máy gập) thì giữa khoảng trống phía trên phong bì; hết chỗ nữa mới nằm trên vạt dưới (giữa mép dưới dấu sáp, ~69%
+ *  cao thẻ, và mép phong bì); còn lại để CSS. */
 const CTA_H = 64;
 const PILL_H = 38;
 function ctaPlace(rect, wide) {
@@ -42,6 +43,11 @@ function ctaPlace(rect, wide) {
   const below = window.innerHeight - bottom;
   if (below >= CTA_H + 16) return { top: Math.round(bottom + Math.min(48, (below - CTA_H) / 2)), bottom: 'auto' };
   if (wide) {
+    // Còn chỗ phía trên phong bì (khổ ngang: nav chưa hiện, ~76px) → nút nằm giữa khoảng trống đó, không đè lên thiệp
+    // (chủ thiệp 25/11, iPhone Duo). Không đủ chỗ mới đặt lên vạt dưới như cũ.
+    if (rect.y >= PILL_H + 20) {
+      return { top: Math.round((rect.y - PILL_H) / 2), bottom: 'auto', left: Math.round(rect.x + rect.w / 2) };
+    }
     const band = rect.h * 0.31;
     return { top: Math.round(rect.y + rect.h * 0.69 + Math.max(0, (band - PILL_H) / 2)), bottom: 'auto', left: Math.round(rect.x + rect.w / 2) };
   }
@@ -156,7 +162,9 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
     };
   })() : null;
   // "Trân trọng kính mời": trên phong bì nếu còn chỗ (dọc, máy tính); điện thoại ngang thì dưới nút như cũ
-  const inviteAbove = !!rect && rect.y >= 78;
+  // Khổ ngang mà dưới phong bì hết chỗ: nút "Chạm để mở thiệp" chiếm khoảng trống phía trên (ctaPlace) → bỏ dòng mời
+  const ctaUp = wide && !!rect && window.innerHeight - rect.y - rect.h < CTA_H + 16 && rect.y >= PILL_H + 20;
+  const inviteAbove = !!rect && rect.y >= 78 && !ctaUp;
   return (
     <div
       className={`intro-gate step-${step} ${ready ? 'ready' : ''}`}

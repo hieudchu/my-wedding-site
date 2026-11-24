@@ -31,7 +31,7 @@ const MUSIC_GAP_MS = 3000; // chủ thiệp: nhạc nền của trang nghỉ m�
 // Kết (chủ thiệp): CHÍNH KHUNG video thành thẻ thiệp thật ở đúng chỗ của nó, hình tan thành đỏ #4A000B.
 // Video dừng ngay trước đoạn "thu vào thẻ" có sẵn trong video (khung lồng khung / phóng to rồi thu lại đều bị chê).
 const CARD_AT_S = 10.15;
-const CARD_MOVE_MS = 1300; // khung → thẻ
+const CARD_MOVE_MS = 900; // khung video lớn → thẻ (điện thoại ngang; 25/11: 1,3 → 0,9 s, chữ thẻ hiện sau ~1,5 s thay vì ~2 s)
 // Thành thẻ xong là rời lớp phủ ngay, không giữ thẻ đỏ trống (review 25/11: ~3 s thẻ trống tưởng trang đơ).
 // Khổ dọc: khung đã là thẻ, chỉ chờ hình tan thành đỏ (.in-card.card .intro-media 0,55 s). Khổ ngang / máy tính:
 // chờ khung trượt về thẻ xong. Chữ thẻ trồi lên ngay sau chuyển cảnh, nhanh hơn lần mở trang thường (html[data-hero-quick]).

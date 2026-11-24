@@ -28,7 +28,7 @@ chưa chạm trang, nhưng cú chạm mở phong bì chính là cử chỉ cho p
 | 0 s | Chạm phong bì: nhạc mở đầu (to dần 0,16 → 0,55) + tiếng giấy / bóc sáp. Video chính được "làm nóng". |
 | 1,77 s | Vạt nằm yên: video chạy từ giây 1,2 dưới phong bì; phong bì mờ đi trong 0,9 s (ease-out, vạt tan dần). |
 | ~2,7 s | Máy tính: khung 3:2 giãn ra cả thẻ Hero (0,9 s). Điện thoại ngang: khung nở ra khung video lớn (1 s). |
-| video 10,15 s | Video dừng, hình tan thành thẻ đỏ (khổ dọc: tại chỗ trong 0,55 s; khổ ngang: khung trượt về thẻ trong 1,3 s). Không giữ thẻ trống (review 25/11: trước đây ~3 s thẻ trống, khách tưởng trang đơ). |
+| video 10,15 s | Video dừng, hình tan thành thẻ đỏ (khổ dọc: tại chỗ trong 0,55 s; điện thoại ngang: khung trượt về thẻ trong 0,9 s). Không giữ thẻ trống (review 25/11: trước đây ~3 s thẻ trống, khách tưởng trang đơ). |
 | sau đó | Lớp phủ rời đi ngay bằng View Transition 0,5 s (nav hiện trong chuyển cảnh); xong thì chữ thẻ trồi lên từng dòng, nhanh hơn lần mở trang thường (`html[data-hero-quick]`: trễ 0–0,46 s, mỗi dòng 1,1 s); nhạc lắng xuống. |
 
 ## Tệp

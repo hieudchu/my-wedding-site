@@ -883,7 +883,7 @@ html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-meta { animation-d
 }
 .intro-frame.card .intro-media {
   opacity: 0;
-  transition: opacity 0.7s ease 0.5s; /* khung đi được ~nửa đường thì hình tan thành đỏ, xong trước khi khung tới thẻ */
+  transition: opacity 0.55s ease 0.3s; /* khung đi được ~1/3 đường thì hình tan thành đỏ, xong trước khi khung tới thẻ (0,9 s) */
 }
 .intro-frame::after {
   content: '';
@@ -892,7 +892,7 @@ html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-meta { animation-d
   border: 1px solid rgba(216, 183, 120, 0.35);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.6s ease 0.5s;
+  transition: opacity 0.5s ease 0.3s;
 }
 .intro-frame.card::after { opacity: 1; }
 /* Có phong bì: khung là thẻ hero (khổ ngang: phần 3:2 giữa thẻ) — video chạy trong thẻ, viền vàng mảnh như khung

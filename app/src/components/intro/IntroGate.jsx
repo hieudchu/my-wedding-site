@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
  */
 
 const A = '/assets/intro/envelope/';
-const GV = '?v=20261125c'; // 25/11: open-video*.{mp4,webm} — vạt dưới hết bạc trắng (flap_fix.py); b: dấu sáp dọc không còn thấu ảnh; c: vạt trên hết nháy xám
+const GV = '?v=20261125d'; // 25/11: open-video*.{mp4,webm} — vạt dưới hết bạc trắng (flap_fix.py); b: dấu sáp dọc không còn thấu ảnh; c: vạt trên hết nháy xám; d: bản ngang — vạt tối không còn trong suốt (alpha_w)
 // Thẻ trong khung hình clip (tỉ lệ theo rộng/cao clip), đo ở khung cuối: khổ dọc / xoay ngang
 const CLIP_CARD = { x: 0.1791, y: 0.2324, w: 0.6409, h: 0.5353 };
 const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };

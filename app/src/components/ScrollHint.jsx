@@ -16,7 +16,9 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  *    lần 2–3 bản nhẹ (không chữ), tối đa 3 lần;
  *  · chạm vào (chỗ không phải nút / ảnh) là trang tự cuộn xuống phần tiếp;
  *  · khách tự kéo xuống được nửa màn → không bao giờ hiện nữa, kể cả lần mở sau (localStorage);
- *  · chỉ hiện khi đang ở hero; không hiện khi đang xem ảnh phóng to, đang gõ chữ, tab ở nền.
+ *  · là một lớp riêng của CẢ MÀN HÌNH, không thuộc hero (chủ thiệp): luôn ở góc dưới trái màn hình,
+ *    hiện ở bất kỳ đoạn nào khách đang dừng, trừ phần Xác nhận tham dự, chân trang và cuối trang;
+ *    không hiện khi đang xem ảnh phóng to, đang gõ chữ, tab ở nền.
  *  · Lướt ảnh trái phải không tính là thao tác (chủ thiệp: "cứ để đó").
  */
 
@@ -83,36 +85,17 @@ function setLearned() {
 }
 const isTouch = () => mqMatches('(pointer: coarse)') || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
-/** Đo vị trí theo thẻ hero thật (điện thoại cao thấp khác nhau). Trả về biến CSS (px). */
+/**
+ * Vị trí: cả cụm bám GÓC DƯỚI BÊN TRÁI màn hình, cùng một khoảng cách (đơn vị u) trên mọi điện thoại,
+ * không đo theo nội dung trang (chủ thiệp, 2026-11-27: "phần riêng của cả màn hình, không phải của hero").
+ * CSS cộng thêm vùng an toàn (tai thỏ, thanh home). Trả về biến CSS (px).
+ */
 function measure() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const wide = vw > vh;
-  const txH = 11 * U; // hai dòng chữ
+  const wide = window.innerWidth > window.innerHeight;
   const gap = 5.8 * U; // từ đỉnh đường vuốt tới đáy chữ (ngôi sao nằm giữa)
-  let rx; let v0; let L;
-  if (!wide) {
-    // Dọc: chấm sáng ngay trên thanh ‹ 01 / 15 ›; chữ đứng ngay trên dòng ngày giờ của thẻ
-    rx = 14 * U;
-    const bar = document.querySelector('#hero .hm-bar');
-    const meta = document.querySelector('#hero .hero-meta');
-    const barTop = bar ? bar.getBoundingClientRect().top : vh - 92;
-    v0 = Math.max(10 * U, vh - barTop + 9.5 * U);
-    const txBottom = meta ? vh - meta.getBoundingClientRect().top + 2 * U : v0 + 38.4 * U + gap;
-    L = txBottom - gap - v0;
-    if (L < 16 * U) { L = 16 * U; v0 = Math.max(6 * U, txBottom - gap - L); }
-    L = Math.min(L, 45 * U);
-  } else {
-    // Ngang / máy gập mở: cụm thấp ở lề trái, hai dòng chữ nằm dưới nút ‹ của dải ảnh
-    rx = 9 * U;
-    v0 = 6 * U;
-    L = 13 * U;
-    const prev = document.querySelector('#hero .hm-bar .hm-btn');
-    if (prev) {
-      const limit = vh - prev.getBoundingClientRect().bottom - 2 * U - txH; // đáy chữ cao nhất được phép
-      L = Math.max(8 * U, Math.min(L, limit - v0 - gap));
-    }
-  }
+  const rx = 8 * U; // đầu ngón cách mép trái ≈ 31 px
+  const v0 = (wide ? 6 : 8) * U; // chấm sáng cách đáy ≈ 23 / 31 px
+  const L = (wide ? 15 : 22) * U; // đường vuốt ≈ 59 / 86 px
   return {
     wide,
     vars: {
@@ -165,7 +148,8 @@ export default function ScrollHint({ enabled }) {
       if (Math.abs(d) < 2) return;
       S.last = now();
       if (S.on) hide();
-      if (!S.auto && d > 0) {
+      const navPin = Number(root.getAttribute('data-nav-pin')) > Date.now(); // nav đang tự cuộn
+      if (!S.auto && !navPin && d > 0) {
         S.own += d;
         if (S.own > window.innerHeight * 0.5) stop();
       }
@@ -180,12 +164,13 @@ export default function ScrollHint({ enabled }) {
       // Chạm vào nút, ảnh, ô nhập… thì để nó làm việc của nó, chỉ tắt gợi ý
       if (e.target instanceof Element && e.target.closest('button, a, input, textarea, select, label, [role="button"], .lb-overlay')) { hide(); return; }
       hide();
-      const next = document.getElementById('groom');
-      if (!next) return;
       S.auto = true;
       root.setAttribute('data-nav-pin', String(Date.now() + 1600)); // nav không trốn khi tự cuộn
+      // Đang ở hero: cuộn tới đúng đầu phần chú rể; ở đoạn khác: xuống thêm gần một màn
+      const next = window.scrollY < window.innerHeight * 0.5 ? document.getElementById('groom') : null;
       const navH = document.querySelector('.nav')?.offsetHeight || 0;
-      window.scrollTo({ top: next.getBoundingClientRect().top + window.scrollY - navH, behavior: 'smooth' });
+      const top = next ? next.getBoundingClientRect().top + window.scrollY - navH : window.scrollY + window.innerHeight * 0.8;
+      window.scrollTo({ top, behavior: 'smooth' });
       later(() => { S.auto = false; S.last = now(); }, 1200);
     };
     const onResize = () => { if (S.on) hide(); };
@@ -194,7 +179,10 @@ export default function ScrollHint({ enabled }) {
       if (document.visibilityState !== 'visible') return true;
       if (root.dataset.intro) return true;
       if (!mqMatches(PHONE_QUERY)) return true;
-      if (window.scrollY > window.innerHeight * 0.4) return true; // chỉ ở hero
+      const vh = window.innerHeight;
+      if (window.scrollY + vh >= document.documentElement.scrollHeight - 8) return true; // cuối trang
+      const seen = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.top < vh * 0.75 && r.bottom > 0; };
+      if (seen(document.getElementById('rsvp')) || seen(document.querySelector('footer, .footer'))) return true; // Xác nhận, chân trang
       if (document.querySelector('.lb-overlay')) return true; // đang xem ảnh phóng to
       const a = document.activeElement;
       if (a && (a.matches('input, textarea, select') || a.isContentEditable)) return true; // đang gõ

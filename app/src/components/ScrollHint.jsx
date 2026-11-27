@@ -15,7 +15,8 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  *  · mỗi lần nhắc tay vuốt 3 lượt (≈ 10,5 s) rồi tự tắt; khách ngồi yên thêm 5 s thì nhắc lại,
  *    tối đa 3 lần; lần nào cũng có chữ (chủ thiệp), lần 2–3 chỉ có nền tối nhạt hơn;
  *  · chạm vào (chỗ không phải nút / ảnh) là trang tự cuộn xuống phần tiếp;
- *  · khách tự kéo xuống được nửa màn → không bao giờ hiện nữa, kể cả lần mở sau (localStorage);
+ *  · khách tự kéo xuống được nửa màn → không hiện nữa trong TAB ĐÓ, kể cả tải lại trang (sessionStorage);
+ *    mở link ở tab mới coi như lượt vào mới, lại được nhắc (chủ thiệp, 2026-11-27);
  *  · là một lớp riêng của CẢ MÀN HÌNH, không thuộc hero (chủ thiệp): luôn ở góc dưới trái màn hình,
  *    hiện ở bất kỳ đoạn nào khách đang dừng, trừ phần Xác nhận tham dự, chân trang và cuối trang;
  *    không hiện khi đang xem ảnh phóng to, đang gõ chữ, tab ở nền.
@@ -77,11 +78,14 @@ const DUST = (() => {
   });
 })();
 
+// Ghi nhớ theo từng tab (sessionStorage): tải lại vẫn nhớ, tab mới thì quên.
+// Bản cũ lưu ở localStorage (nhớ mãi) — xoá đi để máy đã từng cuộn lại được nhắc.
+try { localStorage.removeItem(KEY); } catch { /* bỏ qua */ }
 function learned() {
-  try { return localStorage.getItem(KEY) === 'learned'; } catch { return false; }
+  try { return sessionStorage.getItem(KEY) === 'learned'; } catch { return false; }
 }
 function setLearned() {
-  try { localStorage.setItem(KEY, 'learned'); } catch { /* bỏ qua */ }
+  try { sessionStorage.setItem(KEY, 'learned'); } catch { /* bỏ qua */ }
 }
 const isTouch = () => mqMatches('(pointer: coarse)') || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 

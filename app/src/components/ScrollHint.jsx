@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react';
 import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
 
 /*
- * Gợi ý cuộn xuống (2026-11-27, chủ thiệp chọn bản "ngón cái + vệt nhũ", demo docs/scroll-hint-nhu.html).
+ * Gợi ý cuộn xuống (2026-11-27; chủ thiệp duyệt chuyển động ở docs/scroll-hint-3d.html, chọn tay kiểu A).
  *
  * Chỉ điện thoại / màn cảm ứng (bố cục PHONE_QUERY + có cảm ứng); máy tính dùng chuột không có.
  * Thẻ đỏ đầu thiệp chiếm trọn màn nên khách lớn tuổi tưởng thiệp đã hết. Khi khách chưa kéo xuống,
- * ở mép trái một ngón cái (tay phải, tranh vẽ) ấn vào chấm sáng rồi lướt lên, đầu ngón đi tới đâu rắc
- * nhũ vàng tới đó, tới đỉnh một ngôi sao nở ra; chữ "Vuốt xuống / để xem thêm ạ" chỉ hiện lúc tay vuốt.
+ * giữa đáy màn một bàn tay vẽ (ngà viền vàng, cổ tay áo nhung đỏ — public/assets/hint/hand.webp) đặt
+ * ngón trỏ lên mặt kính rồi trượt thẳng lên như đang lướt Facebook, nhũ vàng rắc theo đầu ngón; tới
+ * trên thì nhấc tay (to ra, bóng xa ra), đưa về dưới, đặt xuống, vuốt tiếp. Chữ "Vuốt xuống / để xem
+ * thêm ạ" hiện theo nhịp vuốt. Chuyển động sao y bản video đã duyệt nhưng dựng bằng CSS (60 khung/giây,
+ * một ảnh 10 KB thay cho WebP động ≈ 870 KB).
  *
  * Luật (đã thống nhất với chủ thiệp):
  *  · lần đầu ≈ 6,5 s sau khi trang hiện (sau video mở đầu nếu có), nếu khách chưa kéo xuống;
  *  · không hiện khi ngón tay còn trên màn, chờ nhấc tay 1 s;
- *  · mỗi lần nhắc tay vuốt 3 lượt (≈ 10,5 s) rồi tự tắt; khách ngồi yên thêm 5 s thì nhắc lại,
+ *  · mỗi lần nhắc tay vuốt 3 lượt (≈ 7 s) rồi tự tắt; khách ngồi yên thêm 5 s thì nhắc lại,
  *    tối đa 3 lần; lần nào cũng có chữ (chủ thiệp), lần 2–3 chỉ có nền tối nhạt hơn;
  *  · chạm vào (chỗ không phải nút / ảnh) là trang tự cuộn xuống phần tiếp;
  *  · khách tự kéo xuống được nửa màn → không hiện nữa trong TAB ĐÓ, kể cả tải lại trang (sessionStorage);
@@ -24,33 +27,27 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  */
 
 const U = 3.9; // 1u = 3,9 px thật: to bằng nhau trên mọi điện thoại
-const CY = 3800; // một lượt vuốt (ms) — khớp --sh-cy trong mobile.css
+const CY = 2300; // một lượt (ms) — khớp --sh-cy trong mobile.css
 const LOOPS = 3;
-const AUTO_OFF = (LOOPS - 1) * CY + CY * 0.76 + 100; // tắt ngay sau lần nhấc tay thứ ba
+const AUTO_OFF = LOOPS * CY - 150; // tắt khi tay vừa về chỗ sau lượt thứ ba
 const FIRST = 6500;
 const IDLE = 5000;
 const MAX = 3;
 const LIFT = 1000;
 const KEY = 'hm-scroll-hint';
-const THUMB = '/assets/hint/thumb.webp';
+const HAND_SRC = '/assets/hint/hand.webp';
 const WORD = Array.from('Vuốt xuống');
 
-// Ngón cái lướt từ 22% tới 56% lượt theo cubic-bezier(.62, 0, .32, 1) (khớp @keyframes sh-fg).
-// Hạt nhũ thứ i bung ra đúng lúc đầu ngón đi qua chỗ của nó.
-function glideTime(f) {
-  const [p1x, p1y, p2x, p2y] = [0.62, 0, 0.32, 1];
-  const xy = (s) => [
-    3 * (1 - s) ** 2 * s * p1x + 3 * (1 - s) * s * s * p2x + s ** 3,
-    3 * (1 - s) ** 2 * s * p1y + 3 * (1 - s) * s * s * p2y + s ** 3,
-  ];
-  let lo = 0;
-  let hi = 1;
-  for (let k = 0; k < 40; k += 1) {
-    const m = (lo + hi) / 2;
-    if (xy(m)[1] < f) lo = m; else hi = m;
-  }
-  return (0.22 + 0.34 * xy(lo)[0]) * CY;
-}
+/*
+ * Một lượt (CY = 2,3 s, khớp @keyframes sh-hand): chạm 0,16 s → trượt lên 1,1 s (sin vào–ra) → nhấc tay
+ * 0,22 s → đưa về 0,62 s → đặt xuống 0,2 s. Toạ độ tay theo u (đo từ ảnh hand.webp ở cỡ đã duyệt):
+ * khung ảnh W×H, đầu ngón (TX, TY), tâm bàn tay (CX, CY0) — gốc phóng khi nhấc tay; T = quãng trượt.
+ */
+const HAND = { W: 17.15, H: 18.09, TX: 1.81, TY: 0.35, CX: 8.59, CY0: 9.53, T: 16.8 };
+const T_HOLD = 0.16;
+const T_GLIDE = 1.1;
+// Hạt nhũ thứ i bung ra đúng lúc đầu ngón đi qua chỗ của nó (nghịch đảo đường sin của lượt trượt).
+const glideTime = (f) => (T_HOLD + (T_GLIDE * Math.acos(1 - 2 * f)) / Math.PI) * 1000;
 function seeded(seed) {
   let a = seed;
   return () => {
@@ -63,16 +60,17 @@ function seeded(seed) {
 const DUST = (() => {
   const rnd = seeded(11);
   const r = (a, b) => a + (b - a) * rnd();
-  return Array.from({ length: 30 }, (_, i) => {
-    const f = (i + 0.5) / 30;
-    const star = i % 4 === 1;
+  return Array.from({ length: 32 }, (_, i) => {
+    const f = (i + 0.5) / 32;
+    const star = rnd() < 0.27;
     return {
       f,
       star,
-      x: r(-0.9, 0.35),
-      s: star ? r(1.5, 2.3) : r(0.6, 1.35),
-      dx: rnd() < 0.85 ? -r(0.6, 2.8) : r(0.4, 1.2), // tay ở bên phải nên nhũ rơi chủ yếu sang trái
-      dy: r(0.5, 2.6),
+      x: r(-0.45, 0.45),
+      y: r(-0.4, 0.4),
+      s: star ? r(1.8, 2.8) : r(0.82, 1.74),
+      dx: r(-1.6, 1.6),
+      dy: r(1.2, 2.8), // trôi nhẹ xuống sau đầu ngón
       delay: Math.round(glideTime(f)),
     };
   });
@@ -90,30 +88,23 @@ function setLearned() {
 const isTouch = () => mqMatches('(pointer: coarse)') || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
 /**
- * Vị trí: cả cụm nằm GIỮA MÀN HÌNH theo chiều ngang, sát đáy theo chiều dọc (chủ thiệp, 2026-11-27):
- * đường vuốt thẳng trục giữa màn, chữ căn giữa trên trục; chấm sáng cách đáy 8u (6u khi xoay ngang),
- * CSS cộng thêm vùng an toàn đáy (thanh home). Là lớp của cả màn hình, không đo theo nội dung trang.
- * Trả về biến CSS (px).
+ * Vị trí: lớp của CẢ MÀN HÌNH (không đo theo nội dung trang). Đầu ngón lúc chạm nằm trên trục giữa màn;
+ * đáy bàn tay cách đáy màn 5u (CSS cộng vùng an toàn đáy). Chữ ở trên đỉnh đường trượt. Trả về biến CSS (px).
  */
 function measure() {
-  const wide = window.innerWidth > window.innerHeight;
-  const gap = 5.8 * U; // từ đỉnh đường vuốt tới đáy chữ (ngôi sao nằm giữa)
-  const L = (wide ? 15 : 22) * U; // đường vuốt ≈ 59 / 86 px
-  const rx = window.innerWidth / 2;
-  const v0 = (wide ? 6 : 8) * U; // chấm sáng cách đáy ≈ 23 / 31 px
+  const px = (v) => `${(v * U).toFixed(1)}px`;
   return {
-    wide,
     vars: {
-      '--rx': `${rx.toFixed(1)}px`,
-      '--v0': `${v0.toFixed(1)}px`,
-      '--L': `${L.toFixed(1)}px`,
-      '--tb': `${(L + gap).toFixed(1)}px`,
+      '--rx': `${(window.innerWidth / 2).toFixed(1)}px`,
+      '--v0': px(HAND.H - HAND.TY + 5),
+      '--T': px(HAND.T),
+      '--tb': px(HAND.T + 5.2),
     },
   };
 }
 
 export default function ScrollHint({ enabled }) {
-  const [hint, setHint] = useState(null); // { id, light, off, wide, vars }
+  const [hint, setHint] = useState(null); // { id, light, off, vars }
 
   useEffect(() => {
     if (!enabled || !isTouch() || learned()) return undefined;
@@ -127,7 +118,7 @@ export default function ScrollHint({ enabled }) {
       if (S.ready !== null) return;
       S.ready = now();
       S.last = S.ready + (FIRST - IDLE);
-      const img = new Image(); img.src = THUMB; // tải sẵn tay (≈ 23 KB)
+      const img = new Image(); img.src = HAND_SRC; // tải sẵn tay (≈ 10 KB)
     };
     if (root.dataset.intro === 'on') window.addEventListener('hm-intro-end', start, { once: true });
     else start();
@@ -227,50 +218,43 @@ export default function ScrollHint({ enabled }) {
   }, [enabled]);
 
   if (!hint) return null;
+  const u = (v) => `${(v * U).toFixed(1)}px`;
   return (
     <div
       key={hint.id}
-      className={`sh${hint.off ? ' off' : ''}${hint.light ? ' light' : ''}${hint.wide ? ' wide' : ''}`}
+      className={`sh${hint.off ? ' off' : ''}${hint.light ? ' light' : ''}`}
       style={hint.vars}
       aria-hidden="true"
     >
       <div className="sh-dim" />
       <div className="sh-grp">
-        <span className="sh-streak" />
         {DUST.map((d, i) => (
           <span
             key={i}
             className="sh-dust"
             style={{
-              bottom: `calc(var(--L) * ${d.f.toFixed(3)})`,
-              left: `${(d.x * U).toFixed(1)}px`,
-              '--s': `${(d.s * U).toFixed(1)}px`,
-              '--dx': `${(d.dx * U).toFixed(1)}px`,
-              '--dy': `${(d.dy * U).toFixed(1)}px`,
+              left: u(d.x),
+              bottom: `calc(var(--T) * ${d.f.toFixed(3)} + ${u(d.y)})`,
+              '--s': u(d.s),
+              '--dx': u(d.dx),
+              '--dy': u(d.dy),
             }}
           >
             <i className={d.star ? 'st' : undefined} style={{ animationDelay: `${d.delay}ms` }} />
           </span>
         ))}
-        <svg className="sh-star" viewBox="-6 -6 12 12">
-          <defs>
-            <linearGradient id="sh-gold" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#FFF6D8" />
-              <stop offset=".5" stopColor="#EBCB86" />
-              <stop offset="1" stopColor="#B8893F" />
-            </linearGradient>
-          </defs>
-          <path fill="url(#sh-gold)" d="M0 -6 C.7 -1.4 1.4 -.7 6 0 C1.4 .7 .7 1.4 0 6 C-.7 1.4 -1.4 .7 -6 0 C-1.4 -.7 -.7 -1.4 0 -6Z" />
-        </svg>
-        <span className="sh-dot" />
-        <span className="sh-fg">
-          <span className="sh-glow" />
-          <img className="sh-th" src={THUMB} alt="" draggable="false" />
+        <span
+          className="sh-hand"
+          style={{ left: u(-HAND.TX), top: u(-HAND.TY), width: u(HAND.W), height: u(HAND.H), transformOrigin: `${u(HAND.CX)} ${u(HAND.CY0)}` }}
+        >
+          <img className="sh-hs" src={HAND_SRC} alt="" draggable="false" />
+          <img className="sh-hi" src={HAND_SRC} alt="" draggable="false" />
+          <span className="sh-glow" style={{ left: u(HAND.TX), top: u(HAND.TY) }} />
         </span>
         <div className="sh-tx">
           <span className="sh-l1">
             {WORD.map((c, i) => (
-              <span key={i} className="sh-ch" style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>
+              <span key={i} className="sh-ch" style={{ '--i': i }}>{c === ' ' ? '\u00a0' : c}</span>
             ))}
           </span>
           <span className="sh-rule" />

@@ -882,13 +882,14 @@
 }
 
 /* ═══════════ GỢI Ý CUỘN XUỐNG (ScrollHint.jsx, 2026-11-27) ═══════════
-   Ngón cái tay phải (tranh vẽ, public/assets/hint/thumb.webp) ấn vào chấm sáng giữa màn rồi lướt lên,
-   rắc nhũ vàng theo đầu ngón; ngôi sao nở ở đỉnh; chữ hai dòng chỉ hiện lúc tay vuốt.
-   Cỡ tính bằng --u = 3,9 px thật nên to bằng nhau trên mọi máy. Vị trí (--rx, --v0, --L, --tb, px) do
-   ScrollHint đặt thẳng lên .sh: cả cụm ở giữa theo chiều ngang, sát đáy màn hình, chữ căn giữa trên trục vuốt. Một lượt --sh-cy phải khớp CY trong ScrollHint.jsx. */
+   Bàn tay vẽ (ngà viền vàng, cổ tay áo nhung đỏ) đặt ngón trỏ lên mặt kính, trượt thẳng lên rắc nhũ vàng,
+   tới trên nhấc tay (to ra 7 %, bóng xa ra), đưa về dưới, đặt xuống, lặp. Sao y video đã duyệt
+   (docs/scroll-hint-3d.html, bản A) nhưng dựng bằng CSS. Một lượt --sh-cy = CY trong ScrollHint.jsx (2,3 s):
+   chạm 0–6,96 % · trượt 6,96–54,78 % · nhấc 54,78–64,35 % · về 64,35–91,3 % · đặt xuống 91,3–100 %.
+   Cỡ theo --u = 3,9 px. Vị trí (--rx, --v0, --T, --tb, px) do ScrollHint đặt thẳng lên .sh. */
 @media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
   .sh {
-    --u: 3.9px; --sh-cy: 3.8s;
+    --u: 3.9px; --sh-cy: 2.3s;
     position: fixed; inset: 0; z-index: 110; pointer-events: none; overflow: hidden;
     -webkit-user-select: none; user-select: none;
     animation: sh-in .8s ease both;
@@ -898,81 +899,69 @@
   @keyframes sh-out { from { opacity: 1; } to { opacity: 0; } }
   /* Cả màn tối lại để gợi ý nổi lên; quanh chỗ tay vuốt (giữa, sát đáy) đậm hơn một chút */
   .sh-dim { position: absolute; inset: 0; background:
-    radial-gradient(circle at var(--rx) calc(100% - var(--v0) - var(--L) / 2), rgba(22,3,6,.4), rgba(22,3,6,.2) calc(var(--u) * 30), transparent calc(var(--u) * 60)),
+    radial-gradient(circle at var(--rx) calc(100% - var(--v0) - var(--T) / 2), rgba(22,3,6,.4), rgba(22,3,6,.2) calc(var(--u) * 30), transparent calc(var(--u) * 60)),
     rgba(22,3,6,.56); }
   .sh.light .sh-dim { opacity: .9; }
+  /* gốc toạ độ = đầu ngón lúc chạm kính */
   .sh-grp { position: absolute; left: var(--rx); bottom: calc(var(--v0) + env(safe-area-inset-bottom, 0px)); width: 0; height: 0; }
 
-  /* chấm sáng: chỗ đặt ngón; vòng toả ra đúng lúc ngón ấn xuống */
-  .sh-dot { position: absolute; left: calc(var(--u) * -1.3); bottom: calc(var(--u) * -1.3); width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); border-radius: 50%; background: radial-gradient(circle, #FFF7DE 0 35%, #E9CB8A 60%, rgba(233,203,138,0) 72%); box-shadow: 0 0 calc(var(--u) * 2.2) rgba(246,214,140,.75); }
-  .sh-dot::after { content: ""; position: absolute; inset: calc(var(--u) * -1.2); border-radius: 50%; border: 1px solid rgba(240,214,156,.9); opacity: 0; animation: sh-ring var(--sh-cy) ease-out infinite; }
-  @keyframes sh-ring { 0%, 16% { opacity: 0; transform: scale(.5); } 19% { opacity: .9; transform: scale(.6); } 42%, 100% { opacity: 0; transform: scale(2.3); } }
+  /* bàn tay: trượt lên (sin vào–ra) → nhấc (to ra quanh tâm bàn tay) → về → đặt xuống */
+  .sh-hand { position: absolute; display: block; animation: sh-hand var(--sh-cy) linear infinite; will-change: transform; }
+  .sh-hand img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; display: block; }
+  @keyframes sh-hand {
+    0%, 6.96% { transform: none; animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    54.78% { transform: translateY(calc(var(--T) * -1)); animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    64.35% { transform: translateY(calc(var(--T) * -1.04)) scale(1.07); animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    91.3% { transform: scale(1.07); animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    100% { transform: none; } }
+  /* bóng: cùng hình, tối, nhoè; nhấc tay thì lệch xa và nhạt hơn */
+  .sh-hs { filter: brightness(0) blur(2px); opacity: .34; transform: translate(1.2px, 1.9px); animation: sh-hs var(--sh-cy) linear infinite; }
+  @keyframes sh-hs {
+    0%, 54.78% { opacity: .34; transform: translate(1.2px, 1.9px); animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    64.35%, 91.3% { opacity: .2; transform: translate(3.8px, 6px); animation-timing-function: cubic-bezier(.37, 0, .63, 1); }
+    100% { opacity: .34; transform: translate(1.2px, 1.9px); } }
+  /* quầng sáng ở đầu ngón khi đang chạm kính */
+  .sh-glow { position: absolute; width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); margin: calc(var(--u) * -1.7) 0 0 calc(var(--u) * -1.7); border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,240,205,.92), rgba(255,240,205,.45) 40%, rgba(255,240,205,0) 70%); animation: sh-glow var(--sh-cy) linear infinite; }
+  @keyframes sh-glow { 0%, 54.78% { opacity: .85; } 64.35%, 91.3% { opacity: 0; } 100% { opacity: .85; } }
 
-  /* quầng sáng mờ kéo theo sau đầu ngón */
-  .sh-streak { position: absolute; left: calc(var(--u) * -1.3); bottom: calc(var(--u) * -.4); width: calc(var(--u) * 2.6); height: calc(var(--L) + var(--u) * .4); border-radius: 99px; background: linear-gradient(to top, rgba(240,205,130,0), rgba(240,205,130,.22) 45%, rgba(255,236,190,.55)); filter: blur(calc(var(--u) * .7)); transform-origin: bottom; transform: scaleY(0); animation: sh-streak var(--sh-cy) linear infinite; }
-  @keyframes sh-streak {
-    0%, 22% { transform: scaleY(0); opacity: 1; animation-timing-function: cubic-bezier(.62, 0, .32, 1); }
-    56% { transform: scaleY(1); opacity: 1; animation-timing-function: ease-in-out; }
-    86%, 100% { transform: scaleY(1); opacity: 0; } }
-  /* nhũ vàng: mỗi hạt bung đúng lúc đầu ngón đi qua (animation-delay đặt trong JSX), rơi nhẹ rồi tan */
+  /* nhũ vàng: mỗi hạt bung đúng lúc đầu ngón đi qua (animation-delay trong JSX), trôi nhẹ xuống rồi tan (≈ 0,75 s) */
   .sh-dust { position: absolute; width: 0; height: 0; }
   .sh-dust i { position: absolute; left: calc(var(--s) / -2); top: calc(var(--s) / -2); width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #FFF9E6 0 28%, #F3D597 52%, rgba(243,213,151,0) 72%); opacity: 0; animation: sh-dust var(--sh-cy) linear infinite backwards; }
   .sh-dust i.st { border-radius: 0; background: linear-gradient(135deg, #FFF8E0, #EBC982); clip-path: polygon(50% 0, 59% 41%, 100% 50%, 59% 59%, 50% 100%, 41% 59%, 0 50%, 41% 41%); filter: drop-shadow(0 0 calc(var(--u) * .5) rgba(246,214,140,.9)); }
   @keyframes sh-dust {
-    0% { opacity: 0; transform: scale(.2); animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
-    3% { opacity: 1; transform: scale(1.15); animation-timing-function: cubic-bezier(.25, .6, .4, 1); }
-    16% { opacity: .95; transform: translate(calc(var(--dx) * .35), calc(var(--dy) * .25)) scale(1) rotate(25deg); animation-timing-function: linear; }
-    32% { opacity: .65; transform: translate(calc(var(--dx) * .72), calc(var(--dy) * .62)) scale(.8) rotate(60deg); animation-timing-function: ease-in; }
-    46%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.3) rotate(95deg); } }
-  /* ngôi sao bốn cánh ở đỉnh, nở khi ngón cái tới */
-  .sh-star { position: absolute; left: calc(var(--u) * -2.2); bottom: calc(var(--L) + var(--u) * .2); width: calc(var(--u) * 4.4); height: calc(var(--u) * 4.4); overflow: visible; filter: drop-shadow(0 0 calc(var(--u) * 1.2) rgba(246,214,140,.85)); opacity: .45; transform: scale(.55); animation: sh-star var(--sh-cy) ease-out infinite; }
-  @keyframes sh-star { 0%, 52% { opacity: .45; transform: scale(.55) rotate(0); } 60% { opacity: 1; transform: scale(1.2) rotate(45deg); } 72% { opacity: 1; transform: scale(1) rotate(70deg); } 100% { opacity: .45; transform: scale(.55) rotate(90deg); } }
+    0% { opacity: 0; transform: scale(.35); animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+    2.6% { opacity: 1; transform: scale(1.2); animation-timing-function: cubic-bezier(.25, .6, .4, 1); }
+    13% { opacity: .9; transform: translate(calc(var(--dx) * .4), calc(var(--dy) * .4)) scale(1) rotate(30deg); animation-timing-function: linear; }
+    24% { opacity: .5; transform: translate(calc(var(--dx) * .8), calc(var(--dy) * .8)) scale(.75) rotate(60deg); animation-timing-function: ease-in; }
+    32.6%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.45) rotate(80deg); } }
 
-  /* ngón cái: .sh-fg là đúng đầu ngón; đặt, ấn, lướt (hơi cong như ngón cái thật), nhấc */
-  .sh-fg { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; animation: sh-fg var(--sh-cy) linear infinite; }
-  .sh-th { position: absolute; left: calc(var(--u) * -2.133); top: calc(var(--u) * -1.119); width: calc(var(--u) * 16); height: auto; max-width: none; display: block;
-    -webkit-mask-image: linear-gradient(to top, transparent 0, #000 34%), linear-gradient(to left, transparent 0, #000 22%); -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to top, transparent 0, #000 34%), linear-gradient(to left, transparent 0, #000 22%); mask-composite: intersect;
-    filter: drop-shadow(0 calc(var(--u) * 1) calc(var(--u) * 1.8) rgba(10,0,2,.45)); }
-  .sh-glow { position: absolute; z-index: 1; left: calc(var(--u) * -1.6); top: calc(var(--u) * -1.6); width: calc(var(--u) * 3.2); height: calc(var(--u) * 3.2); border-radius: 50%; background: radial-gradient(circle, rgba(255,246,220,.95), rgba(246,214,140,.5) 45%, rgba(246,214,140,0) 70%); opacity: 0; animation: sh-glow var(--sh-cy) ease infinite; }
-  @keyframes sh-glow { 0%, 16% { opacity: 0; } 20%, 54% { opacity: 1; } 60%, 100% { opacity: 0; } }
-  @keyframes sh-fg {
-    0% { opacity: 0; transform: translate(calc(var(--u) * 2), calc(var(--u) * 5)) rotate(9deg); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-    13% { opacity: 1; transform: rotate(5deg); animation-timing-function: ease-in-out; }
-    18%, 22% { opacity: 1; transform: rotate(5deg) scale(.97); animation-timing-function: cubic-bezier(.62, 0, .32, 1); }
-    40% { opacity: 1; transform: translate(calc(var(--u) * -.5), calc(var(--L) * -.55)) rotate(1deg) scale(.97); animation-timing-function: cubic-bezier(.3, 0, .4, 1); }
-    56% { opacity: 1; transform: translateY(calc(var(--L) * -1)) rotate(-2deg) scale(.97); animation-timing-function: cubic-bezier(.3, 0, .4, 1); }
-    66% { opacity: .9; transform: translate(calc(var(--u) * -.8), calc(var(--L) * -1 - var(--u) * 2.2)) rotate(-5deg); animation-timing-function: ease-out; }
-    74%, 100% { opacity: 0; transform: translate(calc(var(--u) * -1.4), calc(var(--L) * -1 - var(--u) * 3.4)) rotate(-7deg); } }
-
-  /* chữ hai dòng, chỉ hiện lúc tay vuốt: "Vuốt xuống" nghiêng có chân như tên trên thẻ, gạch vàng,
+  /* chữ hai dòng theo nhịp vuốt: "Vuốt xuống" nghiêng có chân như tên trên thẻ, gạch vàng,
      "ĐỂ XEM THÊM Ạ" in hoa nhỏ giãn chữ như "THIỆP CƯỚI" */
   .sh-tx { position: absolute; left: 0; bottom: var(--tb); transform: translateX(-50%); text-align: center; white-space: nowrap; line-height: 1; text-shadow: 0 0 calc(var(--u) * 2.4) rgba(20,2,5,.9), 0 1px 2px rgba(0,0,0,.6); }
   .sh-l1 { display: block; font: italic 500 calc(var(--u) * 5.2)/1 var(--serif); letter-spacing: .01em; color: #FBF1DF; }
-  .sh-ch { display: inline-block; opacity: 0; animation: sh-ch var(--sh-cy) linear infinite both; animation-delay: calc(var(--i, 0) * 40ms); }
+  .sh-ch { display: inline-block; opacity: 0; animation: sh-ch var(--sh-cy) linear infinite both; animation-delay: calc(var(--i, 0) * 30ms); }
   @keyframes sh-ch {
-    0%, 22% { opacity: 0; transform: translateY(.5em); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-    36% { opacity: 1; transform: none; }
-    64% { opacity: 1; transform: none; animation-timing-function: ease-in; }
-    76%, 100% { opacity: 0; transform: translateY(-.25em); } }
+    0%, 7% { opacity: 0; transform: translateY(.5em); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+    20% { opacity: 1; transform: none; }
+    56% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+    68%, 100% { opacity: 0; transform: translateY(-.25em); } }
   .sh-rule { display: block; width: calc(var(--u) * 9); height: 1px; margin: calc(var(--u) * 1.5) auto calc(var(--u) * 1.3); background: linear-gradient(90deg, rgba(235,211,160,0), #EBD3A0 50%, rgba(235,211,160,0)); transform-origin: center; animation: sh-rule var(--sh-cy) linear infinite both; }
   @keyframes sh-rule {
-    0%, 26% { transform: scaleX(0); opacity: 1; animation-timing-function: ease-out; }
-    48% { transform: scaleX(1); opacity: 1; }
-    64% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in; }
-    76%, 100% { transform: scaleX(1); opacity: 0; } }
+    0%, 10% { transform: scaleX(0); opacity: 1; animation-timing-function: ease-out; }
+    28% { transform: scaleX(1); opacity: 1; }
+    56% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in; }
+    68%, 100% { transform: scaleX(1); opacity: 0; } }
   .sh-sub { display: block; padding-left: .26em; font: 500 calc(var(--u) * 2.6)/1 var(--sans); letter-spacing: .26em; text-transform: uppercase; color: #E9CF98; opacity: 0; text-shadow: 0 0 calc(var(--u) * 2) rgba(20,2,5,.95), 0 1px 1px rgba(0,0,0,.6); animation: sh-sub var(--sh-cy) linear infinite both; }
   @keyframes sh-sub {
-    0%, 30% { opacity: 0; letter-spacing: .5em; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-    46% { opacity: 1; letter-spacing: .26em; }
-    64% { opacity: 1; letter-spacing: .26em; animation-timing-function: ease-in; }
-    76%, 100% { opacity: 0; letter-spacing: .26em; } }
+    0%, 12% { opacity: 0; letter-spacing: .5em; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+    28% { opacity: 1; letter-spacing: .26em; }
+    56% { opacity: 1; letter-spacing: .26em; animation-timing-function: ease-in; }
+    68%, 100% { opacity: 0; letter-spacing: .26em; } }
 
   @media (prefers-reduced-motion: reduce) {
     .sh, .sh *, .sh *::after { animation: none !important; }
-    .sh-fg { opacity: 1; transform: translateY(calc(var(--L) * -1)); }
-    .sh-star { opacity: 1; transform: none; }
-    .sh-dust, .sh-streak { display: none; }
+    .sh-dust { display: none; }
     .sh-ch, .sh-sub { opacity: 1; }
   }
 }

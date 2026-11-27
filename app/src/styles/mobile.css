@@ -882,10 +882,10 @@
 }
 
 /* ═══════════ GỢI Ý CUỘN XUỐNG (ScrollHint.jsx, 2026-11-27) ═══════════
-   Ngón cái tay phải (tranh vẽ, public/assets/hint/thumb.webp) ấn vào chấm sáng ở mép trái rồi lướt lên,
+   Ngón cái tay phải (tranh vẽ, public/assets/hint/thumb.webp) ấn vào chấm sáng giữa màn rồi lướt lên,
    rắc nhũ vàng theo đầu ngón; ngôi sao nở ở đỉnh; chữ hai dòng chỉ hiện lúc tay vuốt.
    Cỡ tính bằng --u = 3,9 px thật nên to bằng nhau trên mọi máy. Vị trí (--rx, --v0, --L, --tb, px) do
-   ScrollHint đặt thẳng lên .sh: cả cụm bám góc dưới bên trái màn hình (cộng vùng an toàn). Một lượt --sh-cy phải khớp CY trong ScrollHint.jsx. */
+   ScrollHint đặt thẳng lên .sh: cả cụm nằm giữa màn hình, chữ căn giữa trên trục vuốt. Một lượt --sh-cy phải khớp CY trong ScrollHint.jsx. */
 @media (max-width: 759.98px), (max-height: 520px), (max-width: 1199.98px) and (max-aspect-ratio: 5/6), (hover: none) and (pointer: coarse) and (max-width: 1439.98px) {
   .sh {
     --u: 3.9px; --sh-cy: 3.8s;
@@ -896,12 +896,12 @@
   .sh.off { animation: sh-out .8s ease both; }
   @keyframes sh-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes sh-out { from { opacity: 1; } to { opacity: 0; } }
-  /* Cả màn hơi tối lại để gợi ý nổi lên; góc dưới trái (nơi tay vuốt) đậm hơn một chút */
+  /* Cả màn tối lại để gợi ý nổi lên; quanh chỗ tay vuốt (giữa màn) đậm hơn một chút */
   .sh-dim { position: absolute; inset: 0; background:
-    radial-gradient(circle at 0 100%, rgba(22,3,6,.5), rgba(22,3,6,.25) calc(var(--u) * 32), transparent calc(var(--u) * 64)),
-    rgba(22,3,6,.46); }
+    radial-gradient(circle at var(--rx) calc(100% - var(--v0) - var(--L) / 2), rgba(22,3,6,.4), rgba(22,3,6,.2) calc(var(--u) * 30), transparent calc(var(--u) * 60)),
+    rgba(22,3,6,.56); }
   .sh.light .sh-dim { opacity: .9; }
-  .sh-grp { position: absolute; left: calc(var(--rx) + env(safe-area-inset-left, 0px)); bottom: calc(var(--v0) + env(safe-area-inset-bottom, 0px)); width: 0; height: 0; }
+  .sh-grp { position: absolute; left: var(--rx); bottom: var(--v0); width: 0; height: 0; }
 
   /* chấm sáng: chỗ đặt ngón; vòng toả ra đúng lúc ngón ấn xuống */
   .sh-dot { position: absolute; left: calc(var(--u) * -1.3); bottom: calc(var(--u) * -1.3); width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); border-radius: 50%; background: radial-gradient(circle, #FFF7DE 0 35%, #E9CB8A 60%, rgba(233,203,138,0) 72%); box-shadow: 0 0 calc(var(--u) * 2.2) rgba(246,214,140,.75); }
@@ -947,7 +947,7 @@
 
   /* chữ hai dòng, chỉ hiện lúc tay vuốt: "Vuốt xuống" nghiêng có chân như tên trên thẻ, gạch vàng,
      "ĐỂ XEM THÊM Ạ" in hoa nhỏ giãn chữ như "THIỆP CƯỚI" */
-  .sh-tx { position: absolute; left: calc(var(--u) * -3.4); bottom: var(--tb); white-space: nowrap; line-height: 1; text-shadow: 0 0 calc(var(--u) * 2.4) rgba(20,2,5,.9), 0 1px 2px rgba(0,0,0,.6); }
+  .sh-tx { position: absolute; left: 0; bottom: var(--tb); transform: translateX(-50%); text-align: center; white-space: nowrap; line-height: 1; text-shadow: 0 0 calc(var(--u) * 2.4) rgba(20,2,5,.9), 0 1px 2px rgba(0,0,0,.6); }
   .sh-l1 { display: block; font: italic 500 calc(var(--u) * 5.2)/1 var(--serif); letter-spacing: .01em; color: #FBF1DF; }
   .sh-ch { display: inline-block; opacity: 0; animation: sh-ch var(--sh-cy) linear infinite both; animation-delay: calc(var(--i, 0) * 40ms); }
   @keyframes sh-ch {
@@ -955,13 +955,13 @@
     36% { opacity: 1; transform: none; }
     64% { opacity: 1; transform: none; animation-timing-function: ease-in; }
     76%, 100% { opacity: 0; transform: translateY(-.25em); } }
-  .sh-rule { display: block; width: calc(var(--u) * 6.5); height: 1px; margin: calc(var(--u) * 1.5) 0 calc(var(--u) * 1.3); background: linear-gradient(90deg, #EBD3A0, rgba(235,211,160,0)); transform-origin: left; animation: sh-rule var(--sh-cy) linear infinite both; }
+  .sh-rule { display: block; width: calc(var(--u) * 9); height: 1px; margin: calc(var(--u) * 1.5) auto calc(var(--u) * 1.3); background: linear-gradient(90deg, rgba(235,211,160,0), #EBD3A0 50%, rgba(235,211,160,0)); transform-origin: center; animation: sh-rule var(--sh-cy) linear infinite both; }
   @keyframes sh-rule {
     0%, 26% { transform: scaleX(0); opacity: 1; animation-timing-function: ease-out; }
     48% { transform: scaleX(1); opacity: 1; }
     64% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in; }
     76%, 100% { transform: scaleX(1); opacity: 0; } }
-  .sh-sub { display: block; font: 500 calc(var(--u) * 2.6)/1 var(--sans); letter-spacing: .26em; text-transform: uppercase; color: #E9CF98; opacity: 0; text-shadow: 0 0 calc(var(--u) * 2) rgba(20,2,5,.95), 0 1px 1px rgba(0,0,0,.6); animation: sh-sub var(--sh-cy) linear infinite both; }
+  .sh-sub { display: block; padding-left: .26em; font: 500 calc(var(--u) * 2.6)/1 var(--sans); letter-spacing: .26em; text-transform: uppercase; color: #E9CF98; opacity: 0; text-shadow: 0 0 calc(var(--u) * 2) rgba(20,2,5,.95), 0 1px 1px rgba(0,0,0,.6); animation: sh-sub var(--sh-cy) linear infinite both; }
   @keyframes sh-sub {
     0%, 30% { opacity: 0; letter-spacing: .5em; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
     46% { opacity: 1; letter-spacing: .26em; }

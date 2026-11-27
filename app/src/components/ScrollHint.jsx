@@ -17,7 +17,7 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  *  · chạm vào (chỗ không phải nút / ảnh) là trang tự cuộn xuống phần tiếp;
  *  · khách tự kéo xuống được nửa màn → không hiện nữa trong TAB ĐÓ, kể cả tải lại trang (sessionStorage);
  *    mở link ở tab mới coi như lượt vào mới, lại được nhắc (chủ thiệp, 2026-11-27);
- *  · là một lớp riêng của CẢ MÀN HÌNH, không thuộc hero (chủ thiệp): luôn ở góc dưới trái màn hình,
+ *  · là một lớp riêng của CẢ MÀN HÌNH, không thuộc hero (chủ thiệp): luôn ở giữa màn hình,
  *    hiện ở bất kỳ đoạn nào khách đang dừng, trừ phần Xác nhận tham dự, chân trang và cuối trang;
  *    không hiện khi đang xem ảnh phóng to, đang gõ chữ, tab ở nền.
  *  · Lướt ảnh trái phải không tính là thao tác (chủ thiệp: "cứ để đó").
@@ -90,16 +90,19 @@ function setLearned() {
 const isTouch = () => mqMatches('(pointer: coarse)') || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
 /**
- * Vị trí: cả cụm bám GÓC DƯỚI BÊN TRÁI màn hình, cùng một khoảng cách (đơn vị u) trên mọi điện thoại,
- * không đo theo nội dung trang (chủ thiệp, 2026-11-27: "phần riêng của cả màn hình, không phải của hero").
- * CSS cộng thêm vùng an toàn (tai thỏ, thanh home). Trả về biến CSS (px).
+ * Vị trí: cả cụm nằm GIỮA MÀN HÌNH (chủ thiệp, 2026-11-27, thay cho góc dưới trái trước đó):
+ * đường vuốt thẳng trục giữa màn, chữ căn giữa trên trục; theo chiều dọc, khối từ đỉnh chữ tới
+ * phần tay nhìn thấy (≈ 16u dưới chấm sáng, phần dưới tay đã mờ) cân ở giữa màn. Là lớp của cả
+ * màn hình, không đo theo nội dung trang. Trả về biến CSS (px).
  */
 function measure() {
   const wide = window.innerWidth > window.innerHeight;
   const gap = 5.8 * U; // từ đỉnh đường vuốt tới đáy chữ (ngôi sao nằm giữa)
-  const rx = 8 * U; // đầu ngón cách mép trái ≈ 31 px
-  const v0 = (wide ? 6 : 8) * U; // chấm sáng cách đáy ≈ 23 / 31 px
   const L = (wide ? 15 : 22) * U; // đường vuốt ≈ 59 / 86 px
+  const top = L + gap + 10.8 * U; // đỉnh chữ, tính từ chấm sáng
+  const below = 16 * U; // phần tay còn thấy dưới chấm sáng
+  const rx = window.innerWidth / 2;
+  const v0 = window.innerHeight / 2 - (top - below) / 2;
   return {
     wide,
     vars: {

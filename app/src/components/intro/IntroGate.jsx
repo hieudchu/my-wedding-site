@@ -19,6 +19,8 @@ const CLIP_CARD_W = { x: 0.2324, y: 0.1791, w: 0.5353, h: 0.6409 };
 const GATE_CUT_S = 1.77;
 const GATE_FADE_MS = 900; // = .intro-gate transition; review 25/11: 0,65 s nhìn như hai vạt bên "tắt phụt"
 export const GATE_LEAD_S = GATE_CUT_S; // chạm → video chạy (IntroVideo canh nhạc)
+// Giữa thẻ (chỗ dấu HM) hết bị vạt che: đo trên open-card.mp4 / open-card-w.webm, vùng dấu lộ ≥ 95% từ 1,30–1,32 s
+const GATE_REVEAL_S = 1.3;
 // Clip nền trong suốt: Safari / iPhone / iPad đọc HEVC có alpha; trình duyệt khác WebM VP9 có alpha
 const APPLE = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent)
   || (/Safari/.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|Android/.test(navigator.userAgent)));
@@ -59,10 +61,11 @@ function ctaPlace(rect, wide) {
  * @param reveal  tải lại: clip mở ra thẻ đỏ trống
  * @param wide    khổ ngang / máy tính: clip xoay ngang, nền trong suốt
  * @param onOpen  gọi trong cú chạm (đồng bộ) — nhạc + tiếng giấy, làm nóng video
+ * @param onReveal giữa thẻ vừa lộ ra (GATE_REVEAL_S) — tải lại: dấu HM hiện cùng lúc thẻ lộ ra
  * @param onCut   vạt nằm yên (GATE_CUT_S)
  * @param onDone  clip đã mờ hết: gỡ phong bì
  */
-export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone }) {
+export default function IntroGate({ rect, reveal, wide, onOpen, onReveal, onCut, onDone }) {
   // Khổ ngang tải lại: thẻ trong phong bì là 3:2, thẻ trang rộng hơn → phong bì cũng mờ đi (như lần đầu) để
   // IntroVideo giãn thẻ đỏ ra đúng thẻ trang; khổ dọc giữ khung cuối rồi rời lớp phủ.
   const hold = reveal && !wide;
@@ -71,6 +74,7 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
   const [clipReady, setClipReady] = useState(false);
   const ready = imgReady && clipReady && !!rect;
   const clipRef = useRef(null);
+  const stillRef = useRef(null);
   const timers = useRef([]);
   const raf = useRef(0);
   const cut = useRef(false);
@@ -94,10 +98,27 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
     return () => { v.removeEventListener('canplaythrough', ok); v.removeEventListener('error', ok); clearTimeout(t); };
   }, []);
 
+  // Tải lại khổ dọc: chép khung cuối của clip ra <canvas> đè lên. Safari không chụp <video> vào ảnh của View
+  // Transition → vạt phong bì (và thẻ đỏ có sẵn trong clip) biến mất một nhịp lúc lớp phủ rời đi (chủ thiệp 27/11).
+  useEffect(() => {
+    if (step !== 'hold') return;
+    const v = clipRef.current;
+    const c = stillRef.current;
+    if (!v || !c || !v.videoWidth) return;
+    try {
+      c.width = v.videoWidth;
+      c.height = v.videoHeight;
+      c.getContext('2d').drawImage(v, 0, 0);
+    } catch { /* không vẽ được: giữ clip như cũ */ }
+  }, [step]);
+
   /** Mở xong. Lần đầu: video chạy dưới phong bì, phong bì mờ rồi gỡ. Tải lại: đứng ở khung cuối. */
+  const revealed = useRef(false);
+  const revealNow = () => { if (!revealed.current) { revealed.current = true; onReveal?.(); } };
   const toVideo = () => {
     if (cut.current) return;
     cut.current = true;
+    revealNow(); // clip không chạy được / hết sớm: vẫn báo
     cancelAnimationFrame(raf.current);
     if (hold) {
       clipRef.current?.pause();
@@ -137,6 +158,7 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
     if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(show);
     else v.addEventListener('playing', show, { once: true });
     const watch = () => {
+      if (v.currentTime >= GATE_REVEAL_S) revealNow();
       if (v.currentTime >= GATE_CUT_S || v.ended) { toVideo(); return; }
       raf.current = requestAnimationFrame(watch);
     };
@@ -187,6 +209,7 @@ export default function IntroGate({ rect, reveal, wide, onOpen, onCut, onDone })
         onEnded={toVideo}
         onError={() => { if (step !== 'idle') toVideo(); }}
       />
+      {step === 'hold' && <canvas ref={stillRef} className="ig-clip" style={place} aria-hidden="true" />}
       {seal && <div className="ig-seal" style={seal} aria-hidden="true" />}
       {inviteAbove && (
         <div className="ig-invite" style={{ top: Math.round(rect.y - 34) }} aria-hidden="true">

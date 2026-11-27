@@ -930,6 +930,55 @@ html[data-hero-quick] :is(.hm-track, .hero-stage).ready .hero-meta { animation-d
   transition: left 0.9s var(--ease-soft), top 0.9s var(--ease-soft), width 0.9s var(--ease-soft), height 0.9s var(--ease-soft);
 }
 .intro-frame.in-card::after { transition: opacity 0.7s ease 0.4s; }
+/* Dấu HM trên thẻ đỏ của lớp phủ (IntroVideo SEAL_MS 650): hiện 0,55 s + ánh nhũ lướt 0,56 s, xong trước khi lớp phủ
+   rời đi; View Transition lúc rời lớp phủ làm dấu tan, trước khi chữ thẻ trồi lên. Chỉ opacity + transform → 60 fps. */
+.intro-seal {
+  position: absolute;
+  z-index: 4; /* trên phong bì (.intro-gate 3) */
+  pointer-events: none;
+}
+/* Căn theo hình bầu dục H M, không theo cả ảnh: cành hoa chìa sang phải, bầu dục lệch trái 11,9% bề ngang ảnh
+   (medallion-gold.png: bầu dục x 35–270 / 400) → -50% + 11,9% = -38,1%. absolute + transform, không grid: Safari tính
+   bề ngang ô grid có height % + aspect-ratio khác Chrome (lệch ~13 px trong ảnh chụp View Transition). */
+.intro-seal > i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 46.3%;
+  aspect-ratio: 400 / 556;
+  transform: translate(-38.1%, -50%);
+}
+.intro-seal .mk {
+  background: url('/assets/medallion-gold.png') center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(216, 183, 120, 0.5));
+  animation: sealIn 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) var(--seal-delay, 0ms) both;
+}
+.intro-seal .gl {
+  overflow: hidden;
+  -webkit-mask: url('/assets/medallion-gold.png') center / contain no-repeat;
+  mask: url('/assets/medallion-gold.png') center / contain no-repeat;
+  opacity: 0;
+  animation: sealGloss 0.56s linear calc(var(--seal-delay, 0ms) + 60ms);
+}
+.intro-seal .gl b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  background: linear-gradient(110deg, rgba(255, 240, 200, 0) 15%, rgba(255, 242, 206, 0.95) 50%, rgba(255, 240, 200, 0) 85%);
+  transform: translateX(-100%);
+  animation: sealSweep 0.56s cubic-bezier(0.4, 0, 0.3, 1) calc(var(--seal-delay, 0ms) + 60ms);
+}
+@keyframes sealIn {
+  from { opacity: 0; transform: translate(-38.1%, -50%) scale(1.07); }
+  to { opacity: 0.42; transform: translate(-38.1%, -50%); }
+}
+@keyframes sealGloss { from, to { opacity: 0.85; } }
+@keyframes sealSweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(170%); }
+}
 .intro-landscape .intro-frame {
   border-radius: 0;
   box-shadow:

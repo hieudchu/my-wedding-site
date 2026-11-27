@@ -38,6 +38,12 @@ const CARD_MOVE_MS = 900; // khung video lớn → thẻ (điện thoại ngang;
 const CARD_RED_MS = 550;
 const CARD_SETTLE_MS = CARD_MOVE_MS + 100;
 const WIDEN_MS = 900; // tải lại khổ ngang: thẻ đỏ 3:2 giãn ra thẻ hero (= .intro-frame.widen)
+// Dấu HM (chủ thiệp 27/11, kiểu B của docs/hero-blank-fx.html): lúc thẻ đỏ còn trống, dấu HM ép nhũ hiện mờ giữa thẻ
+// (0,55 s) + ánh nhũ lướt qua (xong ở 0,62 s). Dấu chỉ có trên lớp phủ: View Transition lúc rời lớp phủ làm dấu tan
+// trong ~0,5 s, xong trước khi chữ thẻ thật trồi lên (chủ thiệp 27/11: dấu còn hiện mờ lúc chữ lên → ẩn sớm hơn).
+// Lớp phủ chỉ rời đi khi dấu đã hiện xong.
+const SEAL_MS = 650;
+const SEAL_IN_CARD_MS = 250; // khổ dọc / máy tính: hình đã tan gần nửa thành đỏ thì dấu hiện (0,55 s, .in-card.card)
 
 /**
  * @param ready   trang đã có nội dung (useSiteConfig hết loading)
@@ -103,6 +109,17 @@ export default function IntroVideo({ ready, enabled, music }) {
     return () => { window.removeEventListener('resize', onResize); clearInterval(t); };
   }, []);
 
+  // Dấu HM trên thẻ đỏ (null = chưa hiện; số = trễ bao nhiêu ms).
+  const [seal, setSeal] = useState(null);
+  const sealRef = useRef(false);
+  const sealAtRef = useRef(0); // lúc dấu bắt đầu hiện (performance.now, đã cộng trễ)
+  const startSeal = (delay) => {
+    if (sealRef.current || leavingRef.current) return;
+    sealRef.current = true;
+    sealAtRef.current = performance.now() + delay;
+    setSeal(delay);
+  };
+
   /** Khung → thẻ thật. false nếu chưa đo được thẻ. */
   const toCard = () => {
     if (cardRef.current) return true;
@@ -112,6 +129,8 @@ export default function IntroVideo({ ready, enabled, music }) {
     mainRef.current?.pause();
     setCard(r);
     setBox(r);
+    // Video thành thẻ: dấu hiện khi hình tan thành đỏ; điện thoại ngang chờ khung trượt gần tới thẻ
+    if (mode.current === 'video') startSeal(frameModeRef.current === 'video' ? CARD_MOVE_MS - 250 : SEAL_IN_CARD_MS);
     return true;
   };
 
@@ -159,7 +178,9 @@ export default function IntroVideo({ ready, enabled, music }) {
         cardRef.current = r; setBox(r);
       }
     }, 120);
-    const wait = p.gate && frameModeRef.current !== 'video' ? CARD_RED_MS : CARD_SETTLE_MS;
+    // Chờ dấu HM hiện xong (không có dấu: ảnh tĩnh / bị tắt → như cũ)
+    const sealEnd = sealRef.current ? (frameModeRef.current === 'video' ? CARD_MOVE_MS - 250 : SEAL_IN_CARD_MS) + SEAL_MS : 0;
+    const wait = Math.max(p.gate && frameModeRef.current !== 'video' ? CARD_RED_MS : CARD_SETTLE_MS, sealEnd);
     const t = setTimeout(go, wait);
     const cap = setTimeout(leave, wait + LOOP_CAP_MS);
     return () => { clearTimeout(t); clearTimeout(cap); clearInterval(follow); };
@@ -242,9 +263,21 @@ export default function IntroVideo({ ready, enabled, music }) {
   };
   // Vạt đã mở hết. Lần đầu: video chạy dưới phong bì đang mờ. Tải lại khổ dọc: rời lớp phủ sau một nhịp;
   // tải lại khổ ngang: chờ phong bì tan (onGateDone) rồi thẻ đỏ giãn ra.
+  // Tải lại (chủ thiệp 27/11): dấu HM hiện ngay lúc phong bì mở ra — khi giữa thẻ vừa hết bị vạt che (onReveal,
+  // ~0,47 s trước khi vạt nằm yên), không chờ vạt mở hết. Lần đầu: dấu hiện lúc video thành thẻ (toCard).
+  const onGateReveal = () => { if (p.pageReveal) startSeal(0); };
   const onGateCut = () => {
-    if (p.pageReveal && wide) { setRevealCut(true); return; }
-    if (p.pageReveal) { setTimeout(leave, 200); return; }
+    if (p.pageReveal && wide) { setRevealCut(true); startSeal(0); return; }
+    // Khổ dọc: thẻ đỏ lúc này chỉ là khung cuối của clip phong bì. Safari không chụp <video> vào ảnh của View
+    // Transition → thẻ biến mất ~0,2 s (chủ thiệp 27/11: "có 1 lần nháy"). Hiện thẻ đỏ thật (.intro-frame.card) ngay
+    // dưới clip để ảnh chụp vẫn có thẻ.
+    if (p.pageReveal) {
+      setRevealCut(true);
+      startSeal(0);
+      // Rời lớp phủ một nhịp sau khi vạt nằm yên (như trước khi có dấu), nhưng không trước khi dấu hiện xong
+      setTimeout(leave, Math.max(200, sealAtRef.current + SEAL_MS - performance.now()));
+      return;
+    }
     setPhase((ph) => (ph === 'gate' ? 'play' : ph));
   };
   const onGateDone = () => {
@@ -495,7 +528,18 @@ export default function IntroVideo({ ready, enabled, music }) {
       </div>
       {DEBUG && <IntroDebug phase={phase} needTap={needTap} musicRef={musicRef} mainRef={mainRef} />}
       {p.gate && !gateGone && phase !== 'wait' && (
-        <IntroGate rect={wide ? fit32(box) : box} reveal={p.pageReveal} wide={wide} onOpen={onGateOpen} onCut={onGateCut} onDone={onGateDone} />
+        <IntroGate rect={wide ? fit32(box) : box} reveal={p.pageReveal} wide={wide} onOpen={onGateOpen} onReveal={onGateReveal} onCut={onGateCut} onDone={onGateDone} />
+      )}
+      {/* Dấu HM trên thẻ đỏ — trên cả phong bì (khổ dọc tải lại: thẻ đỏ nằm trong khung cuối của clip phong bì) */}
+      {seal != null && card && box && (
+        <span
+          className="intro-seal"
+          style={{ left: box.x, top: box.y, width: box.w, height: box.h, '--seal-delay': `${seal}ms` }}
+          aria-hidden="true"
+        >
+          <i className="mk" />
+          <i className="gl"><b /></i>
+        </span>
       )}
       {/* Khung bắt đầu thành thẻ thì cất nút: không lọt vào ảnh chụp của chuyển cảnh, đè thanh tiêu đề */}
       {(phase === 'play' || phase === 'loop') && gateGone && !card && (

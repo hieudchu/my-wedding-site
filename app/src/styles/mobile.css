@@ -883,7 +883,7 @@
 
 /* ═══════════ GỢI Ý CUỘN XUỐNG (ScrollHint.jsx, 2026-11-27) ═══════════
    Bàn tay vẽ (ngà viền vàng, cổ tay áo nhung đỏ) đặt ngón trỏ lên mặt kính, trượt thẳng lên rắc nhũ vàng,
-   tới trên nhấc tay (to ra 7 %, bóng xa ra), đưa về dưới, đặt xuống, lặp. Sao y video đã duyệt
+   tới đỉnh một ngôi sao nhỏ nở nhẹ, rồi nhấc tay (to ra 7 %, bóng xa ra), đưa về dưới, đặt xuống, lặp. Sao y video đã duyệt
    (docs/scroll-hint-3d.html, bản A) nhưng dựng bằng CSS. Một lượt --sh-cy = CY trong ScrollHint.jsx (2,3 s):
    chạm 0–6,96 % · trượt 6,96–54,78 % · nhấc 54,78–64,35 % · về 64,35–91,3 % · đặt xuống 91,3–100 %.
    Cỡ theo --u = 3,9 px. Vị trí (--rx, --v0, --T, --tb, px) do ScrollHint đặt thẳng lên .sh. */
@@ -924,6 +924,15 @@
   .sh-glow { position: absolute; width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); margin: calc(var(--u) * -1.7) 0 0 calc(var(--u) * -1.7); border-radius: 50%;
     background: radial-gradient(circle, rgba(255,240,205,.92), rgba(255,240,205,.45) 40%, rgba(255,240,205,0) 70%); animation: sh-glow var(--sh-cy) linear infinite; }
   @keyframes sh-glow { 0%, 54.78% { opacity: .85; } 64.35%, 91.3% { opacity: 0; } 100% { opacity: .85; } }
+
+  /* ngôi sao bốn cánh nở nhẹ ở đỉnh đường vuốt khi đầu ngón tới (chủ thiệp: "nhẹ thôi"), tan khi tay về */
+  .sh-star { position: absolute; left: calc(var(--u) * -1.7); bottom: calc(var(--T) + var(--u) * 1.1); width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); overflow: visible;
+    filter: drop-shadow(0 0 calc(var(--u) * 1) rgba(246,214,140,.7)); opacity: 0; transform: scale(.4); animation: sh-star var(--sh-cy) linear infinite; }
+  @keyframes sh-star {
+    0%, 47% { opacity: 0; transform: scale(.4) rotate(0); animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+    57% { opacity: .8; transform: scale(1) rotate(35deg); animation-timing-function: ease-out; }
+    70% { opacity: .5; transform: scale(.85) rotate(55deg); animation-timing-function: ease-in; }
+    84%, 100% { opacity: 0; transform: scale(.55) rotate(70deg); } }
 
   /* nhũ vàng: mỗi hạt bung đúng lúc đầu ngón đi qua (animation-delay trong JSX), trôi nhẹ xuống rồi tan (≈ 0,75 s) */
   .sh-dust { position: absolute; width: 0; height: 0; }

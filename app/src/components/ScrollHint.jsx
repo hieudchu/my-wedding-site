@@ -7,8 +7,8 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  * Chỉ điện thoại / màn cảm ứng (bố cục PHONE_QUERY + có cảm ứng); máy tính dùng chuột không có.
  * Thẻ đỏ đầu thiệp chiếm trọn màn nên khách lớn tuổi tưởng thiệp đã hết. Khi khách chưa kéo xuống,
  * giữa đáy màn một bàn tay vẽ (ngà viền vàng, cổ tay áo nhung đỏ — public/assets/hint/hand.webp) đặt
- * ngón trỏ lên mặt kính rồi trượt thẳng lên như đang lướt Facebook, nhũ vàng rắc theo đầu ngón; tới
- * trên thì nhấc tay (to ra, bóng xa ra), đưa về dưới, đặt xuống, vuốt tiếp. Chữ "Vuốt xuống / để xem
+ * ngón trỏ lên mặt kính rồi trượt thẳng lên như đang lướt Facebook, nhũ vàng rắc theo đầu ngón, tới đỉnh
+ * một ngôi sao nhỏ nở nhẹ; tới trên thì nhấc tay (to ra, bóng xa ra), đưa về dưới, đặt xuống, vuốt tiếp. Chữ "Vuốt xuống / để xem
  * thêm ạ" hiện theo nhịp vuốt. Chuyển động sao y bản video đã duyệt nhưng dựng bằng CSS (60 khung/giây,
  * một ảnh 10 KB thay cho WebP động ≈ 870 KB).
  *
@@ -98,7 +98,7 @@ function measure() {
       '--rx': `${(window.innerWidth / 2).toFixed(1)}px`,
       '--v0': px(HAND.H - HAND.TY + 5),
       '--T': px(HAND.T),
-      '--tb': px(HAND.T + 5.2),
+      '--tb': px(HAND.T + 6.4), // chừa chỗ cho ngôi sao ở đỉnh
     },
   };
 }
@@ -243,6 +243,16 @@ export default function ScrollHint({ enabled }) {
             <i className={d.star ? 'st' : undefined} style={{ animationDelay: `${d.delay}ms` }} />
           </span>
         ))}
+        <svg className="sh-star" viewBox="-6 -6 12 12">
+          <defs>
+            <linearGradient id="sh-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#FFF6D8" />
+              <stop offset=".5" stopColor="#EBCB86" />
+              <stop offset="1" stopColor="#B8893F" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#sh-gold)" d="M0 -6 C.7 -1.4 1.4 -.7 6 0 C1.4 .7 .7 1.4 0 6 C-.7 1.4 -1.4 .7 -6 0 C-1.4 -.7 -.7 -1.4 0 -6Z" />
+        </svg>
         <span
           className="sh-hand"
           style={{ left: u(-HAND.TX), top: u(-HAND.TY), width: u(HAND.W), height: u(HAND.H), transformOrigin: `${u(HAND.CX)} ${u(HAND.CY0)}` }}

@@ -13,6 +13,7 @@ import Timeline from './components/Timeline';
 import RSVP from './components/RSVP';
 import Footer from './components/Footer';
 import DeskMotion from './components/DeskMotion';
+import ScrollHint from './components/ScrollHint';
 import IntroVideo from './components/intro/IntroVideo';
 import { LightboxProvider } from './components/Lightbox';
 import { setManifest } from './lib/storage';
@@ -81,6 +82,7 @@ export default function App() {
       />
       <Nav config={config} siteText={siteText} visible={entered} />
       <Hero config={config} siteText={siteText} visible={entered} />
+      <ScrollHint enabled={isPhone} />
       <Family side="groom" config={config} siteText={siteText} />
       <Family side="bride" config={config} siteText={siteText} />
       <WeddingInfo config={config} siteText={siteText} />

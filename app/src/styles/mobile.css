@@ -936,8 +936,8 @@
     24% { opacity: .5; transform: translate(calc(var(--dx) * .8), calc(var(--dy) * .8)) scale(.75) rotate(60deg); animation-timing-function: ease-in; }
     32.6%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.45) rotate(80deg); } }
 
-  /* chữ hai dòng theo nhịp vuốt: "Vuốt xuống" nghiêng có chân như tên trên thẻ, gạch vàng,
-     "ĐỂ XEM THÊM Ạ" in hoa nhỏ giãn chữ như "THIỆP CƯỚI" */
+  /* chữ hai dòng theo nhịp vuốt, cùng một font (chủ thiệp): "Vuốt xuống" nghiêng có chân như tên trên thẻ,
+     gạch vàng, rồi "để xem thêm ạ" cùng font, nhỏ hơn, màu vàng nhạt */
   .sh-tx { position: absolute; left: 0; bottom: var(--tb); transform: translateX(-50%); text-align: center; white-space: nowrap; line-height: 1; text-shadow: 0 0 calc(var(--u) * 2.4) rgba(20,2,5,.9), 0 1px 2px rgba(0,0,0,.6); }
   .sh-l1 { display: block; font: italic 500 calc(var(--u) * 5.2)/1 var(--serif); letter-spacing: .01em; color: #FBF1DF; }
   .sh-ch { display: inline-block; opacity: 0; animation: sh-ch var(--sh-cy) linear infinite both; animation-delay: calc(var(--i, 0) * 30ms); }
@@ -952,12 +952,12 @@
     28% { transform: scaleX(1); opacity: 1; }
     56% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in; }
     68%, 100% { transform: scaleX(1); opacity: 0; } }
-  .sh-sub { display: block; padding-left: .26em; font: 500 calc(var(--u) * 2.6)/1 var(--sans); letter-spacing: .26em; text-transform: uppercase; color: #E9CF98; opacity: 0; text-shadow: 0 0 calc(var(--u) * 2) rgba(20,2,5,.95), 0 1px 1px rgba(0,0,0,.6); animation: sh-sub var(--sh-cy) linear infinite both; }
+  .sh-sub { display: block; font: italic 500 calc(var(--u) * 3.9)/1 var(--serif); letter-spacing: .03em; color: #E9CF98; opacity: 0; text-shadow: 0 0 calc(var(--u) * 2) rgba(20,2,5,.95), 0 1px 1px rgba(0,0,0,.6); animation: sh-sub var(--sh-cy) linear infinite both; }
   @keyframes sh-sub {
-    0%, 12% { opacity: 0; letter-spacing: .5em; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-    28% { opacity: 1; letter-spacing: .26em; }
-    56% { opacity: 1; letter-spacing: .26em; animation-timing-function: ease-in; }
-    68%, 100% { opacity: 0; letter-spacing: .26em; } }
+    0%, 12% { opacity: 0; transform: translateY(.4em); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+    28% { opacity: 1; transform: none; }
+    56% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+    68%, 100% { opacity: 0; transform: translateY(-.2em); } }
 
   @media (prefers-reduced-motion: reduce) {
     .sh, .sh *, .sh *::after { animation: none !important; }

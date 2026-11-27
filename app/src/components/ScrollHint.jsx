@@ -13,7 +13,7 @@ import { mqMatches, PHONE_QUERY } from '../hooks/useViewport';
  *  · lần đầu ≈ 6,5 s sau khi trang hiện (sau video mở đầu nếu có), nếu khách chưa kéo xuống;
  *  · không hiện khi ngón tay còn trên màn, chờ nhấc tay 1 s;
  *  · mỗi lần nhắc tay vuốt 3 lượt (≈ 10,5 s) rồi tự tắt; khách ngồi yên thêm 5 s thì nhắc lại,
- *    lần 2–3 bản nhẹ (không chữ), tối đa 3 lần;
+ *    tối đa 3 lần; lần nào cũng có chữ (chủ thiệp), lần 2–3 chỉ có nền tối nhạt hơn;
  *  · chạm vào (chỗ không phải nút / ảnh) là trang tự cuộn xuống phần tiếp;
  *  · khách tự kéo xuống được nửa màn → không bao giờ hiện nữa, kể cả lần mở sau (localStorage);
  *  · là một lớp riêng của CẢ MÀN HÌNH, không thuộc hero (chủ thiệp): luôn ở góc dưới trái màn hình,
@@ -262,17 +262,15 @@ export default function ScrollHint({ enabled }) {
           <span className="sh-glow" />
           <img className="sh-th" src={THUMB} alt="" draggable="false" />
         </span>
-        {!hint.light && (
-          <div className="sh-tx">
-            <span className="sh-l1">
-              {WORD.map((c, i) => (
-                <span key={i} className="sh-ch" style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>
-              ))}
-            </span>
-            <span className="sh-rule" />
-            <span className="sh-sub">để xem thêm ạ</span>
-          </div>
-        )}
+        <div className="sh-tx">
+          <span className="sh-l1">
+            {WORD.map((c, i) => (
+              <span key={i} className="sh-ch" style={{ '--i': i }}>{c === ' ' ? ' ' : c}</span>
+            ))}
+          </span>
+          <span className="sh-rule" />
+          <span className="sh-sub">để xem thêm ạ</span>
+        </div>
       </div>
     </div>
   );

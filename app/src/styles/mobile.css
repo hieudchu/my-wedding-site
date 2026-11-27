@@ -896,8 +896,11 @@
   .sh.off { animation: sh-out .8s ease both; }
   @keyframes sh-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes sh-out { from { opacity: 1; } to { opacity: 0; } }
-  .sh-dim { position: absolute; inset: 0; background: radial-gradient(circle at 0 100%, rgba(22,3,6,.6), rgba(22,3,6,.3) calc(var(--u) * 26), rgba(22,3,6,.08) calc(var(--u) * 50), transparent calc(var(--u) * 70)); }
-  .sh.light .sh-dim { opacity: .5; }
+  /* Cả màn hơi tối lại để gợi ý nổi lên; góc dưới trái (nơi tay vuốt) đậm hơn một chút */
+  .sh-dim { position: absolute; inset: 0; background:
+    radial-gradient(circle at 0 100%, rgba(22,3,6,.5), rgba(22,3,6,.25) calc(var(--u) * 32), transparent calc(var(--u) * 64)),
+    rgba(22,3,6,.46); }
+  .sh.light .sh-dim { opacity: .9; }
   .sh-grp { position: absolute; left: calc(var(--rx) + env(safe-area-inset-left, 0px)); bottom: calc(var(--v0) + env(safe-area-inset-bottom, 0px)); width: 0; height: 0; }
 
   /* chấm sáng: chỗ đặt ngón; vòng toả ra đúng lúc ngón ấn xuống */
